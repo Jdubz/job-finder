@@ -80,11 +80,13 @@ class FirestoreJobStorage:
         import re
 
         # Remove level indicators in parentheses or brackets
-        role = re.sub(r'\s*[\(\[].*?[\)\]]', '', title)
+        role = re.sub(r"\s*[\(\[].*?[\)\]]", "", title)
 
         # Remove common seniority prefixes (but keep the core role)
-        seniority_pattern = r'^(Senior|Sr\.|Junior|Jr\.|Lead|Principal|Staff|Entry[ -]?Level|Mid[ -]?Level)\s+'
-        role = re.sub(seniority_pattern, '', role, flags=re.IGNORECASE).strip()
+        seniority_pattern = (
+            r"^(Senior|Sr\.|Junior|Jr\.|Lead|Principal|Staff|Entry[ -]?Level|Mid[ -]?Level)\s+"
+        )
+        role = re.sub(seniority_pattern, "", role, flags=re.IGNORECASE).strip()
 
         # If the removal made it too short, use original title
         if len(role) < 5:
