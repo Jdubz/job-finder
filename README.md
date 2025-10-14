@@ -52,17 +52,41 @@ A Python-based web scraper that finds online job postings relevant to your exper
    # OPENAI_API_KEY=your_key_here (get from https://platform.openai.com/)
    ```
 
-4. **Create your profile:**
+4. **Set up your profile** (choose one option):
+
+   **Option A: Use Firestore (recommended if you have the portfolio project)**
+   ```bash
+   # Download your Firebase service account key from Firebase Console
+   # Place it in a secure location (e.g., ~/.firebase/portfolio-key.json)
+
+   # In .env, set:
+   # GOOGLE_APPLICATION_CREDENTIALS=/path/to/serviceAccountKey.json
+
+   # In config/config.yaml, set:
+   # profile:
+   #   source: "firestore"
+   #   firestore:
+   #     database_name: "portfolio"
+   #     name: "Your Name"
+   #     email: "your.email@example.com"
+   ```
+
+   **Option B: Use JSON profile**
    ```bash
    python -m job_finder.main --create-profile data/profile.json
    # Edit data/profile.json with your experience, skills, and preferences
+
+   # In config/config.yaml, set:
+   # profile:
+   #   source: "json"
+   #   profile_path: "data/profile.json"
    ```
 
 5. **Configure your preferences:**
    ```bash
    cp config/config.example.yaml config/config.yaml
    # Edit config/config.yaml:
-   # - Set profile.profile_path to "data/profile.json"
+   # - Set profile source (firestore or json)
    # - Configure AI settings (provider, model, match threshold)
    # - Configure job sites and scraping settings
    ```
@@ -179,7 +203,9 @@ job-finder/
 
 ## How It Works
 
-1. **Profile Creation**: Create a comprehensive JSON profile with your skills, experience, and preferences
+1. **Profile Loading**:
+   - **Option A**: Load directly from Firestore database (automatically syncs with portfolio project)
+   - **Option B**: Load from JSON file (manual profile creation)
 2. **Job Scraping**: Scrapers collect job postings from configured job boards
 3. **Basic Filtering**: Traditional filters remove obviously irrelevant jobs (wrong location, missing keywords)
 4. **AI Analysis**: For each remaining job:
@@ -193,6 +219,25 @@ job-finder/
    - Identifies which experiences and projects to highlight
    - Suggests achievement angles and keywords to include
 6. **Output**: Saves all data in JSON/CSV format with full AI analysis
+
+## Firestore Integration
+
+If you have the portfolio project with Firestore, you can load profile data directly from your database:
+
+**Collections Used:**
+- `experience-entries`: Work experience data
+- `experience-blurbs`: Skills and highlights
+
+**Benefits:**
+- No manual data export/import needed
+- Profile automatically stays in sync with portfolio
+- Single source of truth for your professional data
+
+**Setup:**
+1. Download Firebase service account key from [Firebase Console](https://console.firebase.google.com/)
+2. Set `GOOGLE_APPLICATION_CREDENTIALS` in `.env`
+3. Configure `profile.source: "firestore"` in `config.yaml`
+4. Run the job finder - it will automatically load your latest profile data
 
 ## AI Providers
 

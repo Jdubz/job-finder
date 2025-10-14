@@ -21,6 +21,7 @@ dependencies = [
     "openai>=1.54.0",
     "pydantic>=2.10.0",
     "tiktoken>=0.8.0",
+    "firebase-admin>=6.5.0",
 ]
 
 [project.optional-dependencies]

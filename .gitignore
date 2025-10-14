@@ -46,10 +46,18 @@ data/*.db
 logs/*.log
 !data/.gitkeep
 !logs/.gitkeep
+!data/profile.example.json
+
+# Configuration
+config/config.yaml
 
 # Environment variables
 .env
 .env.local
+
+# Firebase credentials
+serviceAccountKey.json
+*-firebase-adminsdk-*.json
 
 # OS
 .DS_Store

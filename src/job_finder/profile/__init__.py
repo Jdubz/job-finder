@@ -8,6 +8,7 @@ from job_finder.profile.schema import (
     Preferences,
 )
 from job_finder.profile.loader import ProfileLoader
+from job_finder.profile.firestore_loader import FirestoreProfileLoader
 
 __all__ = [
     "Profile",
@@ -17,4 +18,5 @@ __all__ = [
     "Project",
     "Preferences",
     "ProfileLoader",
+    "FirestoreProfileLoader",
 ]

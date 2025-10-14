@@ -7,7 +7,7 @@ from typing import Dict, Any, Optional, List
 
 from job_finder.filters import JobFilter
 from job_finder.storage import JobStorage
-from job_finder.profile import ProfileLoader, Profile
+from job_finder.profile import ProfileLoader, FirestoreProfileLoader, Profile
 from job_finder.ai import AIJobMatcher, JobMatchResult
 from job_finder.ai.providers import create_provider
 
@@ -39,22 +39,55 @@ def load_profile(config: Dict[str, Any]) -> Optional[Profile]:
     Returns:
         Profile instance or None if not configured.
     """
-    profile_path = config.get("profile", {}).get("profile_path")
+    profile_config = config.get("profile", {})
+    source = profile_config.get("source", "json").lower()
 
-    if not profile_path:
-        logger.info("No profile path configured, skipping AI matching")
-        return None
+    # Load from Firestore
+    if source == "firestore":
+        try:
+            logger.info("Loading profile from Firestore...")
+            firestore_config = profile_config.get("firestore", {})
 
-    try:
-        profile = ProfileLoader.load_from_json(profile_path)
-        logger.info(f"Loaded profile for {profile.name}")
-        return profile
-    except FileNotFoundError:
-        logger.warning(f"Profile file not found: {profile_path}")
-        logger.info("Run 'ProfileLoader.create_template()' to create a profile template")
-        return None
-    except Exception as e:
-        logger.error(f"Error loading profile: {str(e)}")
+            loader = FirestoreProfileLoader(
+                database_name=firestore_config.get("database_name", "portfolio")
+            )
+
+            profile = loader.load_profile(
+                user_id=firestore_config.get("user_id"),
+                name=firestore_config.get("name", "User"),
+                email=firestore_config.get("email")
+            )
+
+            logger.info(f"Loaded profile from Firestore for {profile.name}")
+            return profile
+
+        except Exception as e:
+            logger.error(f"Error loading profile from Firestore: {str(e)}")
+            logger.info("Make sure GOOGLE_APPLICATION_CREDENTIALS is set in .env")
+            return None
+
+    # Load from JSON file
+    elif source == "json":
+        profile_path = profile_config.get("profile_path")
+
+        if not profile_path:
+            logger.info("No profile path configured, skipping AI matching")
+            return None
+
+        try:
+            profile = ProfileLoader.load_from_json(profile_path)
+            logger.info(f"Loaded profile from JSON for {profile.name}")
+            return profile
+        except FileNotFoundError:
+            logger.warning(f"Profile file not found: {profile_path}")
+            logger.info("Run 'python -m job_finder.main --create-profile data/profile.json' to create a template")
+            return None
+        except Exception as e:
+            logger.error(f"Error loading profile: {str(e)}")
+            return None
+
+    else:
+        logger.error(f"Unknown profile source: {source}. Use 'json' or 'firestore'")
         return None
 
 

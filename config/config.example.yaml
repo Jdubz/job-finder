@@ -4,8 +4,18 @@
 # User Profile - Path to your JSON profile data
 # Create a profile using ProfileLoader.create_template() or export from your portfolio
 profile:
-  # Path to profile JSON file (leave empty to use legacy keyword-based filtering)
+  # Profile source: "json" or "firestore"
+  source: "json"  # Options: "json", "firestore"
+
+  # Path to profile JSON file (used when source is "json")
   profile_path: "data/profile.json"
+
+  # Firestore settings (used when source is "firestore")
+  firestore:
+    database_name: "portfolio"  # Firestore database name
+    user_id: null  # Optional: filter by user ID
+    name: "Your Name"  # Your name for the profile
+    email: "your.email@example.com"  # Your email for the profile
 
   # Legacy keyword-based filtering (used if profile_path is not set)
   keywords:

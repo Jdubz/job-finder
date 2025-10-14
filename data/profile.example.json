@@ -1,0 +1,106 @@
+{
+  "name": "Your Name",
+  "email": "your.email@example.com",
+  "location": "City, State/Country",
+  "summary": "Brief professional summary highlighting your expertise and career goals.",
+  "years_of_experience": 5.0,
+  "skills": [
+    {
+      "name": "Python",
+      "level": "advanced",
+      "years_experience": 5.0,
+      "category": "programming"
+    },
+    {
+      "name": "JavaScript",
+      "level": "intermediate",
+      "years_experience": 3.0,
+      "category": "programming"
+    }
+  ],
+  "experience": [
+    {
+      "company": "Company Name",
+      "title": "Software Engineer",
+      "start_date": "2020-01",
+      "end_date": "2023-06",
+      "location": "City, State",
+      "description": "Brief description of the role",
+      "responsibilities": [
+        "Key responsibility 1",
+        "Key responsibility 2"
+      ],
+      "achievements": [
+        "Notable achievement 1",
+        "Notable achievement 2"
+      ],
+      "technologies": [
+        "Python",
+        "Django",
+        "PostgreSQL"
+      ],
+      "is_current": false
+    }
+  ],
+  "education": [
+    {
+      "institution": "University Name",
+      "degree": "Bachelor of Science",
+      "field_of_study": "Computer Science",
+      "start_date": "2015",
+      "end_date": "2019",
+      "honors": [
+        "Dean's List",
+        "Cum Laude"
+      ]
+    }
+  ],
+  "projects": [
+    {
+      "name": "Project Name",
+      "description": "Description of the project",
+      "technologies": [
+        "Python",
+        "React",
+        "Docker"
+      ],
+      "highlights": [
+        "Key achievement 1",
+        "Key achievement 2"
+      ]
+    }
+  ],
+  "preferences": {
+    "desired_roles": [
+      "Software Engineer",
+      "Backend Developer"
+    ],
+    "preferred_locations": [
+      "Remote",
+      "San Francisco",
+      "New York"
+    ],
+    "remote_preference": "remote",
+    "min_salary": 100000,
+    "employment_types": [
+      "full-time"
+    ],
+    "company_sizes": [
+      "startup",
+      "medium",
+      "large"
+    ],
+    "industries": [
+      "technology",
+      "fintech",
+      "healthcare"
+    ]
+  },
+  "certifications": [
+    "AWS Certified Developer"
+  ],
+  "languages": [
+    "English",
+    "Spanish"
+  ]
+}

@@ -186,7 +186,25 @@ User profiles are managed through Pydantic models in `src/job_finder/profile/sch
 - **Project**: Personal/professional projects
 - **Preferences**: Job search preferences (roles, locations, salary, etc.)
 
-Profiles are loaded from JSON files using `ProfileLoader` (src/job_finder/profile/loader.py:7).
+**Profile Loading:**
+- **JSON**: Load from JSON files using `ProfileLoader` (src/job_finder/profile/loader.py:7)
+- **Firestore**: Load directly from Firestore database using `FirestoreProfileLoader` (src/job_finder/profile/firestore_loader.py:16)
+
+**Firestore Integration:**
+The tool can read profile data directly from the portfolio project's Firestore database:
+- Connects to `portfolio` database
+- Reads from `experience-entries` and `experience-blurbs` collections
+- Automatically extracts skills, experience, and generates summary
+- Keeps profile data in sync with portfolio without manual export/import
+
+Configure in `config.yaml`:
+```yaml
+profile:
+  source: "firestore"  # or "json"
+  firestore:
+    database_name: "portfolio"
+    name: "Your Name"
+```
 
 ### Module Organization
 
@@ -198,8 +216,9 @@ src/job_finder/
 ├── storage.py           # JobStorage class - output handling
 ├── profile/
 │   ├── __init__.py
-│   ├── schema.py        # Pydantic models for profile data
-│   └── loader.py        # Profile loading from JSON/dict
+│   ├── schema.py            # Pydantic models for profile data
+│   ├── loader.py            # Profile loading from JSON/dict
+│   └── firestore_loader.py  # Profile loading from Firestore
 ├── ai/
 │   ├── __init__.py
 │   ├── providers.py     # AI provider abstraction (Claude, OpenAI)
