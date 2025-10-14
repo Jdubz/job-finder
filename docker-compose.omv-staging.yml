@@ -1,0 +1,92 @@
+version: '3.8'
+
+# Portainer Stack - Staging Environment (OMV/bignasty.local)
+# Deploy this in Portainer UI: Stacks > Add Stack > Web editor (paste this content)
+
+services:
+  job-finder:
+    image: ghcr.io/jdubz/job-finder:latest
+    container_name: job-finder-staging
+    restart: unless-stopped
+
+    environment:
+      # API Keys - SET THESE IN PORTAINER STACK ENVIRONMENT VARIABLES
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/credentials/serviceAccountKey.json
+
+      # Environment Configuration
+      - ENVIRONMENT=staging
+
+      # Database Overrides - USE STAGING DATABASES
+      - PROFILE_DATABASE_NAME=portfolio-staging
+      - STORAGE_DATABASE_NAME=portfolio-staging
+
+      # Config path
+      - CONFIG_PATH=/app/config/config.yaml
+      - LOG_FILE=/app/logs/scheduler.log
+
+      # Timezone for cron
+      - TZ=America/Los_Angeles
+
+    volumes:
+      # OMV Storage paths - adjust UUID if different
+      # Mount credentials (REQUIRED)
+      - /srv/dev-disk-by-uuid-45e47416-96ad-41be-9fc0-582e15241cbd/storage/jobscraper/staging/credentials:/app/credentials:ro
+
+      # Mount config (optional - uses built-in config if not provided)
+      - /srv/dev-disk-by-uuid-45e47416-96ad-41be-9fc0-582e15241cbd/storage/jobscraper/staging/config:/app/config:ro
+
+      # Mount logs for persistence
+      - /srv/dev-disk-by-uuid-45e47416-96ad-41be-9fc0-582e15241cbd/storage/jobscraper/staging/logs:/app/logs
+
+      # Mount data for any local file outputs
+      - /srv/dev-disk-by-uuid-45e47416-96ad-41be-9fc0-582e15241cbd/storage/jobscraper/staging/data:/app/data
+
+    labels:
+      # Watchtower auto-update labels
+      - "com.centurylinklabs.watchtower.enable=true"
+      - "environment=staging"
+
+    networks:
+      - job-finder-network
+
+    # Resource limits (adjust as needed)
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+    healthcheck:
+      test: ["CMD", "python", "-c", "import sys; sys.exit(0)"]
+      interval: 5m
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # Watchtower for auto-updates
+  watchtower:
+    image: containrrr/watchtower:latest
+    container_name: watchtower-job-finder-staging
+    restart: unless-stopped
+
+    environment:
+      - WATCHTOWER_CLEANUP=true
+      - WATCHTOWER_POLL_INTERVAL=300  # Check every 5 minutes
+      - WATCHTOWER_LABEL_ENABLE=true  # Only update containers with watchtower label
+      - WATCHTOWER_INCLUDE_RESTARTING=true
+      - TZ=America/Los_Angeles
+
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+
+    networks:
+      - job-finder-network
+
+networks:
+  job-finder-network:
+    driver: bridge
