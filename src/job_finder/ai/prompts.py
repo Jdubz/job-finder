@@ -10,7 +10,7 @@ class JobMatchPrompts:
     @staticmethod
     def build_profile_summary(profile: Profile) -> str:
         """
-        Build a concise profile summary for prompts.
+        Build a comprehensive profile summary for prompts.
 
         Args:
             profile: User profile.
@@ -20,46 +20,155 @@ class JobMatchPrompts:
         """
         lines = [f"# Candidate Profile: {profile.name}\n"]
 
+        # Location and Languages (if available)
+        metadata = []
+        if profile.location:
+            metadata.append(f"**Location:** {profile.location}")
+        if profile.languages:
+            metadata.append(f"**Languages:** {', '.join(profile.languages)}")
+        if metadata:
+            lines.extend(metadata)
+            lines.append("")
+
+        # Professional Summary
         if profile.summary:
-            lines.append(f"## Summary\n{profile.summary}\n")
+            lines.append(f"## Professional Summary\n{profile.summary}\n")
 
+        # Experience Overview
         if profile.years_of_experience:
-            lines.append(f"## Experience\nTotal Years: {profile.years_of_experience}\n")
+            lines.append(f"## Experience Overview")
+            lines.append(f"Total Years: {profile.years_of_experience}")
 
-        # Skills
+            # Current role
+            current = profile.get_current_role()
+            if current:
+                lines.append(f"Current Role: {current.title} at {current.company}")
+            lines.append("")
+
+        # Skills (with levels and years)
         if profile.skills:
-            lines.append("## Skills")
-            skill_names = [s.name for s in profile.skills]
-            lines.append(", ".join(skill_names) + "\n")
+            lines.append("## Technical Skills")
 
-        # Recent work experience
+            # Group by level if available
+            expert_skills = [s for s in profile.skills if s.level and "expert" in s.level.lower()]
+            advanced_skills = [
+                s for s in profile.skills if s.level and "advanced" in s.level.lower()
+            ]
+            intermediate_skills = [
+                s for s in profile.skills if s.level and "intermediate" in s.level.lower()
+            ]
+            other_skills = [
+                s
+                for s in profile.skills
+                if not s.level or s.level.lower() not in ["expert", "advanced", "intermediate"]
+            ]
+
+            if expert_skills:
+                lines.append("**Expert:**")
+                for skill in expert_skills:
+                    exp_str = f" ({skill.years_experience} years)" if skill.years_experience else ""
+                    lines.append(f"  - {skill.name}{exp_str}")
+
+            if advanced_skills:
+                lines.append("**Advanced:**")
+                for skill in advanced_skills:
+                    exp_str = f" ({skill.years_experience} years)" if skill.years_experience else ""
+                    lines.append(f"  - {skill.name}{exp_str}")
+
+            if intermediate_skills:
+                lines.append("**Intermediate:**")
+                for skill in intermediate_skills:
+                    exp_str = f" ({skill.years_experience} years)" if skill.years_experience else ""
+                    lines.append(f"  - {skill.name}{exp_str}")
+
+            if other_skills:
+                lines.append("**Other Skills:**")
+                skill_names = [
+                    f"{s.name} ({s.years_experience} years)" if s.years_experience else s.name
+                    for s in other_skills
+                ]
+                lines.append("  " + ", ".join(skill_names))
+
+            lines.append("")
+
+        # Recent work experience with responsibilities and achievements
         if profile.experience:
-            lines.append("## Recent Work Experience")
+            lines.append("## Work Experience (Recent)")
             for exp in profile.experience[:3]:  # Top 3 most recent
-                lines.append(
-                    f"- {exp.title} at {exp.company} ({exp.start_date} - {exp.end_date or 'Present'})"
-                )
+                duration = f"{exp.start_date} - {exp.end_date or 'Present'}"
+                lines.append(f"\n### {exp.title} at {exp.company}")
+                lines.append(f"*{duration}*")
+
+                if exp.description:
+                    lines.append(f"{exp.description}")
+
+                if exp.responsibilities:
+                    lines.append("**Responsibilities:**")
+                    for resp in exp.responsibilities[:4]:  # Top 4 responsibilities
+                        lines.append(f"  - {resp}")
+
+                if exp.achievements:
+                    lines.append("**Key Achievements:**")
+                    for achievement in exp.achievements[:3]:  # Top 3
+                        lines.append(f"  - {achievement}")
+
                 if exp.technologies:
-                    lines.append(f"  Technologies: {', '.join(exp.technologies)}")
+                    lines.append(f"**Technologies:** {', '.join(exp.technologies)}")
+            lines.append("")
+
+        # Notable Projects
+        if profile.projects:
+            lines.append("## Notable Projects")
+            for proj in profile.projects[:2]:  # Top 2
+                lines.append(f"\n### {proj.name}")
+                lines.append(f"{proj.description}")
+                if proj.technologies:
+                    lines.append(f"**Technologies:** {', '.join(proj.technologies)}")
+                if proj.highlights:
+                    lines.append("**Highlights:**")
+                    for highlight in proj.highlights[:2]:
+                        lines.append(f"  - {highlight}")
             lines.append("")
 
         # Education
         if profile.education:
             lines.append("## Education")
             for edu in profile.education:
-                lines.append(f"- {edu.degree} in {edu.field_of_study} from {edu.institution}")
+                degree_str = (
+                    f"{edu.degree} in {edu.field_of_study}" if edu.field_of_study else edu.degree
+                )
+                lines.append(f"- {degree_str} from {edu.institution}")
+                if edu.honors:
+                    lines.append(f"  Honors: {', '.join(edu.honors)}")
             lines.append("")
 
-        # Preferences
+        # Certifications
+        if profile.certifications:
+            lines.append("## Certifications")
+            lines.append(", ".join(profile.certifications))
+            lines.append("")
+
+        # Job Search Preferences
         if profile.preferences:
             prefs = profile.preferences
-            lines.append("## Job Preferences")
+            lines.append("## Job Search Preferences")
             if prefs.desired_roles:
-                lines.append(f"Desired Roles: {', '.join(prefs.desired_roles)}")
+                lines.append(f"**Desired Roles:** {', '.join(prefs.desired_roles)}")
             if prefs.remote_preference:
-                lines.append(f"Remote Preference: {prefs.remote_preference}")
-            if prefs.min_salary:
-                lines.append(f"Min Salary: ${prefs.min_salary:,}")
+                lines.append(f"**Remote Preference:** {prefs.remote_preference}")
+            if prefs.min_salary or prefs.max_salary:
+                salary_range = ""
+                if prefs.min_salary and prefs.max_salary:
+                    salary_range = f"${prefs.min_salary:,} - ${prefs.max_salary:,}"
+                elif prefs.min_salary:
+                    salary_range = f"${prefs.min_salary:,}+"
+                elif prefs.max_salary:
+                    salary_range = f"Up to ${prefs.max_salary:,}"
+                lines.append(f"**Salary Range:** {salary_range}")
+            if prefs.employment_types:
+                lines.append(f"**Employment Types:** {', '.join(prefs.employment_types)}")
+            if prefs.industries:
+                lines.append(f"**Preferred Industries:** {', '.join(prefs.industries)}")
             lines.append("")
 
         return "\n".join(lines)
@@ -78,7 +187,7 @@ class JobMatchPrompts:
         """
         profile_summary = JobMatchPrompts.build_profile_summary(profile)
 
-        prompt = f"""You are an expert career advisor and job matching specialist. Analyze how well this job posting matches the candidate's profile.
+        prompt = f"""You are an expert career advisor and job matching specialist. Analyze how well this job posting matches the candidate's profile with extreme accuracy and honesty.
 
 {profile_summary}
 
@@ -87,43 +196,95 @@ class JobMatchPrompts:
 **Title:** {job.get('title', 'N/A')}
 **Company:** {job.get('company', 'N/A')}
 **Location:** {job.get('location', 'N/A')}
+**Salary:** {job.get('salary', 'Not specified')}
 **Description:**
 {job.get('description', 'N/A')}
 
-# Task
+# Analysis Task
 
-Analyze this job posting and provide:
+Provide a thorough, accurate analysis of job fit. Be HONEST and REALISTIC - false positives waste the candidate's time.
 
-1. **Match Score (0-100)**: Overall fit score
-2. **Matched Skills**: List specific skills from the candidate's profile that match job requirements
-3. **Missing Skills**: Skills required by the job that the candidate doesn't have
-4. **Experience Match**: How well the candidate's experience aligns with job requirements
-5. **Key Strengths**: Top 3-5 reasons this candidate would be strong for this role
-6. **Potential Concerns**: Any gaps or mismatches (be honest but constructive)
-7. **Application Priority**: High/Medium/Low priority for this candidate to apply
-8. **Customization Recommendations**: Specific ways to tailor resume/cover letter for this job
+## Step 1: Extract Job Requirements
 
-# CRITICAL MATCHING RULES
+From the title and description, identify:
+1. **Required skills** (MUST-have technologies/tools)
+2. **Preferred skills** (nice-to-have)
+3. **Experience level** (Junior 0-2 years, Mid 2-5 years, Senior 5+ years, Staff/Principal 8+ years)
+4. **Years of experience required**
+5. **Seniority indicators** (Junior/Mid/Senior/Lead/Staff/Principal in title or description)
+6. **Domain expertise** (e.g., fintech, healthcare, e-commerce)
 
-**TITLE SKILLS ARE MANDATORY:**
-- Skills/technologies mentioned in the job TITLE are the PRIMARY requirements
-- If the candidate lacks ANY core technology from the title, the match score MUST be significantly reduced
-- Examples:
-  * ".NET Developer" → Candidate MUST have .NET experience (not just C#)
-  * "React Engineer" → Candidate MUST have React experience (not just JavaScript)
-  * "Python Django Developer" → Candidate MUST have both Python AND Django
-  * "DevOps Engineer" → Candidate MUST have DevOps/infrastructure experience
+## Step 2: Match Against Profile
 
-**Scoring Guidelines:**
-- Title skill present + strong experience: 70-100 score range
-- Title skill present + limited experience: 50-70 score range
-- Title skill MISSING: 0-40 score range (maximum 40, even if other skills match)
-- Multiple title skills missing: 0-20 score range
+For each requirement, check:
+- Does candidate have this skill? At what level?
+- How many years of experience with this skill?
+- Have they used it in a professional setting (not just side projects)?
+- Do they have recent experience (within last 2-3 years)?
 
-**Application Priority:**
-- HIGH: All title skills present + relevant experience + good overall match
-- MEDIUM: Title skills present but limited experience OR 1 minor title skill missing
-- LOW: Core title skills missing (even if other skills match well)
+## Step 3: Calculate Match Score (0-100)
+
+Use this formula:
+
+**Title Skills (50 points max):**
+- All title skills present at strong level: 50 points
+- Title skills present at moderate level: 30-40 points
+- Some title skills missing: 15-25 points
+- Most/all title skills missing: 0-10 points
+
+**Description Requirements (30 points max):**
+- 90%+ of required skills present: 30 points
+- 70-90% of required skills present: 20-25 points
+- 50-70% of required skills present: 10-15 points
+- <50% of required skills present: 0-5 points
+
+**Experience Level Match (20 points max):**
+- Seniority perfectly aligned: 20 points
+- Slightly over/under qualified: 10-15 points
+- Significantly mismatched: 0-5 points
+
+**CRITICAL RULES:**
+
+1. **Title Skills are Mandatory** - Missing ANY core technology from the title caps score at 40
+2. **Seniority Mismatch** - If job is "Senior" and candidate has 2 years experience, cap at 50
+3. **Domain Mismatch** - If job requires specific domain knowledge candidate lacks, reduce by 10-15 points
+4. **Salary Mismatch** - If salary is below candidate's minimum (if specified), reduce priority
+5. **Be Honest** - It's better to skip a bad match than waste time on applications
+
+## Step 4: Provide Analysis
+
+Return detailed analysis in JSON format with:
+
+1. **match_score** (0-100): Calculated using above formula
+2. **matched_skills**: Array of skills candidate HAS that match (with proficiency level)
+3. **missing_skills**: Array of required skills candidate LACKS
+4. **experience_match**: Detailed explanation of experience level fit
+5. **key_strengths**: Top 3-5 specific reasons candidate is strong (be concrete, reference actual experience)
+6. **potential_concerns**: Honest assessment of gaps/weaknesses (be specific)
+7. **application_priority**: "High" (75-100), "Medium" (50-74), "Low" (0-49)
+8. **customization_recommendations**: Specific, actionable advice for tailoring application
+
+## Scoring Examples:
+
+**Example 1 - Perfect Match (Score: 90)**
+- Job: "Senior Python Developer"
+- Candidate: 6 years Python (expert), similar industry, all required skills present
+
+**Example 2 - Good Match (Score: 75)**
+- Job: "React Frontend Engineer"
+- Candidate: 3 years React (advanced), missing 1-2 nice-to-have skills
+
+**Example 3 - Borderline (Score: 55)**
+- Job: "Full Stack Engineer (Python/React)"
+- Candidate: Strong Python (5 years), basic React (6 months)
+
+**Example 4 - Poor Match (Score: 25)**
+- Job: ".NET Developer"
+- Candidate: Strong Python/JavaScript, NO .NET experience
+
+**Example 5 - Very Poor Match (Score: 10)**
+- Job: "Senior DevOps Engineer"
+- Candidate: Junior developer, no infrastructure experience
 
 Provide your analysis in the following JSON format:
 
@@ -178,7 +339,7 @@ Respond ONLY with valid JSON, no additional text.
         """
         profile_summary = JobMatchPrompts.build_profile_summary(profile)
 
-        prompt = f"""You are an expert resume writer. Based on the candidate's profile and job posting analysis, generate structured intake data that can be used to create a tailored resume.
+        prompt = f"""You are an expert resume writer and ATS (Applicant Tracking System) optimization specialist. Create a detailed resume customization guide for this specific job application.
 
 {profile_summary}
 
@@ -191,20 +352,66 @@ Respond ONLY with valid JSON, no additional text.
 
 # Match Analysis
 
-Match Score: {match_analysis.get('match_score', 'N/A')}
-Matched Skills: {', '.join(match_analysis.get('matched_skills', []))}
-Key Strengths: {', '.join(match_analysis.get('key_strengths', []))}
+**Match Score:** {match_analysis.get('match_score', 'N/A')}/100
+**Matched Skills:** {', '.join(match_analysis.get('matched_skills', []))}
+**Missing Skills:** {', '.join(match_analysis.get('missing_skills', []))}
+**Key Strengths:** {', '.join(match_analysis.get('key_strengths', []))}
+**Potential Concerns:** {', '.join(match_analysis.get('potential_concerns', []))}
 
-# Task
+# Resume Customization Task
 
-Generate resume intake data that specifies exactly how to tailor the candidate's resume for this job. Include:
+Generate specific, actionable guidance for tailoring the resume to THIS job. Focus on ATS optimization and relevance.
 
-1. **Target Summary**: A tailored professional summary for this specific job
-2. **Skills Priority**: Ordered list of which skills to emphasize (most relevant first)
-3. **Experience Highlights**: Which work experiences to feature and what to emphasize
-4. **Projects to Include**: Which projects are most relevant
-5. **Achievement Angles**: How to frame achievements to match job requirements
-6. **Keywords to Include**: Important keywords from job description to incorporate
+## Requirements:
+
+1. **Target Summary** (2-3 sentences)
+   - Emphasize skills and experience MOST relevant to this role
+   - Include key technologies from the job title
+   - Mention years of experience if it matches seniority level
+   - Use power words and quantifiable achievements
+
+2. **Skills Priority** (Ordered list)
+   - List ALL matched skills in priority order
+   - Put title-mentioned skills FIRST
+   - Group related technologies together
+   - Exclude skills not relevant to this role
+
+3. **Experience Highlights**
+   - For EACH relevant work experience, specify:
+     * Which bullet points to emphasize/modify
+     * Specific metrics or achievements to highlight
+     * Technologies to mention prominently
+     * How to reframe responsibilities to match job requirements
+
+4. **Projects to Include**
+   - List 2-3 most relevant projects
+   - For each: explain WHY it's relevant
+   - Suggest specific points to emphasize
+
+5. **Achievement Angles**
+   - How to frame/reword achievements to align with job needs
+   - Specific metrics to emphasize (scale, performance, impact)
+   - Leadership/collaboration angles if relevant
+
+6. **ATS Keywords**
+   - Extract 10-15 critical keywords from job description
+   - Include exact technology names (case-sensitive)
+   - Include role-specific terminology
+   - Include domain-specific terms
+
+7. **Gap Mitigation** (If missing skills exist)
+   - For each missing skill: suggest how to address or downplay the gap
+   - Identify transferable skills to emphasize
+   - Recommend cover letter talking points
+
+## Quality Guidelines:
+
+- Be SPECIFIC - reference actual experiences from profile
+- Focus on RELEVANCE over quantity
+- Use candidate's actual achievements and metrics
+- Match the language/terminology used in job description
+- Consider ATS keyword matching
+- Ensure all recommendations are truthful (no fabrication)
 
 Provide your intake data in the following JSON format:
 
@@ -245,12 +452,24 @@ Provide your intake data in the following JSON format:
     "Highlight team leadership",
     "Focus on API development expertise"
   ],
-  "keywords_to_include": [
-    "microservices",
-    "scalable",
+  "ats_keywords": [
+    "Python",
+    "Django",
     "RESTful APIs",
-    "agile",
-    "CI/CD"
+    "microservices",
+    "PostgreSQL",
+    "Docker",
+    "Kubernetes",
+    "CI/CD",
+    "Agile",
+    "Scrum"
+  ],
+  "gap_mitigation": [
+    {{
+      "missing_skill": "Kubernetes",
+      "mitigation_strategy": "Emphasize Docker and container experience as transferable",
+      "cover_letter_point": "Express enthusiasm for expanding Kubernetes expertise"
+    }}
   ]
 }}
 

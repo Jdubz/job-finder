@@ -155,30 +155,47 @@ class AIJobMatcher:
         """
         try:
             prompt = self.prompts.analyze_job_match(self.profile, job)
-            response = self.provider.generate(prompt, max_tokens=2000, temperature=0.3)
+            # Increased max_tokens to 4000 for detailed analysis with comprehensive prompts
+            response = self.provider.generate(prompt, max_tokens=4000, temperature=0.3)
 
             # Parse JSON response
             # Try to extract JSON from response (in case there's extra text)
-            response = response.strip()
-            if "```json" in response:
+            response_clean = response.strip()
+            if "```json" in response_clean:
                 # Extract JSON from markdown code block
-                start = response.find("```json") + 7
-                end = response.find("```", start)
-                response = response[start:end].strip()
-            elif "```" in response:
-                start = response.find("```") + 3
-                end = response.find("```", start)
-                response = response[start:end].strip()
+                start = response_clean.find("```json") + 7
+                end = response_clean.find("```", start)
+                response_clean = response_clean[start:end].strip()
+            elif "```" in response_clean:
+                start = response_clean.find("```") + 3
+                end = response_clean.find("```", start)
+                response_clean = response_clean[start:end].strip()
 
-            analysis = json.loads(response)
+            analysis = json.loads(response_clean)
+
+            # Validate required fields
+            required_fields = [
+                "match_score",
+                "matched_skills",
+                "missing_skills",
+                "application_priority",
+            ]
+            missing_fields = [field for field in required_fields if field not in analysis]
+            if missing_fields:
+                logger.error(f"AI response missing required fields: {missing_fields}")
+                logger.debug(f"Response was: {response[:500]}...")
+                return None
+
             return analysis
 
         except json.JSONDecodeError as e:
             logger.error(f"Failed to parse AI response as JSON: {str(e)}")
-            logger.debug(f"Response was: {response}")
+            logger.error(
+                f"Raw response (first 500 chars): {response[:500] if response else 'None'}..."
+            )
             return None
         except Exception as e:
-            logger.error(f"Error during match analysis: {str(e)}")
+            logger.error(f"Error during match analysis: {str(e)}", exc_info=True)
             return None
 
     def _generate_intake_data(
@@ -196,27 +213,43 @@ class AIJobMatcher:
         """
         try:
             prompt = self.prompts.generate_resume_intake_data(self.profile, job, match_analysis)
-            response = self.provider.generate(prompt, max_tokens=3000, temperature=0.4)
+            # Increased max_tokens to 5000 for comprehensive resume intake data
+            response = self.provider.generate(prompt, max_tokens=5000, temperature=0.4)
 
             # Parse JSON response
-            response = response.strip()
-            if "```json" in response:
-                start = response.find("```json") + 7
-                end = response.find("```", start)
-                response = response[start:end].strip()
-            elif "```" in response:
-                start = response.find("```") + 3
-                end = response.find("```", start)
-                response = response[start:end].strip()
+            response_clean = response.strip()
+            if "```json" in response_clean:
+                start = response_clean.find("```json") + 7
+                end = response_clean.find("```", start)
+                response_clean = response_clean[start:end].strip()
+            elif "```" in response_clean:
+                start = response_clean.find("```") + 3
+                end = response_clean.find("```", start)
+                response_clean = response_clean[start:end].strip()
 
-            intake_data = json.loads(response)
+            intake_data = json.loads(response_clean)
+
+            # Validate required fields
+            required_fields = [
+                "job_id",
+                "job_title",
+                "target_summary",
+                "skills_priority",
+                "ats_keywords",
+            ]
+            missing_fields = [field for field in required_fields if field not in intake_data]
+            if missing_fields:
+                logger.warning(f"Intake data missing optional fields: {missing_fields}")
+
             logger.info(f"Generated intake data for {job.get('title')}")
             return intake_data
 
         except json.JSONDecodeError as e:
             logger.error(f"Failed to parse intake data response as JSON: {str(e)}")
-            logger.debug(f"Response was: {response}")
+            logger.error(
+                f"Raw response (first 500 chars): {response[:500] if response else 'None'}..."
+            )
             return None
         except Exception as e:
-            logger.error(f"Error generating intake data: {str(e)}")
+            logger.error(f"Error generating intake data: {str(e)}", exc_info=True)
             return None
