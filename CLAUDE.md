@@ -102,15 +102,20 @@ All scrapers inherit from `BaseScraper` (src/job_finder/scrapers/base.py:5) whic
 **Standard job dictionary structure:**
 ```python
 {
-    "title": str,
-    "company": str,
-    "location": str,
-    "description": str,
-    "url": str,
-    "posted_date": str,
-    "salary": str (optional)
+    "title": str,              # Job title/role
+    "company": str,            # Company name
+    "company_website": str,    # Company website URL
+    "company_info": str,       # Company culture/mission statements (optional)
+    "location": str,           # Job location
+    "description": str,        # Full job description
+    "url": str,                # Job posting URL
+    "posted_date": str,        # When the job was posted (optional)
+    "salary": str,             # Salary range (optional)
+    "keywords": List[str],     # Keywords for emphasis (populated by AI analysis)
 }
 ```
+
+**Note:** The `keywords` field is automatically populated by the AI analysis from the `keywords_to_include` field in the resume intake data. These keywords are extracted from the job description and profile analysis to help with ATS optimization and resume tailoring.
 
 When adding a new job site scraper:
 1. Create new file in `src/job_finder/scrapers/`

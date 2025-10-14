@@ -26,7 +26,7 @@ class FirestoreProfileLoader:
             database_name: Firestore database name (default: "portfolio").
         """
         self.database_name = database_name
-        self.db: Optional[Client] = None
+        self.db: Optional[gcloud_firestore.Client] = None
 
         # Get credentials path
         creds_path = credentials_path or os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
@@ -42,13 +42,15 @@ class FirestoreProfileLoader:
 
         # Initialize Firebase Admin
         try:
+            # Load credentials for project ID (needed regardless of initialization status)
+            cred = credentials.Certificate(creds_path)
+
             # Check if already initialized
             try:
                 firebase_admin.get_app()
                 logger.info("Using existing Firebase app")
             except ValueError:
                 # Initialize new app
-                cred = credentials.Certificate(creds_path)
                 firebase_admin.initialize_app(cred)
                 logger.info("Initialized new Firebase app")
 
@@ -134,18 +136,29 @@ class FirestoreProfileLoader:
             for doc in docs:
                 data = doc.to_dict()
 
+                # Firestore schema:
+                # - title = Company name
+                # - role = Job title
+                # - body = Description (may contain "Stack: ..." section)
+                company = data.get("title", "")
+                title = data.get("role", "")
+                body = data.get("body", "")
+
+                # Parse technologies from body (look for "Stack:" section)
+                technologies = self._parse_technologies_from_body(body)
+
                 # Map Firestore data to Experience model
                 experience = Experience(
-                    company=data.get("company", ""),
-                    title=data.get("title", ""),
+                    company=company,
+                    title=title,
                     start_date=data.get("startDate", ""),
                     end_date=data.get("endDate"),
                     location=data.get("location", ""),
-                    description=data.get("description", ""),
-                    responsibilities=data.get("responsibilities", []),
-                    achievements=data.get("achievements", []),
-                    technologies=data.get("technologies", []),
-                    is_current=data.get("isCurrent", False),
+                    description=body,
+                    responsibilities=[],  # Not stored separately in Firestore
+                    achievements=[],  # Not stored separately in Firestore
+                    technologies=technologies,
+                    is_current=data.get("endDate") is None or data.get("endDate") == "",
                 )
                 experiences.append(experience)
 
@@ -155,8 +168,41 @@ class FirestoreProfileLoader:
 
         return experiences
 
+    def _parse_technologies_from_body(self, body: str) -> List[str]:
+        """Extract technologies from experience body text.
+
+        Looks for patterns like:
+        - "Stack: Docker, React, ..."
+        - "Technologies: Python, AWS, ..."
+        """
+        import re
+
+        technologies = []
+
+        # Look for "Stack:" or "Technologies:" sections
+        patterns = [
+            r"Stack:\s*([^\n]+)",
+            r"Technologies:\s*([^\n]+)",
+            r"Tech Stack:\s*([^\n]+)",
+        ]
+
+        for pattern in patterns:
+            match = re.search(pattern, body, re.IGNORECASE)
+            if match:
+                # Extract comma-separated technologies
+                tech_string = match.group(1).strip()
+                # Split by comma and clean up
+                techs = [t.strip() for t in tech_string.split(",")]
+                technologies.extend(techs)
+
+        return technologies
+
     def _load_experience_blurbs(self, user_id: Optional[str] = None) -> List[Dict[str, Any]]:
-        """Load experience blurbs (skill highlights) from Firestore."""
+        """Load experience blurbs from Firestore.
+
+        Note: These are content sections (biography, education, etc.) for the portfolio website,
+        not skill data. We keep this for potential summary generation but don't extract skills from it.
+        """
         blurbs = []
 
         try:
@@ -180,27 +226,21 @@ class FirestoreProfileLoader:
     def _extract_skills(
         self, experiences: List[Experience], blurbs: List[Dict[str, Any]]
     ) -> List[Skill]:
-        """Extract and deduplicate skills from experiences and blurbs."""
+        """Extract and deduplicate skills from experiences.
+
+        Note: Blurbs are portfolio content sections, not skill data, so we only
+        extract from experience technologies.
+        """
         skills_dict: Dict[str, Skill] = {}
 
-        # Extract from experiences
+        # Extract from experience technologies
         for exp in experiences:
             for tech in exp.technologies:
-                if tech not in skills_dict:
+                if tech and tech not in skills_dict:
                     skills_dict[tech] = Skill(
                         name=tech,
                         category="technology"
                     )
-
-        # Extract from blurbs
-        for blurb in blurbs:
-            skill_name = blurb.get("skill") or blurb.get("name")
-            if skill_name and skill_name not in skills_dict:
-                skills_dict[skill_name] = Skill(
-                    name=skill_name,
-                    level=blurb.get("level"),
-                    category=blurb.get("category", "technology")
-                )
 
         return list(skills_dict.values())
 

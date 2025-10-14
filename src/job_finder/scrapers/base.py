@@ -1,10 +1,25 @@
 """Base scraper class for all job site scrapers."""
 from abc import ABC, abstractmethod
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 
 
 class BaseScraper(ABC):
-    """Abstract base class for job scrapers."""
+    """Abstract base class for job scrapers.
+
+    Standard job dictionary structure:
+    {
+        "title": str,              # Job title/role
+        "company": str,            # Company name
+        "company_website": str,    # Company website URL
+        "company_info": str,       # Company culture/mission statements (optional)
+        "location": str,           # Job location
+        "description": str,        # Full job description
+        "url": str,                # Job posting URL
+        "posted_date": str,        # When the job was posted (optional)
+        "salary": str,             # Salary range (optional)
+        "keywords": List[str],     # Keywords for emphasis (populated by AI)
+    }
+    """
 
     def __init__(self, config: Dict[str, Any]):
         """Initialize the scraper with configuration."""
@@ -29,6 +44,9 @@ class BaseScraper(ABC):
             element: Raw job posting element from the page.
 
         Returns:
-            Standardized job posting dictionary.
+            Standardized job posting dictionary with required fields:
+            - title, company, company_website, location, description, url
+            Optional fields:
+            - company_info, posted_date, salary, keywords
         """
         pass

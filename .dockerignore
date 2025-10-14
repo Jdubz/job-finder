@@ -1,0 +1,58 @@
+# Git
+.git
+.gitignore
+.github
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+venv/
+env/
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# Data and Logs (will be mounted as volumes)
+data/*.json
+data/*.csv
+data/*.db
+logs/*.log
+
+# Credentials (NEVER include in image)
+.env
+.env.local
+credentials/
+serviceAccountKey.json
+*-firebase-adminsdk-*.json
+
+# Documentation
+*.md
+docs/
+README.md
+LICENSE
+
+# Temporary files
+*.tmp
+*.bak
+.DS_Store
+Thumbs.db
+
+# Test scripts (optional)
+test_*.py
+debug_*.py

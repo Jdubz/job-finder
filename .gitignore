@@ -66,3 +66,7 @@ serviceAccountKey.json
 # OS
 .DS_Store
 Thumbs.db
+
+# Debug and test scripts (local development)
+debug_*.py
+test_*.py

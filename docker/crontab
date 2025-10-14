@@ -1,0 +1,10 @@
+# Job Finder Cron Schedule
+# Run job search every 6 hours at minute 0
+0 */6 * * * root cd /app && /usr/local/bin/python scheduler.py >> /var/log/cron.log 2>&1
+
+# Run at specific times daily (optional - comment out if using above)
+# 0 6 * * * root cd /app && /usr/local/bin/python scheduler.py >> /var/log/cron.log 2>&1
+# 0 12 * * * root cd /app && /usr/local/bin/python scheduler.py >> /var/log/cron.log 2>&1
+# 0 18 * * * root cd /app && /usr/local/bin/python scheduler.py >> /var/log/cron.log 2>&1
+
+# Blank line required at end of cron file
