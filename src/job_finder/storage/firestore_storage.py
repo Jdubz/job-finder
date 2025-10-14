@@ -131,7 +131,6 @@ class FirestoreJobStorage:
             "keywords": job.get("keywords", []),
             # Match Analysis
             "matchScore": match_result.match_score,
-            "matchPercentage": match_result.match_score,  # Alias for clarity
             "matchedSkills": match_result.matched_skills,
             "missingSkills": match_result.missing_skills,
             "experienceMatch": match_result.experience_match,
