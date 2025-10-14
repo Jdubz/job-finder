@@ -5,8 +5,8 @@ from typing import Dict, Any, List, Optional
 from pathlib import Path
 
 import firebase_admin
-from firebase_admin import credentials, firestore
-from google.cloud.firestore_v1 import Client
+from firebase_admin import credentials
+from google.cloud import firestore as gcloud_firestore
 
 from job_finder.profile.schema import Profile, Experience, Education, Skill
 
@@ -52,9 +52,17 @@ class FirestoreProfileLoader:
                 firebase_admin.initialize_app(cred)
                 logger.info("Initialized new Firebase app")
 
-            # Get Firestore client
-            self.db = firestore.client()
-            logger.info(f"Connected to Firestore database: {database_name}")
+            # Get Firestore client for the specified database
+            # Use google-cloud-firestore Client directly to support named databases
+            project_id = cred.project_id
+
+            if database_name == "(default)":
+                self.db = gcloud_firestore.Client(project=project_id)
+            else:
+                # Connect to named database
+                self.db = gcloud_firestore.Client(project=project_id, database=database_name)
+
+            logger.info(f"Connected to Firestore database: {database_name} in project {project_id}")
 
         except Exception as e:
             raise RuntimeError(f"Failed to initialize Firestore: {str(e)}") from e
@@ -119,7 +127,7 @@ class FirestoreProfileLoader:
                 query = query.where("userId", "==", user_id)
 
             # Order by start date descending (most recent first)
-            query = query.order_by("startDate", direction=firestore.Query.DESCENDING)
+            query = query.order_by("startDate", direction=gcloud_firestore.Query.DESCENDING)
 
             docs = query.stream()
 
