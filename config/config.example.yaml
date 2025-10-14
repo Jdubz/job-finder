@@ -1,0 +1,48 @@
+# Job Finder Configuration
+# Copy this file to config.yaml and customize for your needs
+
+# User Profile - Define your experience and requirements
+profile:
+  keywords:
+    - python
+    - software engineer
+    - backend developer
+
+  experience_years: 5
+
+  preferred_locations:
+    - remote
+    - San Francisco
+    - New York
+
+  excluded_keywords:
+    - junior
+    - intern
+
+# Job Sites to Scrape
+sites:
+  linkedin:
+    enabled: true
+    url: "https://www.linkedin.com/jobs/search"
+
+  indeed:
+    enabled: true
+    url: "https://www.indeed.com"
+
+  # Add more sites as needed
+
+# Scraping Settings
+scraping:
+  delay_between_requests: 2  # seconds
+  max_pages_per_site: 5
+  timeout: 30  # seconds
+
+# Output Settings
+output:
+  format: json  # json, csv, or database
+  file_path: data/jobs.json
+
+# Filtering
+filters:
+  min_salary: null
+  max_age_days: 7  # only jobs posted in last 7 days
