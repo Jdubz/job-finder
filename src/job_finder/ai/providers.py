@@ -30,13 +30,13 @@ class AIProvider(ABC):
 class ClaudeProvider(AIProvider):
     """Anthropic Claude provider."""
 
-    def __init__(self, api_key: Optional[str] = None, model: str = "claude-3-5-sonnet-20241022"):
+    def __init__(self, api_key: Optional[str] = None, model: str = "claude-opus-4-20250514"):
         """
         Initialize Claude provider.
 
         Args:
             api_key: Anthropic API key (defaults to ANTHROPIC_API_KEY env var).
-            model: Model identifier.
+            model: Model identifier (default: claude-opus-4-20250514, the most capable model).
         """
         self.api_key = api_key or os.getenv("ANTHROPIC_API_KEY")
         if not self.api_key:

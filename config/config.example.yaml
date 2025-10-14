@@ -61,7 +61,7 @@ output:
 ai:
   enabled: true  # Enable AI-powered job analysis and resume intake generation
   provider: "claude"  # Options: "claude", "openai"
-  model: "claude-3-5-sonnet-20241022"  # Model to use (claude-3-5-sonnet-20241022, gpt-4o, etc.)
+  model: "claude-opus-4-20250514"  # Model to use (claude-opus-4-20250514, claude-3-5-sonnet-20241022, gpt-4o, etc.)
   min_match_score: 70  # Minimum match score (0-100) for a job to be included
   generate_intake_data: true  # Generate resume intake data for matched jobs
   max_tokens: 3000  # Maximum tokens for AI responses
