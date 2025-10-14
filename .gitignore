@@ -56,8 +56,12 @@ config/config.yaml
 .env.local
 
 # Firebase credentials
+.firebase/
+**/.firebase/
 serviceAccountKey.json
 *-firebase-adminsdk-*.json
+**/*-firebase-adminsdk-*.json
+**/serviceAccountKey.json
 
 # OS
 .DS_Store
