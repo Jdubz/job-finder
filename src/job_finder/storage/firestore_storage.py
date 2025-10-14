@@ -68,6 +68,30 @@ class FirestoreJobStorage:
         except Exception as e:
             raise RuntimeError(f"Failed to initialize Firestore: {str(e)}") from e
 
+    def _extract_role_from_title(self, title: str) -> str:
+        """
+        Extract role from job title, removing common prefixes/suffixes.
+
+        Examples:
+            "Senior Software Engineer" -> "Software Engineer"
+            "Lead Frontend Developer" -> "Frontend Developer"
+            "Full Stack Engineer (L5)" -> "Full Stack Engineer"
+        """
+        import re
+
+        # Remove level indicators in parentheses or brackets
+        role = re.sub(r'\s*[\(\[].*?[\)\]]', '', title)
+
+        # Remove common seniority prefixes (but keep the core role)
+        seniority_pattern = r'^(Senior|Sr\.|Junior|Jr\.|Lead|Principal|Staff|Entry[ -]?Level|Mid[ -]?Level)\s+'
+        role = re.sub(seniority_pattern, '', role, flags=re.IGNORECASE).strip()
+
+        # If the removal made it too short, use original title
+        if len(role) < 5:
+            role = title
+
+        return role.strip()
+
     def save_job_match(
         self, job: Dict[str, Any], match_result: JobMatchResult, user_id: Optional[str] = None
     ) -> str:
@@ -85,10 +109,15 @@ class FirestoreJobStorage:
         if not self.db:
             raise RuntimeError("Firestore not initialized")
 
+        # Extract role from title
+        title = job.get("title", "")
+        role = self._extract_role_from_title(title)
+
         # Build job match document
         job_match = {
             # Job Information
-            "title": job.get("title", ""),
+            "title": title,
+            "role": role,  # Extracted role without seniority level
             "company": job.get("company", ""),
             "companyWebsite": job.get("company_website", ""),
             "companyInfo": job.get("company_info", ""),
@@ -100,6 +129,7 @@ class FirestoreJobStorage:
             "keywords": job.get("keywords", []),
             # Match Analysis
             "matchScore": match_result.match_score,
+            "matchPercentage": match_result.match_score,  # Alias for clarity
             "matchedSkills": match_result.matched_skills,
             "missingSkills": match_result.missing_skills,
             "experienceMatch": match_result.experience_match,
