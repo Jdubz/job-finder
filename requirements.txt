@@ -23,6 +23,7 @@ tiktoken>=0.8.0
 
 # Firebase/Firestore Integration
 firebase-admin>=6.5.0
+google-cloud-logging>=3.5.0
 
 # Testing
 pytest>=7.4.0

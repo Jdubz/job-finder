@@ -2,18 +2,15 @@
 """Run a full job search using configured sources."""
 import os
 import yaml
-import logging
 from dotenv import load_dotenv
 from job_finder.search_orchestrator import JobSearchOrchestrator
+from job_finder.logging_config import setup_logging
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(message)s'
-)
-
-# Load environment variables
+# Load environment variables first
 load_dotenv()
+
+# Configure logging with Cloud Logging support
+setup_logging()
 
 print("=" * 70)
 print("JOB SEARCH - FULL PIPELINE")
@@ -23,7 +20,7 @@ print("=" * 70)
 config_path = "config/config.yaml"
 print(f"\n📋 Loading configuration from: {config_path}")
 
-with open(config_path, 'r') as f:
+with open(config_path, "r") as f:
     config = yaml.safe_load(f)
 
 print(f"✓ Configuration loaded")
@@ -52,5 +49,6 @@ try:
 except Exception as e:
     print(f"\n❌ Error during job search: {str(e)}")
     import traceback
+
     traceback.print_exc()
     exit(1)

@@ -1,7 +1,6 @@
 """Main entry point for the job finder application."""
 
 import argparse
-import logging
 import yaml
 from pathlib import Path
 from typing import Dict, Any, Optional, List
@@ -11,14 +10,10 @@ from job_finder.storage import JobStorage
 from job_finder.profile import ProfileLoader, FirestoreProfileLoader, Profile
 from job_finder.ai import AIJobMatcher, JobMatchResult
 from job_finder.ai.providers import create_provider
+from job_finder.logging_config import setup_logging, get_logger
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    handlers=[logging.FileHandler("logs/job_finder.log"), logging.StreamHandler()],
-)
-logger = logging.getLogger(__name__)
+# Configure logging (will be called in main())
+logger = get_logger(__name__)
 
 
 def load_config(config_path: str = "config/config.yaml") -> Dict[str, Any]:
@@ -139,6 +134,9 @@ def apply_ai_matching(
 
 def main() -> None:
     """Main execution function."""
+    # Set up logging first (before any logging calls)
+    setup_logging()
+
     parser = argparse.ArgumentParser(description="Job Finder - Scrape and filter job postings")
     parser.add_argument(
         "--config",
