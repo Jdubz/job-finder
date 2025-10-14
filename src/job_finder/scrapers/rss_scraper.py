@@ -1,4 +1,5 @@
 """RSS feed scraper for job boards."""
+
 import logging
 import re
 from typing import List, Dict, Any
@@ -126,7 +127,7 @@ class RSSJobScraper(BaseScraper):
             "url": url,
             "posted_date": posted_date,
             "salary": salary,
-            "keywords": []  # Will be populated by AI
+            "keywords": [],  # Will be populated by AI
         }
 
         return job
@@ -141,19 +142,19 @@ class RSSJobScraper(BaseScraper):
         - "Job Title - Company Name"
         """
         # Try "at Company" pattern
-        match = re.search(r'\sat\s+([^|:]+?)(?:\s*[|:]|$)', title)
+        match = re.search(r"\sat\s+([^|:]+?)(?:\s*[|:]|$)", title)
         if match:
             return match.group(1).strip()
 
         # Try "Company: Job" pattern
-        if ':' in title:
-            parts = title.split(':', 1)
+        if ":" in title:
+            parts = title.split(":", 1)
             if len(parts) == 2 and len(parts[0]) < 50:  # Likely company name
                 return parts[0].strip()
 
         # Try "Job - Company" pattern
-        if ' - ' in title:
-            parts = title.split(' - ')
+        if " - " in title:
+            parts = title.split(" - ")
             if len(parts) >= 2:
                 # Last part is often the company
                 return parts[-1].strip()
@@ -164,8 +165,8 @@ class RSSJobScraper(BaseScraper):
         """Extract company name from job description."""
         # Look for common patterns like "We are X" or "X is hiring"
         patterns = [
-            r'(?:We are|Join)\s+([A-Z][a-zA-Z0-9\s&]+?)(?:\s+is|,|\.|!)',
-            r'([A-Z][a-zA-Z0-9\s&]+?)\s+is (?:hiring|looking|seeking)',
+            r"(?:We are|Join)\s+([A-Z][a-zA-Z0-9\s&]+?)(?:\s+is|,|\.|!)",
+            r"([A-Z][a-zA-Z0-9\s&]+?)\s+is (?:hiring|looking|seeking)",
         ]
 
         for pattern in patterns:
@@ -187,23 +188,27 @@ class RSSJobScraper(BaseScraper):
             title = title.replace(f"{company} -", "")
 
         # Remove common location indicators
-        title = re.sub(r'\s*[|(]\s*(?:Remote|USA|US|United States).*$', '', title, flags=re.IGNORECASE)
+        title = re.sub(
+            r"\s*[|(]\s*(?:Remote|USA|US|United States).*$", "", title, flags=re.IGNORECASE
+        )
 
         return title.strip()
 
     def _extract_location(self, title: str, description: str) -> str:
         """Extract location from title or description."""
         # Check for "Remote" in title
-        if re.search(r'\b(?:Remote|Anywhere)\b', title, re.IGNORECASE):
+        if re.search(r"\b(?:Remote|Anywhere)\b", title, re.IGNORECASE):
             return "Remote"
 
         # Check for location patterns in title
-        location_match = re.search(r'[|(]\s*([^|()]+(?:Remote|USA|US|United States)[^|()]*)', title)
+        location_match = re.search(r"[|(]\s*([^|()]+(?:Remote|USA|US|United States)[^|()]*)", title)
         if location_match:
             return location_match.group(1).strip()
 
         # Check for location in first part of description
-        remote_match = re.search(r'\b(?:Remote|Work from (?:home|anywhere))\b', description[:500], re.IGNORECASE)
+        remote_match = re.search(
+            r"\b(?:Remote|Work from (?:home|anywhere))\b", description[:500], re.IGNORECASE
+        )
         if remote_match:
             return "Remote"
 
@@ -215,9 +220,9 @@ class RSSJobScraper(BaseScraper):
 
         # Common salary patterns
         patterns = [
-            r'\$[\d,]+k?\s*-\s*\$[\d,]+k?',
-            r'\$[\d,]+k?(?:\s*-\s*\$?[\d,]+k?)?(?:\s*/\s*(?:year|yr|hour|hr))?',
-            r'[\d,]+k\s*-\s*[\d,]+k',
+            r"\$[\d,]+k?\s*-\s*\$[\d,]+k?",
+            r"\$[\d,]+k?(?:\s*-\s*\$?[\d,]+k?)?(?:\s*/\s*(?:year|yr|hour|hr))?",
+            r"[\d,]+k\s*-\s*[\d,]+k",
         ]
 
         for pattern in patterns:
@@ -230,17 +235,17 @@ class RSSJobScraper(BaseScraper):
     def _clean_html(self, text: str) -> str:
         """Remove HTML tags and clean up text."""
         # Remove HTML tags
-        text = re.sub(r'<[^>]+>', '', text)
+        text = re.sub(r"<[^>]+>", "", text)
 
         # Decode HTML entities
-        text = text.replace('&amp;', '&')
-        text = text.replace('&lt;', '<')
-        text = text.replace('&gt;', '>')
-        text = text.replace('&quot;', '"')
-        text = text.replace('&#39;', "'")
-        text = text.replace('&nbsp;', ' ')
+        text = text.replace("&amp;", "&")
+        text = text.replace("&lt;", "<")
+        text = text.replace("&gt;", ">")
+        text = text.replace("&quot;", '"')
+        text = text.replace("&#39;", "'")
+        text = text.replace("&nbsp;", " ")
 
         # Clean up whitespace
-        text = re.sub(r'\s+', ' ', text)
+        text = re.sub(r"\s+", " ", text)
 
         return text.strip()

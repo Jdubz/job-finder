@@ -1,4 +1,5 @@
 """Manage job source listings in Firestore."""
+
 import logging
 from datetime import datetime
 from typing import Dict, Any, List, Optional
@@ -16,9 +17,7 @@ class JobListingsManager:
     """Manages job board listings, RSS feeds, and company pages in Firestore."""
 
     def __init__(
-        self,
-        credentials_path: Optional[str] = None,
-        database_name: str = "portfolio-staging"
+        self, credentials_path: Optional[str] = None, database_name: str = "portfolio-staging"
     ):
         """
         Initialize Firestore listings manager.
@@ -73,7 +72,7 @@ class JobListingsManager:
         source_type: str,
         config: Dict[str, Any],
         enabled: bool = True,
-        tags: Optional[List[str]] = None
+        tags: Optional[List[str]] = None,
     ) -> str:
         """
         Add a new job source listing.
@@ -154,14 +153,12 @@ class JobListingsManager:
             "config": config,
             "enabled": enabled,
             "tags": tags or [],
-
             # Tracking
             "lastScrapedAt": None,
             "lastScrapedStatus": None,  # success, error, skipped
             "lastScrapedError": None,
             "totalJobsFound": 0,
             "totalJobsMatched": 0,
-
             # Metadata
             "createdAt": gcloud_firestore.SERVER_TIMESTAMP,
             "updatedAt": gcloud_firestore.SERVER_TIMESTAMP,
@@ -178,9 +175,7 @@ class JobListingsManager:
             raise
 
     def get_active_listings(
-        self,
-        source_type: Optional[str] = None,
-        tags: Optional[List[str]] = None
+        self, source_type: Optional[str] = None, tags: Optional[List[str]] = None
     ) -> List[Dict[str, Any]]:
         """
         Get all active job source listings.
@@ -233,7 +228,7 @@ class JobListingsManager:
         status: str,
         jobs_found: int = 0,
         jobs_matched: int = 0,
-        error: Optional[str] = None
+        error: Optional[str] = None,
     ) -> None:
         """
         Update the scrape status for a listing.
@@ -280,10 +275,12 @@ class JobListingsManager:
             raise RuntimeError("Firestore not initialized")
 
         try:
-            self.db.collection("job-listings").document(doc_id).update({
-                "enabled": False,
-                "updatedAt": gcloud_firestore.SERVER_TIMESTAMP,
-            })
+            self.db.collection("job-listings").document(doc_id).update(
+                {
+                    "enabled": False,
+                    "updatedAt": gcloud_firestore.SERVER_TIMESTAMP,
+                }
+            )
             logger.info(f"Disabled listing {doc_id}")
 
         except Exception as e:
@@ -296,10 +293,12 @@ class JobListingsManager:
             raise RuntimeError("Firestore not initialized")
 
         try:
-            self.db.collection("job-listings").document(doc_id).update({
-                "enabled": True,
-                "updatedAt": gcloud_firestore.SERVER_TIMESTAMP,
-            })
+            self.db.collection("job-listings").document(doc_id).update(
+                {
+                    "enabled": True,
+                    "updatedAt": gcloud_firestore.SERVER_TIMESTAMP,
+                }
+            )
             logger.info(f"Enabled listing {doc_id}")
 
         except Exception as e:

@@ -1,4 +1,5 @@
 """AI-powered job matching and intake data generation."""
+
 import json
 import logging
 from typing import Dict, Any, List, Optional

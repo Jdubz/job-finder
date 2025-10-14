@@ -1,4 +1,5 @@
 """Load profile data from Firestore database."""
+
 import os
 import logging
 from typing import Dict, Any, List, Optional
@@ -70,10 +71,7 @@ class FirestoreProfileLoader:
             raise RuntimeError(f"Failed to initialize Firestore: {str(e)}") from e
 
     def load_profile(
-        self,
-        user_id: Optional[str] = None,
-        name: Optional[str] = None,
-        email: Optional[str] = None
+        self, user_id: Optional[str] = None, name: Optional[str] = None, email: Optional[str] = None
     ) -> Profile:
         """
         Load profile from Firestore.
@@ -115,7 +113,9 @@ class FirestoreProfileLoader:
             projects=[],  # TODO: Add projects collection if available
         )
 
-        logger.info(f"Successfully loaded profile with {len(experiences)} experiences and {len(skills)} skills")
+        logger.info(
+            f"Successfully loaded profile with {len(experiences)} experiences and {len(skills)} skills"
+        )
         return profile
 
     def _load_experiences(self, user_id: Optional[str] = None) -> List[Experience]:
@@ -237,16 +237,11 @@ class FirestoreProfileLoader:
         for exp in experiences:
             for tech in exp.technologies:
                 if tech and tech not in skills_dict:
-                    skills_dict[tech] = Skill(
-                        name=tech,
-                        category="technology"
-                    )
+                    skills_dict[tech] = Skill(name=tech, category="technology")
 
         return list(skills_dict.values())
 
-    def _generate_summary(
-        self, experiences: List[Experience], blurbs: List[Dict[str, Any]]
-    ) -> str:
+    def _generate_summary(self, experiences: List[Experience], blurbs: List[Dict[str, Any]]) -> str:
         """Generate a professional summary from experience data."""
         if not experiences:
             return ""

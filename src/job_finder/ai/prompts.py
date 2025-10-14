@@ -1,4 +1,5 @@
 """Prompt templates for AI job matching and analysis."""
+
 from typing import Dict, Any, List
 from job_finder.profile.schema import Profile
 
@@ -35,7 +36,9 @@ class JobMatchPrompts:
         if profile.experience:
             lines.append("## Recent Work Experience")
             for exp in profile.experience[:3]:  # Top 3 most recent
-                lines.append(f"- {exp.title} at {exp.company} ({exp.start_date} - {exp.end_date or 'Present'})")
+                lines.append(
+                    f"- {exp.title} at {exp.company} ({exp.start_date} - {exp.end_date or 'Present'})"
+                )
                 if exp.technologies:
                     lines.append(f"  Technologies: {', '.join(exp.technologies)}")
             lines.append("")

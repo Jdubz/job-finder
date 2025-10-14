@@ -1,4 +1,5 @@
 """Profile data management for job matching."""
+
 from job_finder.profile.schema import (
     Profile,
     Experience,

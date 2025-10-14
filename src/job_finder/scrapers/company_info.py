@@ -1,4 +1,5 @@
 """Utility to scrape company information from company websites."""
+
 import logging
 import re
 from typing import Optional, Dict, Any
@@ -42,7 +43,7 @@ class CompanyInfoScraper:
         """
         try:
             # Normalize URL
-            if not company_website.startswith(('http://', 'https://')):
+            if not company_website.startswith(("http://", "https://")):
                 company_website = f"https://{company_website}"
 
             # Try to find culture/about pages
@@ -83,10 +84,12 @@ class CompanyInfoScraper:
             Cleaned text
         """
         # Remove extra whitespace
-        text = re.sub(r'\s+', ' ', text)
+        text = re.sub(r"\s+", " ", text)
 
         # Remove common navigation/footer text patterns
-        text = re.sub(r'(Cookie Policy|Privacy Policy|Terms of Service).*', '', text, flags=re.IGNORECASE)
+        text = re.sub(
+            r"(Cookie Policy|Privacy Policy|Terms of Service).*", "", text, flags=re.IGNORECASE
+        )
 
         # Trim to reasonable length (first 1000 chars of culture info)
         if len(text) > 1000:
@@ -111,7 +114,13 @@ class CompanyInfoScraper:
             domain = parsed.netloc
 
             # Skip job board domains
-            job_boards = ['linkedin.com', 'indeed.com', 'glassdoor.com', 'monster.com', 'ziprecruiter.com']
+            job_boards = [
+                "linkedin.com",
+                "indeed.com",
+                "glassdoor.com",
+                "monster.com",
+                "ziprecruiter.com",
+            ]
             if any(board in domain.lower() for board in job_boards):
                 return None
 

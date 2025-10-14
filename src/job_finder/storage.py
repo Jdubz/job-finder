@@ -1,4 +1,5 @@
 """Storage handlers for job postings."""
+
 import json
 import csv
 from pathlib import Path

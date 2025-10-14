@@ -1,4 +1,5 @@
 """Profile data loader from various sources."""
+
 import json
 from pathlib import Path
 from typing import Dict, Any, Optional
@@ -73,9 +74,7 @@ class ProfileLoader:
 
         # Check that profile has some useful data
         has_data = (
-            len(profile.skills) > 0
-            or len(profile.experience) > 0
-            or profile.summary is not None
+            len(profile.skills) > 0 or len(profile.experience) > 0 or profile.summary is not None
         )
 
         return has_data
@@ -115,14 +114,14 @@ class ProfileLoader:
                     "name": "Python",
                     "level": "advanced",
                     "years_experience": 5.0,
-                    "category": "programming"
+                    "category": "programming",
                 },
                 {
                     "name": "JavaScript",
                     "level": "intermediate",
                     "years_experience": 3.0,
-                    "category": "programming"
-                }
+                    "category": "programming",
+                },
             ],
             "experience": [
                 {
@@ -132,16 +131,10 @@ class ProfileLoader:
                     "end_date": "2023-06",
                     "location": "City, State",
                     "description": "Brief description of the role",
-                    "responsibilities": [
-                        "Key responsibility 1",
-                        "Key responsibility 2"
-                    ],
-                    "achievements": [
-                        "Notable achievement 1",
-                        "Notable achievement 2"
-                    ],
+                    "responsibilities": ["Key responsibility 1", "Key responsibility 2"],
+                    "achievements": ["Notable achievement 1", "Notable achievement 2"],
                     "technologies": ["Python", "Django", "PostgreSQL"],
-                    "is_current": False
+                    "is_current": False,
                 }
             ],
             "education": [
@@ -151,7 +144,7 @@ class ProfileLoader:
                     "field_of_study": "Computer Science",
                     "start_date": "2015",
                     "end_date": "2019",
-                    "honors": ["Dean's List", "Cum Laude"]
+                    "honors": ["Dean's List", "Cum Laude"],
                 }
             ],
             "projects": [
@@ -159,10 +152,7 @@ class ProfileLoader:
                     "name": "Project Name",
                     "description": "Description of the project",
                     "technologies": ["Python", "React", "Docker"],
-                    "highlights": [
-                        "Key achievement 1",
-                        "Key achievement 2"
-                    ]
+                    "highlights": ["Key achievement 1", "Key achievement 2"],
                 }
             ],
             "preferences": {
@@ -172,10 +162,10 @@ class ProfileLoader:
                 "min_salary": 100000,
                 "employment_types": ["full-time"],
                 "company_sizes": ["startup", "medium", "large"],
-                "industries": ["technology", "fintech", "healthcare"]
+                "industries": ["technology", "fintech", "healthcare"],
             },
             "certifications": ["AWS Certified Developer"],
-            "languages": ["English", "Spanish"]
+            "languages": ["English", "Spanish"],
         }
 
         path = Path(file_path)

@@ -1,4 +1,5 @@
 """Data models for user profile and experience."""
+
 from datetime import date
 from typing import List, Optional
 from pydantic import BaseModel, Field, HttpUrl
@@ -8,9 +9,15 @@ class Skill(BaseModel):
     """Represents a skill or technology."""
 
     name: str = Field(..., description="Skill or technology name")
-    level: Optional[str] = Field(None, description="Proficiency level (beginner, intermediate, advanced, expert)")
-    years_experience: Optional[float] = Field(None, description="Years of experience with this skill")
-    category: Optional[str] = Field(None, description="Category (e.g., programming, framework, tool)")
+    level: Optional[str] = Field(
+        None, description="Proficiency level (beginner, intermediate, advanced, expert)"
+    )
+    years_experience: Optional[float] = Field(
+        None, description="Years of experience with this skill"
+    )
+    category: Optional[str] = Field(
+        None, description="Category (e.g., programming, framework, tool)"
+    )
 
 
 class Experience(BaseModel):
@@ -19,7 +26,9 @@ class Experience(BaseModel):
     company: str = Field(..., description="Company name")
     title: str = Field(..., description="Job title/role")
     start_date: str = Field(..., description="Start date (YYYY-MM or YYYY-MM-DD)")
-    end_date: Optional[str] = Field(None, description="End date (YYYY-MM or YYYY-MM-DD), null if current")
+    end_date: Optional[str] = Field(
+        None, description="End date (YYYY-MM or YYYY-MM-DD), null if current"
+    )
     location: Optional[str] = Field(None, description="Job location")
     description: Optional[str] = Field(None, description="Role description")
     responsibilities: List[str] = Field(default_factory=list, description="Key responsibilities")
@@ -50,24 +59,30 @@ class Project(BaseModel):
     github_url: Optional[HttpUrl] = Field(None, description="GitHub repository URL")
     start_date: Optional[str] = Field(None, description="Start date")
     end_date: Optional[str] = Field(None, description="End date")
-    highlights: List[str] = Field(default_factory=list, description="Key highlights or achievements")
+    highlights: List[str] = Field(
+        default_factory=list, description="Key highlights or achievements"
+    )
 
 
 class Preferences(BaseModel):
     """Job search preferences."""
 
     desired_roles: List[str] = Field(default_factory=list, description="Desired job titles/roles")
-    preferred_locations: List[str] = Field(default_factory=list, description="Preferred work locations")
+    preferred_locations: List[str] = Field(
+        default_factory=list, description="Preferred work locations"
+    )
     remote_preference: Optional[str] = Field(
         None, description="Remote work preference (remote, hybrid, onsite, flexible)"
     )
     min_salary: Optional[int] = Field(None, description="Minimum desired salary")
     max_salary: Optional[int] = Field(None, description="Maximum expected salary")
     employment_types: List[str] = Field(
-        default_factory=list, description="Preferred employment types (full-time, part-time, contract)"
+        default_factory=list,
+        description="Preferred employment types (full-time, part-time, contract)",
     )
     company_sizes: List[str] = Field(
-        default_factory=list, description="Preferred company sizes (startup, small, medium, large, enterprise)"
+        default_factory=list,
+        description="Preferred company sizes (startup, small, medium, large, enterprise)",
     )
     industries: List[str] = Field(default_factory=list, description="Preferred industries")
 
@@ -86,7 +101,9 @@ class Profile(BaseModel):
 
     # Professional Summary
     summary: Optional[str] = Field(None, description="Professional summary/bio")
-    years_of_experience: Optional[float] = Field(None, description="Total years of professional experience")
+    years_of_experience: Optional[float] = Field(
+        None, description="Total years of professional experience"
+    )
 
     # Experience and Skills
     skills: List[Skill] = Field(default_factory=list, description="Skills and technologies")
@@ -98,7 +115,9 @@ class Profile(BaseModel):
     preferences: Optional[Preferences] = Field(None, description="Job search preferences")
 
     # Certifications and Additional Info
-    certifications: List[str] = Field(default_factory=list, description="Professional certifications")
+    certifications: List[str] = Field(
+        default_factory=list, description="Professional certifications"
+    )
     languages: List[str] = Field(default_factory=list, description="Spoken languages")
 
     def get_all_skills(self) -> List[str]:

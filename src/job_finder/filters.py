@@ -1,4 +1,5 @@
 """Job filtering logic based on user requirements."""
+
 from typing import List, Dict, Any
 
 
@@ -35,37 +36,40 @@ class JobFilter:
 
         return filtered
 
-    def _filter_by_keywords(self, jobs: List[Dict[str, Any]],
-                           keywords: List[str]) -> List[Dict[str, Any]]:
+    def _filter_by_keywords(
+        self, jobs: List[Dict[str, Any]], keywords: List[str]
+    ) -> List[Dict[str, Any]]:
         """Filter jobs containing any of the specified keywords."""
         return [
-            job for job in jobs
+            job
+            for job in jobs
             if any(
-                keyword.lower() in job.get("title", "").lower() or
-                keyword.lower() in job.get("description", "").lower()
+                keyword.lower() in job.get("title", "").lower()
+                or keyword.lower() in job.get("description", "").lower()
                 for keyword in keywords
             )
         ]
 
-    def _filter_by_location(self, jobs: List[Dict[str, Any]],
-                           locations: List[str]) -> List[Dict[str, Any]]:
+    def _filter_by_location(
+        self, jobs: List[Dict[str, Any]], locations: List[str]
+    ) -> List[Dict[str, Any]]:
         """Filter jobs in preferred locations."""
         return [
-            job for job in jobs
-            if any(
-                location.lower() in job.get("location", "").lower()
-                for location in locations
-            )
+            job
+            for job in jobs
+            if any(location.lower() in job.get("location", "").lower() for location in locations)
         ]
 
-    def _exclude_by_keywords(self, jobs: List[Dict[str, Any]],
-                            keywords: List[str]) -> List[Dict[str, Any]]:
+    def _exclude_by_keywords(
+        self, jobs: List[Dict[str, Any]], keywords: List[str]
+    ) -> List[Dict[str, Any]]:
         """Exclude jobs containing any of the specified keywords."""
         return [
-            job for job in jobs
+            job
+            for job in jobs
             if not any(
-                keyword.lower() in job.get("title", "").lower() or
-                keyword.lower() in job.get("description", "").lower()
+                keyword.lower() in job.get("title", "").lower()
+                or keyword.lower() in job.get("description", "").lower()
                 for keyword in keywords
             )
         ]

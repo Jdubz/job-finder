@@ -1,4 +1,5 @@
 """AI provider abstractions for different LLM services."""
+
 import os
 from abc import ABC, abstractmethod
 from typing import Dict, Any, Optional
@@ -94,7 +95,9 @@ class OpenAIProvider(AIProvider):
             raise RuntimeError(f"OpenAI API error: {str(e)}") from e
 
 
-def create_provider(provider_type: str, api_key: Optional[str] = None, model: Optional[str] = None) -> AIProvider:
+def create_provider(
+    provider_type: str, api_key: Optional[str] = None, model: Optional[str] = None
+) -> AIProvider:
     """
     Factory function to create AI provider instances.
 

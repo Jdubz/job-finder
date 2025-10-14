@@ -1,4 +1,5 @@
 """Main job search orchestrator that coordinates scraping, matching, and storage."""
+
 import os
 import logging
 from typing import Dict, Any, List, Optional
@@ -72,7 +73,7 @@ class JobSearchOrchestrator:
             "jobs_analyzed": 0,
             "jobs_matched": 0,
             "jobs_saved": 0,
-            "errors": []
+            "errors": [],
         }
 
         max_total_jobs = self.config.get("search", {}).get("max_jobs", 10)
@@ -85,8 +86,7 @@ class JobSearchOrchestrator:
 
             try:
                 source_stats = self._process_listing(
-                    listing,
-                    remaining_slots=max_total_jobs - jobs_saved
+                    listing, remaining_slots=max_total_jobs - jobs_saved
                 )
 
                 stats["sources_scraped"] += 1
@@ -133,15 +133,14 @@ class JobSearchOrchestrator:
 
             # Allow environment variable override for database name
             database_name = os.getenv(
-                "PROFILE_DATABASE_NAME",
-                firestore_config.get("database_name", "portfolio")
+                "PROFILE_DATABASE_NAME", firestore_config.get("database_name", "portfolio")
             )
 
             loader = FirestoreProfileLoader(database_name=database_name)
             profile = loader.load_profile(
                 user_id=firestore_config.get("user_id"),
                 name=firestore_config.get("name"),
-                email=firestore_config.get("email")
+                email=firestore_config.get("email"),
             )
         else:
             # JSON profile loading not yet implemented
@@ -155,14 +154,14 @@ class JobSearchOrchestrator:
 
         provider = create_provider(
             provider_type=ai_config.get("provider", "claude"),
-            model=ai_config.get("model", "claude-3-haiku-20240307")
+            model=ai_config.get("model", "claude-3-haiku-20240307"),
         )
 
         matcher = AIJobMatcher(
             provider=provider,
             profile=self.profile,
             min_match_score=ai_config.get("min_match_score", 70),
-            generate_intake=ai_config.get("generate_intake_data", True)
+            generate_intake=ai_config.get("generate_intake_data", True),
         )
 
         return matcher
@@ -173,8 +172,7 @@ class JobSearchOrchestrator:
 
         # Allow environment variable override for database name
         database_name = os.getenv(
-            "STORAGE_DATABASE_NAME",
-            storage_config.get("database_name", "portfolio-staging")
+            "STORAGE_DATABASE_NAME", storage_config.get("database_name", "portfolio-staging")
         )
 
         self.job_storage = FirestoreJobStorage(database_name=database_name)
@@ -184,11 +182,7 @@ class JobSearchOrchestrator:
         """Get active job source listings from Firestore."""
         return self.listings_manager.get_active_listings()
 
-    def _process_listing(
-        self,
-        listing: Dict[str, Any],
-        remaining_slots: int
-    ) -> Dict[str, Any]:
+    def _process_listing(self, listing: Dict[str, Any], remaining_slots: int) -> Dict[str, Any]:
         """
         Process a single job listing source.
 
@@ -211,7 +205,7 @@ class JobSearchOrchestrator:
             "duplicates_skipped": 0,
             "jobs_analyzed": 0,
             "jobs_matched": 0,
-            "jobs_saved": 0
+            "jobs_saved": 0,
         }
 
         try:
@@ -220,8 +214,7 @@ class JobSearchOrchestrator:
 
             if source_type == "rss":
                 scraper = RSSJobScraper(
-                    config=self.config.get("scraping", {}),
-                    listing_config=listing.get("config", {})
+                    config=self.config.get("scraping", {}), listing_config=listing.get("config", {})
                 )
                 jobs = scraper.scrape()
 
@@ -242,9 +235,7 @@ class JobSearchOrchestrator:
 
             if not jobs:
                 self.listings_manager.update_scrape_status(
-                    doc_id=listing["id"],
-                    status="success",
-                    jobs_found=0
+                    doc_id=listing["id"], status="success", jobs_found=0
                 )
                 return stats
 
@@ -255,9 +246,7 @@ class JobSearchOrchestrator:
 
             if not remote_jobs:
                 self.listings_manager.update_scrape_status(
-                    doc_id=listing["id"],
-                    status="success",
-                    jobs_found=len(jobs)
+                    doc_id=listing["id"], status="success", jobs_found=len(jobs)
                 )
                 return stats
 
@@ -286,14 +275,18 @@ class JobSearchOrchestrator:
 
                     # Skip if already exists
                     if existing_jobs.get(job_url, False):
-                        logger.debug(f"  [{i}/{len(jobs_to_process)}] Duplicate: {job.get('title')}")
+                        logger.debug(
+                            f"  [{i}/{len(jobs_to_process)}] Duplicate: {job.get('title')}"
+                        )
                         continue
 
                     processed += 1
                     stats["jobs_analyzed"] += 1
 
                     # Run AI matching
-                    logger.info(f"  [{processed}/{new_jobs_count}] Analyzing: {job.get('title')} at {job.get('company')}")
+                    logger.info(
+                        f"  [{processed}/{new_jobs_count}] Analyzing: {job.get('title')} at {job.get('company')}"
+                    )
                     result = self.ai_matcher.analyze_job(job)
 
                     if result:
@@ -301,7 +294,9 @@ class JobSearchOrchestrator:
                         doc_id = self.job_storage.save_job_match(job, result)
                         stats["jobs_matched"] += 1
                         stats["jobs_saved"] += 1
-                        logger.info(f"    ✓ Matched! Score: {result.match_score}, Priority: {result.application_priority} (ID: {doc_id})")
+                        logger.info(
+                            f"    ✓ Matched! Score: {result.match_score}, Priority: {result.application_priority} (ID: {doc_id})"
+                        )
 
                     else:
                         logger.debug(f"    ⚠️  Below match threshold")
@@ -319,7 +314,7 @@ class JobSearchOrchestrator:
                 doc_id=listing["id"],
                 status="success",
                 jobs_found=len(jobs),
-                jobs_matched=stats["jobs_matched"]
+                jobs_matched=stats["jobs_matched"],
             )
 
             logger.info(f"✓ Completed {listing_name}: {stats['jobs_saved']} jobs saved")
@@ -327,9 +322,7 @@ class JobSearchOrchestrator:
         except Exception as e:
             logger.error(f"Error processing {listing_name}: {str(e)}")
             self.listings_manager.update_scrape_status(
-                doc_id=listing["id"],
-                status="error",
-                error=str(e)
+                doc_id=listing["id"], status="error", error=str(e)
             )
             raise
 

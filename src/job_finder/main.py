@@ -1,4 +1,5 @@
 """Main entry point for the job finder application."""
+
 import argparse
 import logging
 import yaml
@@ -14,11 +15,8 @@ from job_finder.ai.providers import create_provider
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler('logs/job_finder.log'),
-        logging.StreamHandler()
-    ]
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    handlers=[logging.FileHandler("logs/job_finder.log"), logging.StreamHandler()],
 )
 logger = logging.getLogger(__name__)
 
@@ -55,7 +53,7 @@ def load_profile(config: Dict[str, Any]) -> Optional[Profile]:
             profile = loader.load_profile(
                 user_id=firestore_config.get("user_id"),
                 name=firestore_config.get("name", "User"),
-                email=firestore_config.get("email")
+                email=firestore_config.get("email"),
             )
 
             logger.info(f"Loaded profile from Firestore for {profile.name}")
@@ -80,7 +78,9 @@ def load_profile(config: Dict[str, Any]) -> Optional[Profile]:
             return profile
         except FileNotFoundError:
             logger.warning(f"Profile file not found: {profile_path}")
-            logger.info("Run 'python -m job_finder.main --create-profile data/profile.json' to create a template")
+            logger.info(
+                "Run 'python -m job_finder.main --create-profile data/profile.json' to create a template"
+            )
             return None
         except Exception as e:
             logger.error(f"Error loading profile: {str(e)}")
@@ -143,16 +143,11 @@ def main() -> None:
     parser.add_argument(
         "--config",
         default="config/config.yaml",
-        help="Path to configuration file (default: config/config.yaml)"
+        help="Path to configuration file (default: config/config.yaml)",
     )
+    parser.add_argument("--output", help="Override output file path from config")
     parser.add_argument(
-        "--output",
-        help="Override output file path from config"
-    )
-    parser.add_argument(
-        "--create-profile",
-        metavar="PATH",
-        help="Create a profile template at the specified path"
+        "--create-profile", metavar="PATH", help="Create a profile template at the specified path"
     )
     args = parser.parse_args()
 
@@ -200,9 +195,7 @@ def main() -> None:
         jobs_with_analysis = []
         for result in ai_results:
             # Find the original job data
-            original_job = next(
-                (j for j in filtered_jobs if j.get("url") == result.job_url), None
-            )
+            original_job = next((j for j in filtered_jobs if j.get("url") == result.job_url), None)
             if original_job:
                 # Add AI analysis to job data
                 job_with_ai = original_job.copy()

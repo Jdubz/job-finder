@@ -1,4 +1,5 @@
 """Base scraper class for all job site scrapers."""
+
 from abc import ABC, abstractmethod
 from typing import List, Dict, Any, Optional
 

@@ -1,4 +1,5 @@
 """Store job matches and analysis in Firestore."""
+
 import logging
 from datetime import datetime
 from typing import Dict, Any, List, Optional
@@ -18,9 +19,7 @@ class FirestoreJobStorage:
     """Stores job matches in Firestore with tracking for document generation."""
 
     def __init__(
-        self,
-        credentials_path: Optional[str] = None,
-        database_name: str = "portfolio-staging"
+        self, credentials_path: Optional[str] = None, database_name: str = "portfolio-staging"
     ):
         """
         Initialize Firestore job storage.
@@ -70,10 +69,7 @@ class FirestoreJobStorage:
             raise RuntimeError(f"Failed to initialize Firestore: {str(e)}") from e
 
     def save_job_match(
-        self,
-        job: Dict[str, Any],
-        match_result: JobMatchResult,
-        user_id: Optional[str] = None
+        self, job: Dict[str, Any], match_result: JobMatchResult, user_id: Optional[str] = None
     ) -> str:
         """
         Save a job match to Firestore.
@@ -102,7 +98,6 @@ class FirestoreJobStorage:
             "postedDate": job.get("posted_date"),
             "salary": job.get("salary"),
             "keywords": job.get("keywords", []),
-
             # Match Analysis
             "matchScore": match_result.match_score,
             "matchedSkills": match_result.matched_skills,
@@ -112,10 +107,8 @@ class FirestoreJobStorage:
             "potentialConcerns": match_result.potential_concerns,
             "applicationPriority": match_result.application_priority,
             "customizationRecommendations": match_result.customization_recommendations,
-
             # Resume Intake Data
             "resumeIntakeData": match_result.resume_intake_data,
-
             # Tracking & Metadata
             "documentGenerated": False,
             "documentGeneratedAt": None,
@@ -124,7 +117,6 @@ class FirestoreJobStorage:
             "appliedAt": None,
             "status": "new",  # new, reviewed, applied, rejected, interview, offer
             "notes": "",
-
             # Timestamps
             "createdAt": gcloud_firestore.SERVER_TIMESTAMP,
             "updatedAt": gcloud_firestore.SERVER_TIMESTAMP,
@@ -138,18 +130,16 @@ class FirestoreJobStorage:
         try:
             doc_ref = self.db.collection("job-matches").add(job_match)
             doc_id = doc_ref[1].id
-            logger.info(f"Saved job match: {job.get('title')} at {job.get('company')} (ID: {doc_id})")
+            logger.info(
+                f"Saved job match: {job.get('title')} at {job.get('company')} (ID: {doc_id})"
+            )
             return doc_id
 
         except Exception as e:
             logger.error(f"Error saving job match: {str(e)}")
             raise
 
-    def update_document_generated(
-        self,
-        doc_id: str,
-        document_url: str
-    ) -> None:
+    def update_document_generated(self, doc_id: str, document_url: str) -> None:
         """
         Mark a job match as having had a document generated.
 
@@ -161,24 +151,21 @@ class FirestoreJobStorage:
             raise RuntimeError("Firestore not initialized")
 
         try:
-            self.db.collection("job-matches").document(doc_id).update({
-                "documentGenerated": True,
-                "documentGeneratedAt": gcloud_firestore.SERVER_TIMESTAMP,
-                "documentUrl": document_url,
-                "updatedAt": gcloud_firestore.SERVER_TIMESTAMP,
-            })
+            self.db.collection("job-matches").document(doc_id).update(
+                {
+                    "documentGenerated": True,
+                    "documentGeneratedAt": gcloud_firestore.SERVER_TIMESTAMP,
+                    "documentUrl": document_url,
+                    "updatedAt": gcloud_firestore.SERVER_TIMESTAMP,
+                }
+            )
             logger.info(f"Updated job match {doc_id} - document generated")
 
         except Exception as e:
             logger.error(f"Error updating job match: {str(e)}")
             raise
 
-    def update_status(
-        self,
-        doc_id: str,
-        status: str,
-        notes: Optional[str] = None
-    ) -> None:
+    def update_status(self, doc_id: str, status: str, notes: Optional[str] = None) -> None:
         """
         Update the status of a job match.
 
@@ -215,7 +202,7 @@ class FirestoreJobStorage:
         user_id: Optional[str] = None,
         status: Optional[str] = None,
         min_score: Optional[int] = None,
-        limit: int = 100
+        limit: int = 100,
     ) -> List[Dict[str, Any]]:
         """
         Query job matches from Firestore.
@@ -292,7 +279,9 @@ class FirestoreJobStorage:
             logger.error(f"Error checking job existence: {str(e)}")
             return False
 
-    def batch_check_exists(self, job_urls: List[str], user_id: Optional[str] = None) -> Dict[str, bool]:
+    def batch_check_exists(
+        self, job_urls: List[str], user_id: Optional[str] = None
+    ) -> Dict[str, bool]:
         """
         Batch check if multiple jobs already exist in the database.
 
@@ -312,7 +301,7 @@ class FirestoreJobStorage:
             # Firestore 'in' queries are limited to 10 items, so batch in chunks
             chunk_size = 10
             for i in range(0, len(job_urls), chunk_size):
-                chunk = job_urls[i:i + chunk_size]
+                chunk = job_urls[i : i + chunk_size]
 
                 query = self.db.collection("job-matches").where("url", "in", chunk)
 
