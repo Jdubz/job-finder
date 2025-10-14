@@ -1,8 +1,13 @@
 # Job Finder Configuration
 # Copy this file to config.yaml and customize for your needs
 
-# User Profile - Define your experience and requirements
+# User Profile - Path to your JSON profile data
+# Create a profile using ProfileLoader.create_template() or export from your portfolio
 profile:
+  # Path to profile JSON file (leave empty to use legacy keyword-based filtering)
+  profile_path: "data/profile.json"
+
+  # Legacy keyword-based filtering (used if profile_path is not set)
   keywords:
     - python
     - software engineer
@@ -41,6 +46,16 @@ scraping:
 output:
   format: json  # json, csv, or database
   file_path: data/jobs.json
+
+# AI-Powered Job Matching
+ai:
+  enabled: true  # Enable AI-powered job analysis and resume intake generation
+  provider: "claude"  # Options: "claude", "openai"
+  model: "claude-3-5-sonnet-20241022"  # Model to use (claude-3-5-sonnet-20241022, gpt-4o, etc.)
+  min_match_score: 70  # Minimum match score (0-100) for a job to be included
+  generate_intake_data: true  # Generate resume intake data for matched jobs
+  max_tokens: 3000  # Maximum tokens for AI responses
+  temperature: 0.3  # Temperature for AI responses (0.0-1.0, lower = more consistent)
 
 # Filtering
 filters:

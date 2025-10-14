@@ -4,7 +4,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Job Finder is a web scraping application that finds online job postings matching user-defined criteria. The system scrapes multiple job boards, filters results based on keywords/location/experience, and outputs data in various formats.
+Job Finder is an AI-powered web scraping application that finds online job postings matching user-defined criteria. The system scrapes multiple job boards, uses AI to analyze job fit, generates resume intake data for tailored applications, and outputs comprehensive results in various formats.
+
+### Key Features
+- **AI-Powered Job Matching**: Uses LLMs (Claude/GPT-4) to analyze job fit based on your complete profile
+- **Resume Intake Generation**: Automatically generates structured data for tailoring resumes to specific jobs
+- **Match Scoring**: Assigns 0-100 match scores based on skills, experience, and preferences
+- **Application Prioritization**: Categorizes jobs as High/Medium/Low priority
+- **Customization Recommendations**: Provides specific guidance for tailoring applications
 
 ## Commands
 
@@ -21,9 +28,18 @@ pip install -r requirements.txt
 pip install -e ".[dev]"
 ```
 
+### Profile Setup
+```bash
+# Create a profile template
+python -m job_finder.main --create-profile data/profile.json
+
+# Edit the profile.json with your information
+# Then update config/config.yaml to point to your profile
+```
+
 ### Running the Application
 ```bash
-# Run with default config
+# Run with default config (includes AI matching if configured)
 python -m job_finder.main
 
 # Run with custom config
@@ -67,11 +83,13 @@ mypy src/
 
 ### Core Pipeline
 
-The application follows a three-stage pipeline architecture:
+The application follows a five-stage pipeline architecture:
 
-1. **Scrape** - Site-specific scrapers collect job postings
-2. **Filter** - Jobs are filtered based on user criteria
-3. **Store** - Results are saved in configured format
+1. **Profile Loading** - Load user profile data from JSON (src/job_finder/profile/loader.py:32)
+2. **Scrape** - Site-specific scrapers collect job postings
+3. **Basic Filter** - Traditional keyword/location filtering (src/job_finder/filters.py:12)
+4. **AI Matching** - AI-powered job analysis and scoring (src/job_finder/ai/matcher.py:71)
+5. **Store** - Results with AI analysis saved in configured format
 
 This pipeline is orchestrated in `src/job_finder/main.py:main()`.
 
@@ -129,14 +147,64 @@ All application behavior is controlled through `config/config.yaml`:
 
 Use `config/config.example.yaml` as a template when creating new configurations.
 
+### AI Matching System
+
+The `AIJobMatcher` class (src/job_finder/ai/matcher.py:41) uses LLMs to analyze jobs against user profiles:
+
+**Analysis Process:**
+1. Analyzes job description against profile using AI prompts
+2. Generates match score (0-100) based on skills, experience, fit
+3. Identifies matched skills and skill gaps
+4. Assigns application priority (High/Medium/Low)
+5. Generates resume intake data with tailoring recommendations
+
+**Resume Intake Data Structure:**
+The AI generates structured data for each matched job including:
+- Target professional summary tailored to the job
+- Priority-ordered skills list (most relevant first)
+- Experience highlights to emphasize
+- Projects to include
+- Achievement angles to emphasize
+- Keywords to incorporate
+
+This intake data can be fed into resume generation systems to create tailored resumes.
+
+**AI Providers:**
+- **ClaudeProvider** (src/job_finder/ai/providers.py:16) - Anthropic Claude (recommended)
+- **OpenAIProvider** (src/job_finder/ai/providers.py:39) - OpenAI GPT-4
+
+Configure provider in `config/config.yaml` under the `ai` section.
+
+### Profile System
+
+User profiles are managed through Pydantic models in `src/job_finder/profile/schema.py`:
+
+- **Profile**: Complete user profile with experience, skills, preferences
+- **Experience**: Work history with responsibilities, achievements, technologies
+- **Education**: Educational background
+- **Skill**: Individual skills with proficiency levels
+- **Project**: Personal/professional projects
+- **Preferences**: Job search preferences (roles, locations, salary, etc.)
+
+Profiles are loaded from JSON files using `ProfileLoader` (src/job_finder/profile/loader.py:7).
+
 ### Module Organization
 
 ```
 src/job_finder/
 ├── __init__.py          # Package initialization
 ├── main.py              # Entry point and pipeline orchestration
-├── filters.py           # JobFilter class - all filtering logic
+├── filters.py           # JobFilter class - traditional filtering logic
 ├── storage.py           # JobStorage class - output handling
+├── profile/
+│   ├── __init__.py
+│   ├── schema.py        # Pydantic models for profile data
+│   └── loader.py        # Profile loading from JSON/dict
+├── ai/
+│   ├── __init__.py
+│   ├── providers.py     # AI provider abstraction (Claude, OpenAI)
+│   ├── prompts.py       # Prompt templates for job analysis
+│   └── matcher.py       # AI job matching and intake generation
 └── scrapers/
     ├── __init__.py
     ├── base.py          # BaseScraper abstract class
