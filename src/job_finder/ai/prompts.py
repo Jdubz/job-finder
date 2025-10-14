@@ -103,6 +103,28 @@ Analyze this job posting and provide:
 7. **Application Priority**: High/Medium/Low priority for this candidate to apply
 8. **Customization Recommendations**: Specific ways to tailor resume/cover letter for this job
 
+# CRITICAL MATCHING RULES
+
+**TITLE SKILLS ARE MANDATORY:**
+- Skills/technologies mentioned in the job TITLE are the PRIMARY requirements
+- If the candidate lacks ANY core technology from the title, the match score MUST be significantly reduced
+- Examples:
+  * ".NET Developer" → Candidate MUST have .NET experience (not just C#)
+  * "React Engineer" → Candidate MUST have React experience (not just JavaScript)
+  * "Python Django Developer" → Candidate MUST have both Python AND Django
+  * "DevOps Engineer" → Candidate MUST have DevOps/infrastructure experience
+
+**Scoring Guidelines:**
+- Title skill present + strong experience: 70-100 score range
+- Title skill present + limited experience: 50-70 score range
+- Title skill MISSING: 0-40 score range (maximum 40, even if other skills match)
+- Multiple title skills missing: 0-20 score range
+
+**Application Priority:**
+- HIGH: All title skills present + relevant experience + good overall match
+- MEDIUM: Title skills present but limited experience OR 1 minor title skill missing
+- LOW: Core title skills missing (even if other skills match well)
+
 Provide your analysis in the following JSON format:
 
 {{
