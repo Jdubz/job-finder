@@ -22,9 +22,13 @@ services:
       - PROFILE_DATABASE_NAME=portfolio
       - STORAGE_DATABASE_NAME=portfolio
 
+      # Logging Configuration
+      - ENABLE_CLOUD_LOGGING=true  # Send logs to Google Cloud Console
+      - LOG_LEVEL=INFO
+      - LOG_FILE=/app/logs/scheduler.log
+
       # Config path
       - CONFIG_PATH=/app/config/config.yaml
-      - LOG_FILE=/app/logs/scheduler.log
 
       # Timezone for cron
       - TZ=America/Los_Angeles
