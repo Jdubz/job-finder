@@ -68,9 +68,9 @@ class AIJobMatcher:
             profile: User profile for matching.
             min_match_score: Minimum score threshold for a job to be considered a match.
             generate_intake: Whether to generate resume intake data for matched jobs.
-            portland_office_bonus: Bonus points to add for companies with Portland, OR offices.
-            user_timezone: User's timezone offset from UTC (default: -8 for Pacific Time).
-            prefer_large_companies: Whether to prefer large companies over small/startups (default: True).
+            portland_office_bonus: Bonus points to add for Portland, OR offices.
+            user_timezone: User's timezone offset from UTC (default: -8).
+            prefer_large_companies: Prefer large companies (default: True).
         """
         self.provider = provider
         self.profile = profile
@@ -305,8 +305,8 @@ class AIJobMatcher:
         """
         try:
             prompt = self.prompts.analyze_job_match(self.profile, job)
-            # Increased max_tokens to 4000 for detailed analysis with comprehensive prompts
-            response = self.provider.generate(prompt, max_tokens=4000, temperature=0.3)
+            # Using 8000 max_tokens for detailed analysis (Sonnet 3.5 supports up to 8192)
+            response = self.provider.generate(prompt, max_tokens=8000, temperature=0.3)
 
             # Parse JSON response
             # Try to extract JSON from response (in case there's extra text)
@@ -363,8 +363,8 @@ class AIJobMatcher:
         """
         try:
             prompt = self.prompts.generate_resume_intake_data(self.profile, job, match_analysis)
-            # Use 4096 max_tokens (Haiku's limit)
-            response = self.provider.generate(prompt, max_tokens=4096, temperature=0.4)
+            # Using 8000 max_tokens for comprehensive intake data (Sonnet 3.5 supports up to 8192)
+            response = self.provider.generate(prompt, max_tokens=8000, temperature=0.4)
 
             # Parse JSON response
             response_clean = response.strip()
