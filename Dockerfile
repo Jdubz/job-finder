@@ -44,7 +44,7 @@ RUN chmod 0644 /etc/cron.d/job-finder-cron && \
 
 # Make PATH include user-installed packages
 ENV PATH=/root/.local/bin:$PATH
-ENV PYTHONPATH=/app
+ENV PYTHONPATH=/app/src:/app
 
 # Create data and logs directories
 RUN mkdir -p /app/data /app/logs
