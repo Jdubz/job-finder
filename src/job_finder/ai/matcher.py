@@ -9,7 +9,16 @@ from pydantic import BaseModel, Field
 from job_finder.ai.prompts import JobMatchPrompts
 from job_finder.ai.providers import AIProvider
 from job_finder.profile.schema import Profile
+from job_finder.utils.company_size_utils import (
+    calculate_company_size_adjustment,
+    detect_company_size,
+)
 from job_finder.utils.date_utils import calculate_freshness_adjustment, parse_job_date
+from job_finder.utils.role_preference_utils import calculate_role_preference_adjustment
+from job_finder.utils.timezone_utils import (
+    calculate_timezone_score_adjustment,
+    detect_timezone_for_job,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -48,6 +57,8 @@ class AIJobMatcher:
         min_match_score: int = 50,
         generate_intake: bool = True,
         portland_office_bonus: int = 15,
+        user_timezone: float = -8,
+        prefer_large_companies: bool = True,
     ):
         """
         Initialize AI job matcher.
@@ -58,12 +69,16 @@ class AIJobMatcher:
             min_match_score: Minimum score threshold for a job to be considered a match.
             generate_intake: Whether to generate resume intake data for matched jobs.
             portland_office_bonus: Bonus points to add for companies with Portland, OR offices.
+            user_timezone: User's timezone offset from UTC (default: -8 for Pacific Time).
+            prefer_large_companies: Whether to prefer large companies over small/startups (default: True).
         """
         self.provider = provider
         self.profile = profile
         self.min_match_score = min_match_score
         self.generate_intake = generate_intake
         self.portland_office_bonus = portland_office_bonus
+        self.user_timezone = user_timezone
+        self.prefer_large_companies = prefer_large_companies
         self.prompts = JobMatchPrompts()
 
     def analyze_job(
@@ -155,6 +170,48 @@ class AIJobMatcher:
             freshness_adj = calculate_freshness_adjustment(None)
             match_score += freshness_adj
             adjustments.append(f"❓ No date info: {freshness_adj}")
+
+        # Detect company size
+        company_name = job.get("company", "")
+        company_info = job.get("company_info", "")
+        job_description = job.get("description", "")
+        company_size = detect_company_size(company_name, company_info, job_description)
+
+        # Apply timezone adjustment with smart detection
+        job_location = job.get("location", "")
+        headquarters_location = ""  # Would come from company data if available
+        job_timezone = detect_timezone_for_job(
+            job_location, job_description, company_size, headquarters_location
+        )
+        timezone_adj, timezone_desc = calculate_timezone_score_adjustment(
+            job_timezone, self.user_timezone
+        )
+        if timezone_adj != 0:
+            match_score += timezone_adj
+            if timezone_adj > 0:
+                adjustments.append(f"🌎 {timezone_desc}")
+            else:
+                adjustments.append(f"⏰ {timezone_desc}")
+
+        # Apply company size adjustment
+        size_adj, size_desc = calculate_company_size_adjustment(
+            company_size, self.prefer_large_companies
+        )
+        if size_adj != 0:
+            match_score += size_adj
+            if size_adj > 0:
+                adjustments.append(f"🏢 {size_desc}")
+            else:
+                adjustments.append(f"🏪 {size_desc}")
+
+        # Apply role preference adjustment
+        role_adj, role_desc = calculate_role_preference_adjustment(job.get("title", ""))
+        if role_adj != 0:
+            match_score += role_adj
+            if role_adj > 0:
+                adjustments.append(f"💻 {role_desc}")
+            else:
+                adjustments.append(f"👔 {role_desc}")
 
         # Clamp score to valid range (0-100)
         match_score = max(0, min(100, match_score))
@@ -306,8 +363,8 @@ class AIJobMatcher:
         """
         try:
             prompt = self.prompts.generate_resume_intake_data(self.profile, job, match_analysis)
-            # Increased max_tokens to 5000 for comprehensive resume intake data
-            response = self.provider.generate(prompt, max_tokens=5000, temperature=0.4)
+            # Use 4096 max_tokens (Haiku's limit)
+            response = self.provider.generate(prompt, max_tokens=4096, temperature=0.4)
 
             # Parse JSON response
             response_clean = response.strip()
@@ -334,6 +391,9 @@ class AIJobMatcher:
             if missing_fields:
                 logger.warning(f"Intake data missing optional fields: {missing_fields}")
 
+            # Intelligently reduce field sizes if they're too large
+            intake_data = self._optimize_intake_data_size(intake_data)
+
             logger.info(f"Generated intake data for {job.get('title')}")
             return intake_data
 
@@ -346,3 +406,114 @@ class AIJobMatcher:
         except Exception as e:
             logger.error(f"Error generating intake data: {str(e)}", exc_info=True)
             return None
+
+    def _optimize_intake_data_size(self, intake_data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Intelligently reduce the size of intake data fields by removing unnecessary
+        information and consolidating content. Applies to ALL large fields generically.
+
+        Args:
+            intake_data: Resume intake data dictionary
+
+        Returns:
+            Optimized intake data with reduced field sizes
+        """
+        import re
+
+        def clean_text(text: str, max_length: int = 500) -> str:
+            """Clean and truncate text intelligently."""
+            if not text or len(text) <= max_length:
+                return text
+
+            # Remove excessive whitespace
+            text = re.sub(r"\s+", " ", text).strip()
+
+            # Remove redundant phrases
+            redundant_phrases = [
+                r"\b(please|kindly|simply|just|really|very|quite|rather)\b",
+                r"\b(note that|it is important to|make sure to)\b",
+            ]
+            for phrase in redundant_phrases:
+                text = re.sub(phrase, "", text, flags=re.IGNORECASE)
+
+            # Clean up extra spaces after removal
+            text = re.sub(r"\s+", " ", text).strip()
+
+            # If still too long, truncate at sentence boundary
+            if len(text) > max_length:
+                # Try to cut at last complete sentence
+                truncated = text[:max_length]
+                last_period = truncated.rfind(".")
+                last_semicolon = truncated.rfind(";")
+                cut_point = max(last_period, last_semicolon)
+
+                if cut_point > max_length * 0.7:  # At least 70% of target length
+                    text = text[: cut_point + 1].strip()
+                else:
+                    text = truncated.strip() + "..."
+
+            return text
+
+        def trim_list(
+            items: List[str], max_items: int = 20, max_item_length: int = 100
+        ) -> List[str]:
+            """Trim list to reasonable size and clean each item."""
+            if not items:
+                return items
+
+            # Take only first max_items
+            trimmed = items[:max_items]
+
+            # Clean each item
+            cleaned = []
+            for item in trimmed:
+                if isinstance(item, str):
+                    # Remove excess whitespace
+                    item = re.sub(r"\s+", " ", item).strip()
+                    # Truncate very long items
+                    if len(item) > max_item_length:
+                        item = item[:max_item_length].strip() + "..."
+                    cleaned.append(item)
+                else:
+                    cleaned.append(item)
+
+            return cleaned
+
+        def optimize_value(value: Any, key: str) -> Any:
+            """Recursively optimize any value based on its type and size."""
+            if isinstance(value, str):
+                # Apply different limits based on field purpose
+                if len(value) > 100:  # Only optimize strings that are actually large
+                    if "description" in key.lower():
+                        return clean_text(value, max_length=2000)  # Descriptions can be longer
+                    elif "summary" in key.lower():
+                        return clean_text(value, max_length=400)
+                    else:
+                        return clean_text(value, max_length=500)
+                return value
+
+            elif isinstance(value, list):
+                # Determine limits based on field name
+                if "keyword" in key.lower() or "skill" in key.lower():
+                    return trim_list(value, max_items=25, max_item_length=100)
+                elif "highlight" in key.lower() or "achievement" in key.lower():
+                    return trim_list(value, max_items=10, max_item_length=200)
+                elif "project" in key.lower():
+                    return trim_list(value, max_items=5, max_item_length=150)
+                else:
+                    return trim_list(value, max_items=15, max_item_length=100)
+
+            elif isinstance(value, dict):
+                # Recursively optimize nested dictionaries
+                return {k: optimize_value(v, k) for k, v in value.items()}
+
+            else:
+                # Return non-text types as-is (numbers, booleans, None, etc.)
+                return value
+
+        # Recursively optimize all fields in the intake data
+        optimized_data = {}
+        for key, value in intake_data.items():
+            optimized_data[key] = optimize_value(value, key)
+
+        return optimized_data

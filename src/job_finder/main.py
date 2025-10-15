@@ -119,6 +119,8 @@ def apply_ai_matching(
             profile=profile,
             min_match_score=ai_config.get("min_match_score", 70),
             generate_intake=ai_config.get("generate_intake_data", True),
+            user_timezone=ai_config.get("user_timezone", -8),  # Default to Pacific Time
+            prefer_large_companies=ai_config.get("prefer_large_companies", True),
         )
 
         # Analyze jobs

@@ -36,6 +36,9 @@ ai:
   generate_intake_data: true
   max_tokens: 3000
   temperature: 0.3
+  portland_office_bonus: 15  # Bonus points for companies with Portland, OR offices
+  user_timezone: -8  # User's timezone offset from UTC (Pacific Time)
+  prefer_large_companies: true  # Prefer large companies over small/startups
 
 # Filtering
 filters:

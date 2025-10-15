@@ -66,6 +66,8 @@ ai:
   generate_intake_data: true  # Generate resume intake data for matched jobs
   max_tokens: 3000  # Maximum tokens for AI responses
   temperature: 0.3  # Temperature for AI responses (0.0-1.0, lower = more consistent)
+  user_timezone: -8  # User's timezone offset from UTC (Pacific: -8, Mountain: -7, Central: -6, Eastern: -5)
+  prefer_large_companies: true  # Prefer large companies over small/startups (+10 for large, -5 for small)
 
 # Filtering
 filters:

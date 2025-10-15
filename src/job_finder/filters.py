@@ -22,6 +22,9 @@ class JobFilter:
         """
         filtered = jobs
 
+        # Apply remote/Portland hybrid filter (always applied)
+        filtered = self._filter_by_work_location(filtered)
+
         # Apply keyword matching
         if keywords := self.config.get("profile", {}).get("keywords", []):
             filtered = self._filter_by_keywords(filtered, keywords)
@@ -35,6 +38,44 @@ class JobFilter:
             filtered = self._exclude_by_keywords(filtered, excluded)
 
         return filtered
+
+    def _filter_by_work_location(self, jobs: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """
+        Filter jobs to only include remote jobs or Portland, OR hybrid jobs.
+
+        Args:
+            jobs: List of job postings to filter.
+
+        Returns:
+            Filtered list of job postings.
+        """
+        filtered_jobs = []
+
+        for job in jobs:
+            location = job.get("location", "").lower()
+            description = job.get("description", "").lower()
+            title = job.get("title", "").lower()
+
+            # Check if job is remote
+            is_remote = (
+                "remote" in location
+                or "remote" in description
+                or "remote" in title
+                or "work from home" in description
+                or "wfh" in description
+            )
+
+            # Check if job is in Portland, OR
+            is_portland = "portland" in location and ("or" in location or "oregon" in location)
+
+            # Check if job is hybrid
+            is_hybrid = "hybrid" in location or "hybrid" in description or "hybrid" in title
+
+            # Include if remote OR (Portland AND hybrid)
+            if is_remote or (is_portland and is_hybrid):
+                filtered_jobs.append(job)
+
+        return filtered_jobs
 
     def _filter_by_keywords(
         self, jobs: List[Dict[str, Any]], keywords: List[str]
