@@ -10,7 +10,10 @@ from job_finder.profile.schema import Profile
 from job_finder.ai import AIJobMatcher
 from job_finder.ai.providers import create_provider
 from job_finder.scrapers.rss_scraper import RSSJobScraper
+from job_finder.scrapers.greenhouse_scraper import GreenhouseScraper
 from job_finder.storage import FirestoreJobStorage, JobListingsManager
+from job_finder.storage.companies_manager import CompaniesManager
+from job_finder.company_info_fetcher import CompanyInfoFetcher
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +33,8 @@ class JobSearchOrchestrator:
         self.ai_matcher: Optional[AIJobMatcher] = None
         self.job_storage: Optional[FirestoreJobStorage] = None
         self.listings_manager: Optional[JobListingsManager] = None
+        self.companies_manager: Optional[CompaniesManager] = None
+        self.company_info_fetcher: Optional[CompanyInfoFetcher] = None
 
     def run_search(self) -> Dict[str, Any]:
         """
@@ -162,12 +167,13 @@ class JobSearchOrchestrator:
             profile=self.profile,
             min_match_score=ai_config.get("min_match_score", 70),
             generate_intake=ai_config.get("generate_intake_data", True),
+            portland_office_bonus=ai_config.get("portland_office_bonus", 15),
         )
 
         return matcher
 
     def _initialize_storage(self):
-        """Initialize Firestore storage for job matches and listings."""
+        """Initialize Firestore storage for job matches, listings, and companies."""
         storage_config = self.config.get("storage", {})
 
         # Allow environment variable override for database name
@@ -177,10 +183,52 @@ class JobSearchOrchestrator:
 
         self.job_storage = FirestoreJobStorage(database_name=database_name)
         self.listings_manager = JobListingsManager(database_name=database_name)
+        self.companies_manager = CompaniesManager(database_name=database_name)
+
+        # Initialize company info fetcher with AI provider (shares same provider as AI matcher)
+        self.company_info_fetcher = CompanyInfoFetcher(ai_provider=self.ai_matcher.provider if self.ai_matcher else None)
 
     def _get_active_listings(self) -> List[Dict[str, Any]]:
-        """Get active job source listings from Firestore."""
-        return self.listings_manager.get_active_listings()
+        """Get active job source listings from Firestore, sorted by priority score.
+
+        Returns listings in priority order:
+        - Tier S (100+): Portland office + strong tech match
+        - Tier A (70-99): Perfect tech matches
+        - Tier B (50-69): Good matches
+        - Tier C (30-49): Moderate matches
+        - Tier D (0-29): Basic matches/job boards
+        """
+        listings = self.listings_manager.get_active_listings()
+
+        # Sort by priority score (highest first), then by name for consistency
+        sorted_listings = sorted(
+            listings,
+            key=lambda x: (
+                -(x.get('priorityScore', 0)),  # Higher score first (negative for descending)
+                x.get('name', '')  # Then alphabetically by name
+            )
+        )
+
+        # Log tier distribution
+        tier_counts = {}
+        for listing in sorted_listings:
+            tier = listing.get('tier', 'Unknown')
+            tier_counts[tier] = tier_counts.get(tier, 0) + 1
+
+        logger.info(f"  Priority distribution:")
+        tier_order = ['S', 'A', 'B', 'C', 'D']
+        for tier in tier_order:
+            if tier in tier_counts:
+                tier_name = {
+                    'S': 'Perfect Match',
+                    'A': 'Excellent Match',
+                    'B': 'Good Match',
+                    'C': 'Moderate Match',
+                    'D': 'Basic Match'
+                }.get(tier, tier)
+                logger.info(f"    Tier {tier} ({tier_name}): {tier_counts[tier]} sources")
+
+        return sorted_listings
 
     def _process_listing(self, listing: Dict[str, Any], remaining_slots: int) -> Dict[str, Any]:
         """
@@ -195,8 +243,23 @@ class JobSearchOrchestrator:
         """
         listing_name = listing.get("name", "Unknown")
         source_type = listing.get("sourceType", "unknown")
+        priority_score = listing.get("priorityScore", 0)
+        tier = listing.get("tier", "?")
 
-        logger.info(f"\n⚡ Processing: {listing_name} ({source_type})")
+        # Add tier emoji
+        tier_emoji = {
+            'S': '⭐',
+            'A': '🔷',
+            'B': '🟢',
+            'C': '🟡',
+            'D': '⚪'
+        }.get(tier, '❓')
+
+        # Add Portland icon if applicable
+        portland_icon = '🏙️ ' if listing.get('hasPortlandOffice', False) else ''
+
+        logger.info(f"\n{tier_emoji} {portland_icon}Processing: {listing_name} (Tier {tier}, Score: {priority_score})")
+        logger.info(f"   Source Type: {source_type}")
         logger.info("-" * 70)
 
         stats = {
@@ -216,6 +279,16 @@ class JobSearchOrchestrator:
                 scraper = RSSJobScraper(
                     config=self.config.get("scraping", {}), listing_config=listing.get("config", {})
                 )
+                jobs = scraper.scrape()
+
+            elif source_type == "greenhouse":
+                # Greenhouse ATS scraper
+                greenhouse_config = {
+                    'board_token': listing.get('board_token'),
+                    'name': listing.get('name', 'Unknown'),
+                    'company_website': listing.get('company_website', '')
+                }
+                scraper = GreenhouseScraper(greenhouse_config)
                 jobs = scraper.scrape()
 
             elif source_type == "api":
@@ -238,6 +311,54 @@ class JobSearchOrchestrator:
                     doc_id=listing["id"], status="success", jobs_found=0
                 )
                 return stats
+
+            # Fetch and cache company information
+            company_name = listing.get("name", "Unknown")
+            company_website = listing.get("company_website", "")
+
+            if company_website:
+                logger.info(f"🏢 Fetching company info for {company_name}...")
+                try:
+                    company_info = self.companies_manager.get_or_create_company(
+                        company_name=company_name,
+                        company_website=company_website,
+                        fetch_info_func=self.company_info_fetcher.fetch_company_info
+                    )
+
+                    # Extract about/culture fields
+                    company_about = company_info.get("about", "")
+                    company_culture = company_info.get("culture", "")
+                    company_mission = company_info.get("mission", "")
+
+                    # Combine into a single company_info string
+                    company_info_parts = []
+                    if company_about:
+                        company_info_parts.append(f"About: {company_about}")
+                    if company_culture:
+                        company_info_parts.append(f"Culture: {company_culture}")
+                    if company_mission:
+                        company_info_parts.append(f"Mission: {company_mission}")
+
+                    company_info_str = "\n\n".join(company_info_parts)
+
+                    # Update all jobs with company info
+                    for job in jobs:
+                        job["company_info"] = company_info_str
+
+                    if company_info_str:
+                        logger.info(f"✓ Company info cached ({len(company_info_str)} chars)")
+                    else:
+                        logger.info(f"⚠️  No company info found")
+
+                except Exception as e:
+                    logger.warning(f"⚠️  Failed to fetch company info: {e}")
+                    # Continue without company info
+                    for job in jobs:
+                        job["company_info"] = ""
+            else:
+                logger.debug("No company website available, skipping company info fetch")
+                for job in jobs:
+                    job["company_info"] = ""
 
             # Filter for remote jobs
             remote_jobs = self._filter_remote_only(jobs)
@@ -283,11 +404,12 @@ class JobSearchOrchestrator:
                     processed += 1
                     stats["jobs_analyzed"] += 1
 
-                    # Run AI matching
+                    # Run AI matching (pass Portland office status for bonus)
                     logger.info(
                         f"  [{processed}/{new_jobs_count}] Analyzing: {job.get('title')} at {job.get('company')}"
                     )
-                    result = self.ai_matcher.analyze_job(job)
+                    has_portland_office = listing.get('hasPortlandOffice', False)
+                    result = self.ai_matcher.analyze_job(job, has_portland_office=has_portland_office)
 
                     if result:
                         # Save to Firestore

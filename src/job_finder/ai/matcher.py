@@ -46,6 +46,7 @@ class AIJobMatcher:
         profile: Profile,
         min_match_score: int = 50,
         generate_intake: bool = True,
+        portland_office_bonus: int = 15,
     ):
         """
         Initialize AI job matcher.
@@ -55,19 +56,22 @@ class AIJobMatcher:
             profile: User profile for matching.
             min_match_score: Minimum score threshold for a job to be considered a match.
             generate_intake: Whether to generate resume intake data for matched jobs.
+            portland_office_bonus: Bonus points to add for companies with Portland, OR offices.
         """
         self.provider = provider
         self.profile = profile
         self.min_match_score = min_match_score
         self.generate_intake = generate_intake
+        self.portland_office_bonus = portland_office_bonus
         self.prompts = JobMatchPrompts()
 
-    def analyze_job(self, job: Dict[str, Any]) -> Optional[JobMatchResult]:
+    def analyze_job(self, job: Dict[str, Any], has_portland_office: bool = False) -> Optional[JobMatchResult]:
         """
         Analyze a single job posting against the profile.
 
         Args:
             job: Job posting dictionary with keys: title, company, location, description, url.
+            has_portland_office: Whether the company has a Portland, OR office.
 
         Returns:
             JobMatchResult if successful, None if analysis fails.
@@ -81,11 +85,35 @@ class AIJobMatcher:
                 logger.warning(f"Failed to analyze job: {job.get('title')}")
                 return None
 
-            # Check if score meets minimum threshold
-            match_score = match_analysis.get("match_score", 0)
+            # Get base score from AI analysis
+            base_score = match_analysis.get("match_score", 0)
+            match_score = base_score
+
+            # Apply Portland office bonus
+            if has_portland_office and self.portland_office_bonus > 0:
+                match_score = min(100, base_score + self.portland_office_bonus)
+                logger.info(
+                    f"  🏙️ Portland office bonus: +{self.portland_office_bonus} points "
+                    f"(Base: {base_score} → Adjusted: {match_score})"
+                )
+
+            # Recalculate priority tier based on adjusted score
+            if match_score >= 75:
+                priority = "High"
+            elif match_score >= 50:
+                priority = "Medium"
+            else:
+                priority = "Low"
+
+            # Override AI's priority with our calculated one (if score changed)
+            if base_score != match_score:
+                match_analysis["application_priority"] = priority
+
+            # Check if adjusted score meets minimum threshold
             if match_score < self.min_match_score:
                 logger.info(
-                    f"Job {job.get('title')} scored {match_score}, below threshold {self.min_match_score}"
+                    f"Job {job.get('title')} scored {match_score} (base: {base_score}), "
+                    f"below threshold {self.min_match_score}"
                 )
                 return None
 
