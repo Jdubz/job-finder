@@ -406,6 +406,25 @@ docker inspect --format='{{.State.Health.Status}}' job-finder-staging
 
 ## Troubleshooting
 
+### Container Logs are Empty
+
+**Problem:** Container appears running but logs are empty in Portainer
+
+**Cause:** Container is running cron in background, waiting for next scheduled run (every 6 hours at 00:00, 06:00, 12:00, 18:00). Between runs, there's no output.
+
+**Solution:** Check the detailed startup logs that show:
+- Container start time and timezone
+- Cron schedule
+- Next scheduled run time
+- Cron daemon status
+
+**Manual trigger for testing:**
+```bash
+docker exec job-finder-staging /app/docker/run-now.sh
+```
+
+This runs a job search immediately and shows output in the logs.
+
 ### Container Won't Start
 
 **Check logs:**
@@ -608,9 +627,25 @@ limits:
 ```bash
 # View logs
 docker logs -f job-finder-staging
+docker logs --tail 100 job-finder-staging
 
-# Manual search
-docker exec job-finder-staging python run_job_search.py
+# Manual search (immediate trigger)
+docker exec job-finder-staging /app/docker/run-now.sh
+
+# Check container status
+docker ps -a | grep job-finder
+
+# Check cron is running
+docker exec job-finder-staging ps aux | grep cron
+
+# View cron schedule
+docker exec job-finder-staging cat /etc/cron.d/job-finder-cron
+
+# View cron log
+docker exec job-finder-staging cat /var/log/cron.log
+
+# Check environment variables
+docker exec job-finder-staging printenv | grep -E "ANTHROPIC|STORAGE|PROFILE|ENVIRONMENT"
 
 # Access shell
 docker exec -it job-finder-staging /bin/bash
@@ -620,9 +655,6 @@ docker restart job-finder-staging
 
 # Update container
 docker pull ghcr.io/jdubz/job-finder:latest && docker restart job-finder-staging
-
-# Check environment
-docker exec job-finder-staging env | grep DATABASE_NAME
 ```
 
 ### File Locations

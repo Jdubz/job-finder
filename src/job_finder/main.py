@@ -1,16 +1,17 @@
 """Main entry point for the job finder application."""
 
 import argparse
-import yaml
 from pathlib import Path
-from typing import Dict, Any, Optional, List
+from typing import Any, Dict, List, Optional
 
-from job_finder.filters import JobFilter
-from job_finder.storage import JobStorage
-from job_finder.profile import ProfileLoader, FirestoreProfileLoader, Profile
+import yaml
+
 from job_finder.ai import AIJobMatcher, JobMatchResult
 from job_finder.ai.providers import create_provider
-from job_finder.logging_config import setup_logging, get_logger
+from job_finder.filters import JobFilter
+from job_finder.logging_config import get_logger, setup_logging
+from job_finder.profile import FirestoreProfileLoader, Profile, ProfileLoader
+from job_finder.storage import JobStorage
 
 # Configure logging (will be called in main())
 logger = get_logger(__name__)

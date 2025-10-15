@@ -2,9 +2,10 @@
 
 import logging
 import re
-from typing import List, Dict, Any
-import feedparser
 from datetime import datetime
+from typing import Any, Dict, List
+
+import feedparser
 
 from job_finder.scrapers.base import BaseScraper
 

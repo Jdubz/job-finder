@@ -1,6 +1,7 @@
 """Prompt templates for AI job matching and analysis."""
 
-from typing import Dict, Any, List
+from typing import Any, Dict, List
+
 from job_finder.profile.schema import Profile
 
 

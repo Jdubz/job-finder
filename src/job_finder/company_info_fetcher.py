@@ -1,10 +1,12 @@
 """Company information fetcher using AI and web scraping."""
 
+import json
 import logging
-import requests
-from typing import Dict, Any, Optional
-from bs4 import BeautifulSoup
 import time
+from typing import Any, Dict, Optional
+
+import requests
+from bs4 import BeautifulSoup
 
 logger = logging.getLogger(__name__)
 
@@ -80,7 +82,8 @@ class CompanyInfoFetcher:
                     if content and len(content) > 200:  # Got meaningful content
                         logger.info(f"Successfully fetched content from {page_url}")
                         break
-                except Exception as e:
+                except (requests.RequestException, ValueError, AttributeError) as e:
+                    # HTTP errors, parsing errors, or invalid URL - try next page
                     logger.debug(f"Failed to fetch {page_url}: {e}")
                     continue
 
@@ -97,8 +100,15 @@ class CompanyInfoFetcher:
             else:
                 logger.warning(f"Could not fetch any content for {company_name}")
 
-        except Exception as e:
+        except (requests.RequestException, ValueError, AttributeError) as e:
+            # HTTP, parsing, or data errors - return empty result
             logger.error(f"Error fetching company info for {company_name}: {e}")
+        except Exception as e:
+            # Unexpected errors - log with traceback
+            logger.error(
+                f"Unexpected error fetching company info for {company_name} ({type(e).__name__}): {e}",
+                exc_info=True,
+            )
 
         return result
 
@@ -137,10 +147,16 @@ class CompanyInfoFetcher:
             return text
 
         except requests.RequestException as e:
+            # HTTP errors (connection, timeout, HTTP status codes)
             logger.debug(f"Request failed for {url}: {e}")
             return None
-        except Exception as e:
+        except (AttributeError, UnicodeDecodeError, ValueError) as e:
+            # HTML parsing errors or encoding issues
             logger.debug(f"Error parsing {url}: {e}")
+            return None
+        except Exception as e:
+            # Unexpected errors - log with more detail
+            logger.debug(f"Unexpected error fetching {url} ({type(e).__name__}): {e}")
             return None
 
     def _extract_company_info(self, content: str, company_name: str) -> Dict[str, str]:
@@ -216,8 +232,6 @@ Return ONLY valid JSON in this format:
             response = self.ai_provider.generate(prompt, max_tokens=1000, temperature=0.2)
 
             # Parse JSON response
-            import json
-
             response_clean = response.strip()
             if "```json" in response_clean:
                 start = response_clean.find("```json") + 7
@@ -232,8 +246,20 @@ Return ONLY valid JSON in this format:
             logger.info(f"AI extracted company info successfully")
             return extracted
 
+        except json.JSONDecodeError as e:
+            # AI returned invalid JSON - fall back to heuristics
+            logger.warning(f"AI returned invalid JSON, falling back to heuristics: {e}")
+            return self._extract_with_heuristics(content)
+        except (ValueError, KeyError, AttributeError) as e:
+            # AI provider errors or missing response fields
+            logger.warning(f"AI extraction error, falling back to heuristics: {e}")
+            return self._extract_with_heuristics(content)
         except Exception as e:
-            logger.warning(f"AI extraction failed, falling back to heuristics: {e}")
+            # Unexpected errors - log and fall back
+            logger.warning(
+                f"Unexpected AI extraction error ({type(e).__name__}), falling back to heuristics: {e}",
+                exc_info=True,
+            )
             return self._extract_with_heuristics(content)
 
     def _extract_with_heuristics(self, content: str) -> Dict[str, str]:

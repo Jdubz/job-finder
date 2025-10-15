@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Test which Claude models are available."""
 import os
-from dotenv import load_dotenv
+
 from anthropic import Anthropic
+from dotenv import load_dotenv
 
 load_dotenv()
 
@@ -24,9 +25,7 @@ print("Testing Claude model availability...\n")
 for model in models_to_try:
     try:
         response = client.messages.create(
-            model=model,
-            max_tokens=10,
-            messages=[{"role": "user", "content": "Hi"}]
+            model=model, max_tokens=10, messages=[{"role": "user", "content": "Hi"}]
         )
         print(f"✓ {model} - WORKS")
     except Exception as e:

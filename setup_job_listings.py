@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """Set up initial job listings in Firestore."""
 import os
+
 from dotenv import load_dotenv
+
 from job_finder.storage import JobListingsManager
 
 load_dotenv()
@@ -34,10 +36,10 @@ listing_id = manager.add_listing(
         "title_field": "title",
         "description_field": "description",
         "link_field": "link",
-        "company_extraction": "from_title"  # Company name is in title
+        "company_extraction": "from_title",  # Company name is in title
     },
     enabled=True,
-    tags=["remote", "programming", "rss"]
+    tags=["remote", "programming", "rss"],
 )
 print(f"✓ Added: We Work Remotely - Programming (ID: {listing_id})")
 
@@ -51,10 +53,10 @@ listing_id = manager.add_listing(
         "title_field": "title",
         "description_field": "description",
         "link_field": "link",
-        "company_extraction": "from_title"
+        "company_extraction": "from_title",
     },
     enabled=True,
-    tags=["remote", "full-stack", "rss"]
+    tags=["remote", "full-stack", "rss"],
 )
 print(f"✓ Added: We Work Remotely - Full Stack (ID: {listing_id})")
 
@@ -67,10 +69,10 @@ listing_id = manager.add_listing(
         "parse_format": "standard",
         "title_field": "title",
         "description_field": "description",
-        "link_field": "link"
+        "link_field": "link",
     },
     enabled=True,
-    tags=["remote", "software", "rss"]
+    tags=["remote", "software", "rss"],
 )
 print(f"✓ Added: Remotive - Software Development (ID: {listing_id})")
 
@@ -85,18 +87,14 @@ listing_id = manager.add_listing(
     config={
         "base_url": "https://remoteok.com/api",
         "auth_type": "none",
-        "endpoints": {
-            "jobs": "/"
-        },
+        "endpoints": {"jobs": "/"},
         "params": {},
         "rate_limit": "300/day",  # Be respectful
         "response_format": "json",
-        "filters": {
-            "tags": ["dev", "engineering", "full-stack"]
-        }
+        "filters": {"tags": ["dev", "engineering", "full-stack"]},
     },
     enabled=True,
-    tags=["remote", "api"]
+    tags=["remote", "api"],
 )
 print(f"✓ Added: RemoteOK API (ID: {listing_id})")
 
@@ -109,19 +107,17 @@ listing_id = manager.add_listing(
         "auth_type": "api_key",
         "api_key_env": "ADZUNA_APP_ID",  # Requires ADZUNA_APP_ID and ADZUNA_API_KEY
         "api_secret_env": "ADZUNA_API_KEY",
-        "endpoints": {
-            "search": "/1"  # Page number
-        },
+        "endpoints": {"search": "/1"},  # Page number
         "params": {
             "what": "software engineer",
             "where": "remote",
-            "content-type": "application/json"
+            "content-type": "application/json",
         },
         "rate_limit": "free tier",
-        "response_format": "json"
+        "response_format": "json",
     },
     enabled=False,  # Disabled until API keys are configured
-    tags=["remote", "api", "requires-key"]
+    tags=["remote", "api", "requires-key"],
 )
 print(f"✓ Added: Adzuna API (ID: {listing_id}) - DISABLED (needs API key)")
 
@@ -140,13 +136,10 @@ listing_id = manager.add_listing(
         "company_info": "Netflix is the world's leading streaming entertainment service. Netflix culture emphasizes freedom and responsibility, with core values including judgment, communication, impact, curiosity, innovation, courage, passion, honesty, and selflessness.",
         "method": "api",
         "api_endpoint": "https://explore.jobs.netflix.net/api/careers",
-        "api_params": {
-            "location": "Remote",
-            "team": "Engineering"
-        }
+        "api_params": {"location": "Remote", "team": "Engineering"},
     },
     enabled=True,
-    tags=["company-page", "remote", "big-tech"]
+    tags=["company-page", "remote", "big-tech"],
 )
 print(f"✓ Added: Netflix Careers (ID: {listing_id})")
 
@@ -165,15 +158,12 @@ listing_id = manager.add_listing(
             "title": ".job-title",
             "location": ".job-location",
             "department": ".job-department",
-            "link": "a.job-link"
+            "link": "a.job-link",
         },
-        "filters": {
-            "location": "Remote",
-            "department": "Engineering"
-        }
+        "filters": {"location": "Remote", "department": "Engineering"},
     },
     enabled=False,  # Disabled until scraper is implemented
-    tags=["company-page", "remote", "ecommerce"]
+    tags=["company-page", "remote", "ecommerce"],
 )
 print(f"✓ Added: Shopify Careers (ID: {listing_id}) - DISABLED (scraper not implemented)")
 
@@ -188,12 +178,10 @@ listing_id = manager.add_listing(
         "company_info": "Stripe is a technology company that builds economic infrastructure for the internet. Businesses of every size use Stripe's software to accept payments and manage their businesses online.",
         "method": "api",
         "api_endpoint": "https://stripe.com/jobs/search",
-        "api_params": {
-            "remote": "true"
-        }
+        "api_params": {"remote": "true"},
     },
     enabled=False,  # Disabled until API integration is implemented
-    tags=["company-page", "remote", "fintech"]
+    tags=["company-page", "remote", "fintech"],
 )
 print(f"✓ Added: Stripe Careers (ID: {listing_id}) - DISABLED (API not implemented)")
 
