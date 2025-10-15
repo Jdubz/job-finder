@@ -5,7 +5,8 @@ This script simulates the bonus calculation to verify it works correctly.
 """
 
 import sys
-sys.path.insert(0, 'src')
+
+sys.path.insert(0, "src")
 
 print("=" * 80)
 print("PORTLAND OFFICE BONUS LOGIC TEST")
@@ -15,6 +16,7 @@ print()
 # Bonus configuration
 PORTLAND_BONUS = 15
 MIN_THRESHOLD = 80
+
 
 def calculate_result(base_score, has_portland_office):
     """Simulate the bonus logic from AIJobMatcher."""
@@ -34,12 +36,13 @@ def calculate_result(base_score, has_portland_office):
     passes = adjusted_score >= MIN_THRESHOLD
 
     return {
-        'base': base_score,
-        'adjusted': adjusted_score,
-        'bonus': adjusted_score - base_score,
-        'priority': priority,
-        'passes': passes
+        "base": base_score,
+        "adjusted": adjusted_score,
+        "bonus": adjusted_score - base_score,
+        "priority": priority,
+        "passes": passes,
     }
+
 
 # Test scenarios
 test_cases = [
@@ -67,7 +70,7 @@ for base_score, has_portland, description in test_cases:
     result = calculate_result(base_score, has_portland)
 
     portland_icon = "🏙️ " if has_portland else "  "
-    pass_icon = "✅" if result['passes'] else "❌"
+    pass_icon = "✅" if result["passes"] else "❌"
 
     print(f"{pass_icon} {portland_icon}{description}")
     print(f"   Base: {result['base']} → Adjusted: {result['adjusted']} (Bonus: +{result['bonus']})")
