@@ -186,7 +186,9 @@ class JobSearchOrchestrator:
         self.companies_manager = CompaniesManager(database_name=database_name)
 
         # Initialize company info fetcher with AI provider (shares same provider as AI matcher)
-        self.company_info_fetcher = CompanyInfoFetcher(ai_provider=self.ai_matcher.provider if self.ai_matcher else None)
+        self.company_info_fetcher = CompanyInfoFetcher(
+            ai_provider=self.ai_matcher.provider if self.ai_matcher else None
+        )
 
     def _get_active_listings(self) -> List[Dict[str, Any]]:
         """Get active job source listings from Firestore, sorted by priority score.
@@ -204,27 +206,27 @@ class JobSearchOrchestrator:
         sorted_listings = sorted(
             listings,
             key=lambda x: (
-                -(x.get('priorityScore', 0)),  # Higher score first (negative for descending)
-                x.get('name', '')  # Then alphabetically by name
-            )
+                -(x.get("priorityScore", 0)),  # Higher score first (negative for descending)
+                x.get("name", ""),  # Then alphabetically by name
+            ),
         )
 
         # Log tier distribution
         tier_counts = {}
         for listing in sorted_listings:
-            tier = listing.get('tier', 'Unknown')
+            tier = listing.get("tier", "Unknown")
             tier_counts[tier] = tier_counts.get(tier, 0) + 1
 
         logger.info(f"  Priority distribution:")
-        tier_order = ['S', 'A', 'B', 'C', 'D']
+        tier_order = ["S", "A", "B", "C", "D"]
         for tier in tier_order:
             if tier in tier_counts:
                 tier_name = {
-                    'S': 'Perfect Match',
-                    'A': 'Excellent Match',
-                    'B': 'Good Match',
-                    'C': 'Moderate Match',
-                    'D': 'Basic Match'
+                    "S": "Perfect Match",
+                    "A": "Excellent Match",
+                    "B": "Good Match",
+                    "C": "Moderate Match",
+                    "D": "Basic Match",
                 }.get(tier, tier)
                 logger.info(f"    Tier {tier} ({tier_name}): {tier_counts[tier]} sources")
 
@@ -247,18 +249,14 @@ class JobSearchOrchestrator:
         tier = listing.get("tier", "?")
 
         # Add tier emoji
-        tier_emoji = {
-            'S': '⭐',
-            'A': '🔷',
-            'B': '🟢',
-            'C': '🟡',
-            'D': '⚪'
-        }.get(tier, '❓')
+        tier_emoji = {"S": "⭐", "A": "🔷", "B": "🟢", "C": "🟡", "D": "⚪"}.get(tier, "❓")
 
         # Add Portland icon if applicable
-        portland_icon = '🏙️ ' if listing.get('hasPortlandOffice', False) else ''
+        portland_icon = "🏙️ " if listing.get("hasPortlandOffice", False) else ""
 
-        logger.info(f"\n{tier_emoji} {portland_icon}Processing: {listing_name} (Tier {tier}, Score: {priority_score})")
+        logger.info(
+            f"\n{tier_emoji} {portland_icon}Processing: {listing_name} (Tier {tier}, Score: {priority_score})"
+        )
         logger.info(f"   Source Type: {source_type}")
         logger.info("-" * 70)
 
@@ -284,9 +282,9 @@ class JobSearchOrchestrator:
             elif source_type == "greenhouse":
                 # Greenhouse ATS scraper
                 greenhouse_config = {
-                    'board_token': listing.get('board_token'),
-                    'name': listing.get('name', 'Unknown'),
-                    'company_website': listing.get('company_website', '')
+                    "board_token": listing.get("board_token"),
+                    "name": listing.get("name", "Unknown"),
+                    "company_website": listing.get("company_website", ""),
                 }
                 scraper = GreenhouseScraper(greenhouse_config)
                 jobs = scraper.scrape()
@@ -322,7 +320,7 @@ class JobSearchOrchestrator:
                     company_info = self.companies_manager.get_or_create_company(
                         company_name=company_name,
                         company_website=company_website,
-                        fetch_info_func=self.company_info_fetcher.fetch_company_info
+                        fetch_info_func=self.company_info_fetcher.fetch_company_info,
                     )
 
                     # Extract about/culture fields
@@ -408,8 +406,10 @@ class JobSearchOrchestrator:
                     logger.info(
                         f"  [{processed}/{new_jobs_count}] Analyzing: {job.get('title')} at {job.get('company')}"
                     )
-                    has_portland_office = listing.get('hasPortlandOffice', False)
-                    result = self.ai_matcher.analyze_job(job, has_portland_office=has_portland_office)
+                    has_portland_office = listing.get("hasPortlandOffice", False)
+                    result = self.ai_matcher.analyze_job(
+                        job, has_portland_office=has_portland_office
+                    )
 
                     if result:
                         # Save to Firestore

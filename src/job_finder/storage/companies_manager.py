@@ -33,13 +33,16 @@ class CompaniesManager:
         """
         try:
             # Query by name (case-insensitive)
-            docs = self.db.collection(self.collection_name).where(
-                'name_lower', '==', company_name.lower()
-            ).limit(1).stream()
+            docs = (
+                self.db.collection(self.collection_name)
+                .where("name_lower", "==", company_name.lower())
+                .limit(1)
+                .stream()
+            )
 
             for doc in docs:
                 company_data = doc.to_dict()
-                company_data['id'] = doc.id
+                company_data["id"] = doc.id
                 return company_data
 
             return None
@@ -67,7 +70,7 @@ class CompaniesManager:
             Document ID of saved company
         """
         try:
-            company_name = company_data.get('name')
+            company_name = company_data.get("name")
             if not company_name:
                 raise ValueError("Company name is required")
 
@@ -76,27 +79,27 @@ class CompaniesManager:
 
             # Prepare data
             save_data = {
-                'name': company_name,
-                'name_lower': company_name.lower(),  # For case-insensitive search
-                'website': company_data.get('website', ''),
-                'about': company_data.get('about', ''),
-                'culture': company_data.get('culture', ''),
-                'mission': company_data.get('mission', ''),
-                'size': company_data.get('size', ''),
-                'industry': company_data.get('industry', ''),
-                'founded': company_data.get('founded', ''),
-                'updatedAt': datetime.now(),
+                "name": company_name,
+                "name_lower": company_name.lower(),  # For case-insensitive search
+                "website": company_data.get("website", ""),
+                "about": company_data.get("about", ""),
+                "culture": company_data.get("culture", ""),
+                "mission": company_data.get("mission", ""),
+                "size": company_data.get("size", ""),
+                "industry": company_data.get("industry", ""),
+                "founded": company_data.get("founded", ""),
+                "updatedAt": datetime.now(),
             }
 
             if existing:
                 # Update existing company
-                doc_id = existing['id']
+                doc_id = existing["id"]
 
                 # Only update if we have new/better information
                 should_update = False
-                for field in ['about', 'culture', 'mission', 'size', 'industry', 'founded']:
-                    new_value = save_data.get(field, '')
-                    existing_value = existing.get(field, '')
+                for field in ["about", "culture", "mission", "size", "industry", "founded"]:
+                    new_value = save_data.get(field, "")
+                    existing_value = existing.get(field, "")
 
                     # Update if new value is longer/better
                     if new_value and len(new_value) > len(existing_value):
@@ -113,7 +116,7 @@ class CompaniesManager:
 
             else:
                 # Create new company
-                save_data['createdAt'] = datetime.now()
+                save_data["createdAt"] = datetime.now()
                 doc_ref = self.db.collection(self.collection_name).add(save_data)
                 doc_id = doc_ref[1].id
 
@@ -125,10 +128,7 @@ class CompaniesManager:
             raise
 
     def get_or_create_company(
-        self,
-        company_name: str,
-        company_website: str = '',
-        fetch_info_func=None
+        self, company_name: str, company_website: str = "", fetch_info_func=None
     ) -> Dict[str, Any]:
         """
         Get company from database or fetch and create if not exists.
@@ -147,8 +147,8 @@ class CompaniesManager:
 
         if company:
             # Check if info is complete enough
-            has_about = len(company.get('about', '')) > 100
-            has_culture = len(company.get('culture', '')) > 50
+            has_about = len(company.get("about", "")) > 100
+            has_culture = len(company.get("culture", "")) > 50
 
             if has_about or has_culture:
                 logger.info(f"Using cached company info for {company_name}")
@@ -176,11 +176,11 @@ class CompaniesManager:
                     return company
                 else:
                     return {
-                        'name': company_name,
-                        'website': company_website,
-                        'about': '',
-                        'culture': '',
-                        'mission': ''
+                        "name": company_name,
+                        "website": company_website,
+                        "about": "",
+                        "culture": "",
+                        "mission": "",
                     }
         else:
             # Return existing or minimal data
@@ -188,11 +188,11 @@ class CompaniesManager:
                 return company
             else:
                 return {
-                    'name': company_name,
-                    'website': company_website,
-                    'about': '',
-                    'culture': '',
-                    'mission': ''
+                    "name": company_name,
+                    "website": company_website,
+                    "about": "",
+                    "culture": "",
+                    "mission": "",
                 }
 
     def get_all_companies(self, limit: int = 100) -> list[Dict[str, Any]]:
@@ -211,7 +211,7 @@ class CompaniesManager:
             companies = []
             for doc in docs:
                 company = doc.to_dict()
-                company['id'] = doc.id
+                company["id"] = doc.id
                 companies.append(company)
 
             return companies

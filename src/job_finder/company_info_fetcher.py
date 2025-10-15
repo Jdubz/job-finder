@@ -21,9 +21,9 @@ class CompanyInfoFetcher:
         """
         self.ai_provider = ai_provider
         self.session = requests.Session()
-        self.session.headers.update({
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-        })
+        self.session.headers.update(
+            {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+        )
 
     def fetch_company_info(self, company_name: str, company_website: str) -> Dict[str, Any]:
         """
@@ -49,14 +49,14 @@ class CompanyInfoFetcher:
         logger.info(f"Fetching company info for {company_name}")
 
         result = {
-            'name': company_name,
-            'website': company_website,
-            'about': '',
-            'culture': '',
-            'mission': '',
-            'size': '',
-            'industry': '',
-            'founded': ''
+            "name": company_name,
+            "website": company_website,
+            "about": "",
+            "culture": "",
+            "mission": "",
+            "size": "",
+            "industry": "",
+            "founded": "",
         }
 
         if not company_website:
@@ -89,9 +89,11 @@ class CompanyInfoFetcher:
                 extracted = self._extract_company_info(content, company_name)
                 result.update(extracted)
 
-                logger.info(f"Extracted company info for {company_name}: "
-                           f"{len(result['about'])} chars about, "
-                           f"{len(result['culture'])} chars culture")
+                logger.info(
+                    f"Extracted company info for {company_name}: "
+                    f"{len(result['about'])} chars about, "
+                    f"{len(result['culture'])} chars culture"
+                )
             else:
                 logger.warning(f"Could not fetch any content for {company_name}")
 
@@ -113,24 +115,24 @@ class CompanyInfoFetcher:
         """
         try:
             # Normalize URL
-            if not url.startswith('http'):
+            if not url.startswith("http"):
                 url = f"https://{url}"
 
             response = self.session.get(url, timeout=timeout, allow_redirects=True)
             response.raise_for_status()
 
             # Parse HTML
-            soup = BeautifulSoup(response.content, 'html.parser')
+            soup = BeautifulSoup(response.content, "html.parser")
 
             # Remove script, style, and other non-content tags
-            for element in soup(['script', 'style', 'nav', 'footer', 'header']):
+            for element in soup(["script", "style", "nav", "footer", "header"]):
                 element.decompose()
 
             # Get text content
-            text = soup.get_text(separator=' ', strip=True)
+            text = soup.get_text(separator=" ", strip=True)
 
             # Clean up whitespace
-            text = ' '.join(text.split())
+            text = " ".join(text.split())
 
             return text
 
@@ -153,12 +155,12 @@ class CompanyInfoFetcher:
             Dictionary with extracted fields
         """
         result = {
-            'about': '',
-            'culture': '',
-            'mission': '',
-            'size': '',
-            'industry': '',
-            'founded': ''
+            "about": "",
+            "culture": "",
+            "mission": "",
+            "size": "",
+            "industry": "",
+            "founded": "",
         }
 
         # If we have AI provider, use it for better extraction
@@ -215,6 +217,7 @@ Return ONLY valid JSON in this format:
 
             # Parse JSON response
             import json
+
             response_clean = response.strip()
             if "```json" in response_clean:
                 start = response_clean.find("```json") + 7
@@ -244,12 +247,12 @@ Return ONLY valid JSON in this format:
             Dictionary with extracted fields
         """
         result = {
-            'about': '',
-            'culture': '',
-            'mission': '',
-            'size': '',
-            'industry': '',
-            'founded': ''
+            "about": "",
+            "culture": "",
+            "mission": "",
+            "size": "",
+            "industry": "",
+            "founded": "",
         }
 
         # Try to find common patterns
@@ -257,9 +260,9 @@ Return ONLY valid JSON in this format:
 
         # Look for mission/about sections
         keywords = {
-            'mission': ['our mission', 'mission statement', 'our purpose'],
-            'culture': ['our culture', 'our values', 'work environment', 'company culture'],
-            'about': ['about us', 'who we are', 'what we do'],
+            "mission": ["our mission", "mission statement", "our purpose"],
+            "culture": ["our culture", "our values", "work environment", "company culture"],
+            "about": ["about us", "who we are", "what we do"],
         }
 
         for field, patterns in keywords.items():
@@ -267,16 +270,16 @@ Return ONLY valid JSON in this format:
                 if pattern in content_lower:
                     # Find the section and extract a snippet
                     start_idx = content_lower.find(pattern)
-                    snippet = content[start_idx:start_idx + 500]
+                    snippet = content[start_idx : start_idx + 500]
 
                     # Clean and truncate
-                    snippet = ' '.join(snippet.split())[:300]
+                    snippet = " ".join(snippet.split())[:300]
                     result[field] = snippet
                     break
 
         # If we found nothing, use first 300 chars as about
-        if not result['about'] and len(content) > 100:
-            result['about'] = content[:300].strip()
+        if not result["about"] and len(content) > 100:
+            result["about"] = content[:300].strip()
 
         return result
 

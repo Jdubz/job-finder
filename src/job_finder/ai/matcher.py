@@ -65,7 +65,9 @@ class AIJobMatcher:
         self.portland_office_bonus = portland_office_bonus
         self.prompts = JobMatchPrompts()
 
-    def analyze_job(self, job: Dict[str, Any], has_portland_office: bool = False) -> Optional[JobMatchResult]:
+    def analyze_job(
+        self, job: Dict[str, Any], has_portland_office: bool = False
+    ) -> Optional[JobMatchResult]:
         """
         Analyze a single job posting against the profile.
 
