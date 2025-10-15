@@ -16,7 +16,7 @@ repos:
     rev: 7.3.0
     hooks:
       - id: flake8
-        args: [--max-line-length=100, --extend-ignore=E203,W503]
+        args: ['--max-line-length=100', '--extend-ignore=E203,W503']
         exclude: ^(venv/|\.venv/|build/|dist/)
 
   # isort import sorting
@@ -49,3 +49,15 @@ repos:
         args: [-c, pyproject.toml]
         additional_dependencies: ["bandit[toml]"]
         exclude: ^tests/
+
+  # Type checking with mypy
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.16.0
+    hooks:
+      - id: mypy
+        additional_dependencies:
+          - pydantic>=2.10.0
+          - types-requests
+          - types-python-dateutil
+        args: [--config-file=pyproject.toml]
+        exclude: ^(tests/|venv/|\.venv/)

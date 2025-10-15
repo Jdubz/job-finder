@@ -361,10 +361,10 @@ class JobSearchOrchestrator:
         listing_name = listing.get("name", "Unknown")
 
         if source_type == "rss":
-            scraper = RSSJobScraper(
+            rss_scraper = RSSJobScraper(
                 config=self.config.get("scraping", {}), listing_config=listing.get("config", {})
             )
-            return scraper.scrape()
+            return rss_scraper.scrape()
 
         elif source_type == "greenhouse":
             greenhouse_config = {
@@ -372,8 +372,8 @@ class JobSearchOrchestrator:
                 "name": listing.get("name", "Unknown"),
                 "company_website": listing.get("company_website", ""),
             }
-            scraper = GreenhouseScraper(greenhouse_config)
-            return scraper.scrape()
+            greenhouse_scraper = GreenhouseScraper(greenhouse_config)
+            return greenhouse_scraper.scrape()
 
         elif source_type == "api":
             logger.warning(f"API scraping not yet implemented for {listing_name}")

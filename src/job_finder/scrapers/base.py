@@ -37,7 +37,7 @@ class BaseScraper(ABC):
         pass
 
     @abstractmethod
-    def parse_job(self, element: Any) -> Dict[str, Any]:
+    def parse_job(self, element: Any) -> Optional[Dict[str, Any]]:
         """
         Parse a single job posting element.
 
@@ -49,5 +49,6 @@ class BaseScraper(ABC):
             - title, company, company_website, location, description, url
             Optional fields:
             - company_info, posted_date, salary, keywords
+            Returns None if parsing fails.
         """
         pass
