@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """Debug script to see raw Firestore document structure."""
-import os
 import json
-from dotenv import load_dotenv
-from google.cloud import firestore as gcloud_firestore
-from firebase_admin import credentials
+import os
+
 import firebase_admin
+from dotenv import load_dotenv
+from firebase_admin import credentials
+from google.cloud import firestore as gcloud_firestore
 
 load_dotenv()
 

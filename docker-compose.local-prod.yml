@@ -15,9 +15,9 @@ services:
       # Environment Configuration
       - ENVIRONMENT=local-prod-test
 
-      # Database Overrides - USE STAGING FOR LOCAL TESTING
-      - PROFILE_DATABASE_NAME=portfolio-staging
-      - STORAGE_DATABASE_NAME=portfolio-staging
+      # Database Overrides - USE PRODUCTION
+      - PROFILE_DATABASE_NAME=portfolio
+      - STORAGE_DATABASE_NAME=portfolio
 
       # Config path
       - CONFIG_PATH=/app/config/config.yaml

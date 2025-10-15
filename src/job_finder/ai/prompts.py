@@ -1,6 +1,7 @@
 """Prompt templates for AI job matching and analysis."""
 
-from typing import Dict, Any, List
+from typing import Any, Dict, List
+
 from job_finder.profile.schema import Profile
 
 
@@ -152,6 +153,10 @@ class JobMatchPrompts:
         if profile.preferences:
             prefs = profile.preferences
             lines.append("## Job Search Preferences")
+
+            # Add Portland location preference (always include for visibility)
+            lines.append(f"**Location:** Portland, OR (prefers local or remote positions)")
+
             if prefs.desired_roles:
                 lines.append(f"**Desired Roles:** {', '.join(prefs.desired_roles)}")
             if prefs.remote_preference:
@@ -199,7 +204,10 @@ class JobMatchPrompts:
 **Salary:** {job.get('salary', 'Not specified')}
 **Description:**
 {job.get('description', 'N/A')}
-
+{f'''
+**Company Information:**
+{job.get('company_info', '')}
+''' if job.get('company_info') else ''}
 # Analysis Task
 
 Provide a thorough, accurate analysis of job fit. Be HONEST and REALISTIC - false positives waste the candidate's time.
@@ -222,34 +230,55 @@ For each requirement, check:
 - Have they used it in a professional setting (not just side projects)?
 - Do they have recent experience (within last 2-3 years)?
 
-## Step 3: Calculate Match Score (0-100)
+## Step 3: Calculate Match Score (0-100) - STRICT GRADING
 
-Use this formula:
+Use this formula with **EXTREMELY HIGH STANDARDS**:
 
 **Title Skills (50 points max):**
-- All title skills present at strong level: 50 points
-- Title skills present at moderate level: 30-40 points
-- Some title skills missing: 15-25 points
-- Most/all title skills missing: 0-10 points
+- ALL title skills at Expert/Advanced level (5+ years): 50 points
+- ALL title skills at Advanced level (3-5 years): 40 points
+- Title skills at Intermediate level (1-3 years): 20-25 points
+- Missing ANY title skill OR only beginner level: 0-10 points
 
 **Description Requirements (30 points max):**
-- 90%+ of required skills present: 30 points
-- 70-90% of required skills present: 20-25 points
-- 50-70% of required skills present: 10-15 points
-- <50% of required skills present: 0-5 points
+- 95%+ of REQUIRED skills present at strong level: 30 points
+- 85-95% of required skills present at strong level: 20 points
+- 70-85% of required skills present: 10 points
+- <70% of required skills present: 0-5 points
 
 **Experience Level Match (20 points max):**
-- Seniority perfectly aligned: 20 points
-- Slightly over/under qualified: 10-15 points
-- Significantly mismatched: 0-5 points
+- Seniority EXACTLY matches + domain experience: 20 points
+- Seniority matches but different domain: 15 points
+- One level off (e.g., Mid for Senior): 5-10 points
+- Two+ levels off OR seniority unclear: 0 points
 
-**CRITICAL RULES:**
+**CRITICAL RULES - STRICT ENFORCEMENT:**
 
-1. **Title Skills are Mandatory** - Missing ANY core technology from the title caps score at 40
-2. **Seniority Mismatch** - If job is "Senior" and candidate has 2 years experience, cap at 50
-3. **Domain Mismatch** - If job requires specific domain knowledge candidate lacks, reduce by 10-15 points
-4. **Salary Mismatch** - If salary is below candidate's minimum (if specified), reduce priority
-5. **Be Honest** - It's better to skip a bad match than waste time on applications
+1. **Title Skills are NON-NEGOTIABLE**
+   - Missing ANY core technology from title → MAXIMUM score = 30 (fails threshold)
+   - Title skill at beginner level → MAXIMUM score = 40
+
+2. **Seniority Strictly Enforced**
+   - Job says "Senior" (5+ years) but candidate has <4 years → MAXIMUM score = 45
+   - Job says "Staff/Principal" (8+ years) but candidate has <7 years → MAXIMUM score = 40
+   - Job says "Lead/Director" but candidate has no leadership experience → MAXIMUM score = 35
+
+3. **Domain Expertise Required**
+   - Job requires specific domain (fintech, healthcare, etc.) candidate lacks → Reduce by 15-20 points
+   - Job requires specific platform (e.g., AWS) candidate lacks → Reduce by 10-15 points
+
+4. **Recency Matters**
+   - Skill mentioned in title but not used in last 3 years → Reduce title score by 20 points
+   - Multiple outdated skills → Additional 10 point reduction
+
+5. **Buzzword Detection**
+   - If job is a generic "Full Stack Developer" with no specific tech → Can be more lenient
+   - If job lists 15+ technologies → Focus on 5-7 most important ones
+
+6. **Be BRUTALLY Honest**
+   - When in doubt, score LOWER
+   - Better to miss marginal matches than waste time on poor fits
+   - Only scores 80+ should pass threshold
 
 ## Step 4: Provide Analysis
 
@@ -261,30 +290,42 @@ Return detailed analysis in JSON format with:
 4. **experience_match**: Detailed explanation of experience level fit
 5. **key_strengths**: Top 3-5 specific reasons candidate is strong (be concrete, reference actual experience)
 6. **potential_concerns**: Honest assessment of gaps/weaknesses (be specific)
-7. **application_priority**: "High" (75-100), "Medium" (50-74), "Low" (0-49)
+7. **application_priority**: "High" (85-100), "Medium" (70-84), "Low" (0-69)
 8. **customization_recommendations**: Specific, actionable advice for tailoring application
 
-## Scoring Examples:
+## Scoring Examples (STRICT STANDARDS):
 
-**Example 1 - Perfect Match (Score: 90)**
-- Job: "Senior Python Developer"
-- Candidate: 6 years Python (expert), similar industry, all required skills present
+**Example 1 - Excellent Match (Score: 92) - HIGH PRIORITY**
+- Job: "Senior Python Developer" at fintech company
+- Candidate: 7 years Python (expert), 5 years in fintech, all required skills at advanced level
+- Title skills (50) + Description (30) + Experience (12) = 92
 
-**Example 2 - Good Match (Score: 75)**
+**Example 2 - Good Match (Score: 85) - HIGH PRIORITY**
 - Job: "React Frontend Engineer"
-- Candidate: 3 years React (advanced), missing 1-2 nice-to-have skills
+- Candidate: 5 years React (expert), 4 years JavaScript, missing 1 nice-to-have skill
+- Title skills (50) + Description (25) + Experience (10) = 85
 
-**Example 3 - Borderline (Score: 55)**
+**Example 3 - Decent Match (Score: 72) - MEDIUM PRIORITY**
+- Job: "Senior Full Stack Engineer (Python/React)"
+- Candidate: 6 years Python (expert), 2 years React (intermediate), senior title mismatch
+- Title skills (35) + Description (25) + Experience (12) = 72
+
+**Example 4 - Borderline (Score: 58) - FAILS THRESHOLD**
 - Job: "Full Stack Engineer (Python/React)"
-- Candidate: Strong Python (5 years), basic React (6 months)
+- Candidate: Strong Python (5 years expert), basic React (6 months beginner)
+- Title skills (25 - React too weak) + Description (20) + Experience (13) = 58
 
-**Example 4 - Poor Match (Score: 25)**
+**Example 5 - Poor Match (Score: 30) - FAILS THRESHOLD**
 - Job: ".NET Developer"
 - Candidate: Strong Python/JavaScript, NO .NET experience
+- Title skills (0 - missing .NET) + Description (20) + Experience (10) = 30 (capped)
 
-**Example 5 - Very Poor Match (Score: 10)**
-- Job: "Senior DevOps Engineer"
-- Candidate: Junior developer, no infrastructure experience
+**Example 6 - Very Poor Match (Score: 15) - FAILS THRESHOLD**
+- Job: "Senior DevOps Engineer (Kubernetes/AWS)"
+- Candidate: Junior developer with 2 years, no infrastructure or cloud experience
+- Title skills (0) + Description (5) + Experience (0) + Seniority cap = 15
+
+**Remember:** Only scores 80+ should realistically pass. Be harsh - candidate's time is valuable.
 
 Provide your analysis in the following JSON format:
 
@@ -349,7 +390,10 @@ Respond ONLY with valid JSON, no additional text.
 **Company:** {job.get('company', 'N/A')}
 **Description:**
 {job.get('description', 'N/A')}
-
+{f'''
+**Company Information:**
+{job.get('company_info', '')}
+''' if job.get('company_info') else ''}
 # Match Analysis
 
 **Match Score:** {match_analysis.get('match_score', 'N/A')}/100

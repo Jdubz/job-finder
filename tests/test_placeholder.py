@@ -18,8 +18,8 @@ def test_imports():
     """Test that main modules can be imported."""
     try:
         import job_finder
-        from job_finder.profile import schema, loader
         from job_finder.ai import matcher, providers
+        from job_finder.profile import loader, schema
         from job_finder.scrapers import base
         from job_finder.storage import firestore_storage, listings_manager
 

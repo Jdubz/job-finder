@@ -2,13 +2,14 @@
 
 import json
 import logging
-from typing import Dict, Any, List, Optional
+from typing import Any, Dict, List, Optional
+
 from pydantic import BaseModel, Field
 
-from job_finder.profile.schema import Profile
-from job_finder.ai.providers import AIProvider
 from job_finder.ai.prompts import JobMatchPrompts
-
+from job_finder.ai.providers import AIProvider
+from job_finder.profile.schema import Profile
+from job_finder.utils.date_utils import calculate_freshness_adjustment, parse_job_date
 
 logger = logging.getLogger(__name__)
 
@@ -46,6 +47,7 @@ class AIJobMatcher:
         profile: Profile,
         min_match_score: int = 50,
         generate_intake: bool = True,
+        portland_office_bonus: int = 15,
     ):
         """
         Initialize AI job matcher.
@@ -55,19 +57,24 @@ class AIJobMatcher:
             profile: User profile for matching.
             min_match_score: Minimum score threshold for a job to be considered a match.
             generate_intake: Whether to generate resume intake data for matched jobs.
+            portland_office_bonus: Bonus points to add for companies with Portland, OR offices.
         """
         self.provider = provider
         self.profile = profile
         self.min_match_score = min_match_score
         self.generate_intake = generate_intake
+        self.portland_office_bonus = portland_office_bonus
         self.prompts = JobMatchPrompts()
 
-    def analyze_job(self, job: Dict[str, Any]) -> Optional[JobMatchResult]:
+    def analyze_job(
+        self, job: Dict[str, Any], has_portland_office: bool = False
+    ) -> Optional[JobMatchResult]:
         """
         Analyze a single job posting against the profile.
 
         Args:
             job: Job posting dictionary with keys: title, company, location, description, url.
+            has_portland_office: Whether the company has a Portland, OR office.
 
         Returns:
             JobMatchResult if successful, None if analysis fails.
@@ -81,45 +88,131 @@ class AIJobMatcher:
                 logger.warning(f"Failed to analyze job: {job.get('title')}")
                 return None
 
-            # Check if score meets minimum threshold
-            match_score = match_analysis.get("match_score", 0)
+            # Step 2: Apply score adjustments (Portland office bonus, freshness multiplier, etc.)
+            match_score = self._calculate_adjusted_score(match_analysis, has_portland_office, job)
+
+            # Step 3: Check if adjusted score meets minimum threshold
             if match_score < self.min_match_score:
                 logger.info(
-                    f"Job {job.get('title')} scored {match_score}, below threshold {self.min_match_score}"
+                    f"Job {job.get('title')} scored {match_score}, "
+                    f"below threshold {self.min_match_score}"
                 )
                 return None
 
-            # Step 2: Generate resume intake data if enabled and score is high enough
+            # Step 4: Generate resume intake data if enabled
             intake_data = None
-            if self.generate_intake and match_score >= self.min_match_score:
+            if self.generate_intake:
                 intake_data = self._generate_intake_data(job, match_analysis)
 
-            # Build result
-            result = JobMatchResult(
-                job_title=job.get("title", ""),
-                job_company=job.get("company", ""),
-                job_url=job.get("url", ""),
-                match_score=match_score,
-                matched_skills=match_analysis.get("matched_skills", []),
-                missing_skills=match_analysis.get("missing_skills", []),
-                experience_match=match_analysis.get("experience_match", ""),
-                key_strengths=match_analysis.get("key_strengths", []),
-                potential_concerns=match_analysis.get("potential_concerns", []),
-                application_priority=match_analysis.get("application_priority", "Medium"),
-                customization_recommendations=match_analysis.get(
-                    "customization_recommendations", {}
-                ),
-                resume_intake_data=intake_data,
-            )
+            # Step 5: Build and return result
+            result = self._build_match_result(job, match_analysis, match_score, intake_data)
 
             logger.info(
-                f"Successfully analyzed {job.get('title')} - Score: {match_score}, Priority: {result.application_priority}"
+                f"Successfully analyzed {job.get('title')} - "
+                f"Score: {match_score}, Priority: {result.application_priority}"
             )
             return result
 
         except Exception as e:
             logger.error(f"Error analyzing job {job.get('title', 'unknown')}: {str(e)}")
             return None
+
+    def _calculate_adjusted_score(
+        self, match_analysis: Dict[str, Any], has_portland_office: bool, job: Dict[str, Any]
+    ) -> int:
+        """
+        Calculate adjusted match score with bonuses and adjustments applied.
+
+        Args:
+            match_analysis: Raw match analysis from AI
+            has_portland_office: Whether company has Portland, OR office
+            job: Job dictionary with posted_date and other fields
+
+        Returns:
+            Adjusted match score (clamped to 0-100)
+        """
+        base_score = match_analysis.get("match_score", 0)
+        match_score = base_score
+        adjustments = []
+
+        # Apply Portland office bonus
+        if has_portland_office and self.portland_office_bonus > 0:
+            match_score += self.portland_office_bonus
+            adjustments.append(f"🏙️ Portland office: +{self.portland_office_bonus}")
+
+        # Apply freshness adjustment
+        posted_date_str = job.get("posted_date", "")
+        if posted_date_str:
+            posted_date = parse_job_date(posted_date_str)
+            freshness_adj = calculate_freshness_adjustment(posted_date)
+            match_score += freshness_adj
+            if freshness_adj > 0:
+                adjustments.append(f"🆕 Fresh job: +{freshness_adj}")
+            elif freshness_adj < 0:
+                adjustments.append(f"📅 Job age: {freshness_adj}")
+        else:
+            # No date info penalty
+            freshness_adj = calculate_freshness_adjustment(None)
+            match_score += freshness_adj
+            adjustments.append(f"❓ No date info: {freshness_adj}")
+
+        # Clamp score to valid range (0-100)
+        match_score = max(0, min(100, match_score))
+
+        # Log adjustments if any were made
+        if adjustments:
+            logger.info(
+                f"  Score adjustments: {', '.join(adjustments)} "
+                f"(Base: {base_score} → Final: {match_score})"
+            )
+
+        # Recalculate priority tier based on adjusted score
+        if match_score >= 75:
+            priority = "High"
+        elif match_score >= 50:
+            priority = "Medium"
+        else:
+            priority = "Low"
+
+        # Override AI's priority with our calculated one (if score changed)
+        if base_score != match_score:
+            match_analysis["application_priority"] = priority
+
+        return match_score
+
+    def _build_match_result(
+        self,
+        job: Dict[str, Any],
+        match_analysis: Dict[str, Any],
+        match_score: int,
+        intake_data: Optional[Dict[str, Any]],
+    ) -> JobMatchResult:
+        """
+        Build JobMatchResult from job data and analysis.
+
+        Args:
+            job: Job posting dictionary
+            match_analysis: Match analysis from AI
+            match_score: Adjusted match score
+            intake_data: Resume intake data (optional)
+
+        Returns:
+            JobMatchResult object
+        """
+        return JobMatchResult(
+            job_title=job.get("title", ""),
+            job_company=job.get("company", ""),
+            job_url=job.get("url", ""),
+            match_score=match_score,
+            matched_skills=match_analysis.get("matched_skills", []),
+            missing_skills=match_analysis.get("missing_skills", []),
+            experience_match=match_analysis.get("experience_match", ""),
+            key_strengths=match_analysis.get("key_strengths", []),
+            potential_concerns=match_analysis.get("potential_concerns", []),
+            application_priority=match_analysis.get("application_priority", "Medium"),
+            customization_recommendations=match_analysis.get("customization_recommendations", {}),
+            resume_intake_data=intake_data,
+        )
 
     def analyze_jobs(self, jobs: List[Dict[str, Any]]) -> List[JobMatchResult]:
         """

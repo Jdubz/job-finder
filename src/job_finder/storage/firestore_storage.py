@@ -1,16 +1,12 @@
 """Store job matches and analysis in Firestore."""
 
 import logging
-from datetime import datetime
-from typing import Dict, Any, List, Optional
-from pathlib import Path
-import os
+from typing import Any, Dict, List, Optional
 
-import firebase_admin
-from firebase_admin import credentials
 from google.cloud import firestore as gcloud_firestore
 
 from job_finder.ai.matcher import JobMatchResult
+from job_finder.storage.firestore_client import FirestoreClient
 
 logger = logging.getLogger(__name__)
 
@@ -29,44 +25,7 @@ class FirestoreJobStorage:
             database_name: Firestore database name (default: "portfolio-staging").
         """
         self.database_name = database_name
-        self.db: Optional[gcloud_firestore.Client] = None
-
-        # Get credentials path
-        creds_path = credentials_path or os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
-
-        if not creds_path:
-            raise ValueError(
-                "Firebase credentials not found. Set GOOGLE_APPLICATION_CREDENTIALS "
-                "environment variable or pass credentials_path parameter."
-            )
-
-        if not Path(creds_path).exists():
-            raise FileNotFoundError(f"Credentials file not found: {creds_path}")
-
-        # Initialize Firebase Admin if not already initialized
-        try:
-            try:
-                firebase_admin.get_app()
-                logger.info("Using existing Firebase app")
-            except ValueError:
-                cred = credentials.Certificate(creds_path)
-                firebase_admin.initialize_app(cred)
-                logger.info("Initialized new Firebase app")
-
-            # Get credentials for project ID
-            cred = credentials.Certificate(creds_path)
-            project_id = cred.project_id
-
-            # Connect to named database
-            if database_name == "(default)":
-                self.db = gcloud_firestore.Client(project=project_id)
-            else:
-                self.db = gcloud_firestore.Client(project=project_id, database=database_name)
-
-            logger.info(f"Connected to Firestore database: {database_name} in project {project_id}")
-
-        except Exception as e:
-            raise RuntimeError(f"Failed to initialize Firestore: {str(e)}") from e
+        self.db = FirestoreClient.get_client(database_name, credentials_path)
 
     def _extract_role_from_title(self, title: str) -> str:
         """
@@ -166,8 +125,16 @@ class FirestoreJobStorage:
             )
             return doc_id
 
+        except (RuntimeError, ValueError, AttributeError) as e:
+            # Firestore errors, validation errors, or missing data
+            logger.error(f"Error saving job match (database/validation): {str(e)}")
+            raise
         except Exception as e:
-            logger.error(f"Error saving job match: {str(e)}")
+            # Unexpected errors - log with traceback and re-raise
+            logger.error(
+                f"Unexpected error saving job match ({type(e).__name__}): {str(e)}",
+                exc_info=True,
+            )
             raise
 
     def update_document_generated(self, doc_id: str, document_url: str) -> None:
@@ -192,8 +159,16 @@ class FirestoreJobStorage:
             )
             logger.info(f"Updated job match {doc_id} - document generated")
 
+        except (RuntimeError, ValueError) as e:
+            # Firestore errors or invalid document ID
+            logger.error(f"Error updating job match (database): {str(e)}")
+            raise
         except Exception as e:
-            logger.error(f"Error updating job match: {str(e)}")
+            # Unexpected errors - log with traceback and re-raise
+            logger.error(
+                f"Unexpected error updating job match ({type(e).__name__}): {str(e)}",
+                exc_info=True,
+            )
             raise
 
     def update_status(self, doc_id: str, status: str, notes: Optional[str] = None) -> None:
@@ -224,8 +199,16 @@ class FirestoreJobStorage:
             self.db.collection("job-matches").document(doc_id).update(update_data)
             logger.info(f"Updated job match {doc_id} - status: {status}")
 
+        except (RuntimeError, ValueError) as e:
+            # Firestore errors or invalid status/document ID
+            logger.error(f"Error updating job match status (database): {str(e)}")
+            raise
         except Exception as e:
-            logger.error(f"Error updating job match status: {str(e)}")
+            # Unexpected errors - log with traceback and re-raise
+            logger.error(
+                f"Unexpected error updating job match status ({type(e).__name__}): {str(e)}",
+                exc_info=True,
+            )
             raise
 
     def get_job_matches(
@@ -277,8 +260,16 @@ class FirestoreJobStorage:
             logger.info(f"Retrieved {len(matches)} job matches")
             return matches
 
+        except (RuntimeError, ValueError) as e:
+            # Firestore query errors or invalid parameters
+            logger.error(f"Error querying job matches (database): {str(e)}")
+            raise
         except Exception as e:
-            logger.error(f"Error querying job matches: {str(e)}")
+            # Unexpected errors - log with traceback and re-raise
+            logger.error(
+                f"Unexpected error querying job matches ({type(e).__name__}): {str(e)}",
+                exc_info=True,
+            )
             raise
 
     def job_exists(self, job_url: str, user_id: Optional[str] = None) -> bool:
@@ -306,8 +297,16 @@ class FirestoreJobStorage:
 
             return len(docs) > 0
 
+        except (RuntimeError, ValueError) as e:
+            # Firestore query errors - return False (job doesn't exist)
+            logger.error(f"Error checking job existence (database): {str(e)}")
+            return False
         except Exception as e:
-            logger.error(f"Error checking job existence: {str(e)}")
+            # Unexpected errors - log with warning and return False
+            logger.warning(
+                f"Unexpected error checking job existence ({type(e).__name__}): {str(e)}",
+                exc_info=True,
+            )
             return False
 
     def batch_check_exists(
@@ -355,7 +354,14 @@ class FirestoreJobStorage:
 
             return exists_map
 
+        except (RuntimeError, ValueError) as e:
+            # Firestore query errors - return all as non-existing
+            logger.error(f"Error batch checking job existence (database): {str(e)}")
+            return {url: False for url in job_urls}
         except Exception as e:
-            logger.error(f"Error batch checking job existence: {str(e)}")
-            # Return all as non-existing on error
+            # Unexpected errors - log with warning and return all as non-existing
+            logger.warning(
+                f"Unexpected error batch checking job existence ({type(e).__name__}): {str(e)}",
+                exc_info=True,
+            )
             return {url: False for url in job_urls}

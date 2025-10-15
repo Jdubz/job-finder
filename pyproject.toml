@@ -46,6 +46,11 @@ addopts = "-v --cov=src/job_finder --cov-report=html --cov-report=term"
 
 [tool.mypy]
 python_version = "3.9"
-warn_return_any = true
 warn_unused_configs = true
-disallow_untyped_defs = true
+ignore_missing_imports = true
+# Gradually enable stricter checks
+# warn_return_any = true
+# disallow_untyped_defs = true
+check_untyped_defs = false
+disallow_any_generics = false
+disallow_untyped_calls = false

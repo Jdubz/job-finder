@@ -4,12 +4,13 @@ Job search scheduler - runs periodic job searches.
 
 This script is designed to be run by cron or as a standalone daemon.
 """
+import logging
 import os
 import sys
-import yaml
-import logging
 from datetime import datetime
 from pathlib import Path
+
+import yaml
 
 # Add src to Python path
 sys.path.insert(0, str(Path(__file__).parent))
@@ -17,14 +18,11 @@ sys.path.insert(0, str(Path(__file__).parent))
 from job_finder.search_orchestrator import JobSearchOrchestrator
 
 # Configure logging
-log_file = os.getenv('LOG_FILE', '/app/logs/scheduler.log')
+log_file = os.getenv("LOG_FILE", "/app/logs/scheduler.log")
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler(log_file),
-        logging.StreamHandler()
-    ]
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    handlers=[logging.FileHandler(log_file), logging.StreamHandler()],
 )
 logger = logging.getLogger(__name__)
 
@@ -37,14 +35,14 @@ def run_scheduled_search():
         logger.info("=" * 70)
 
         # Load configuration
-        config_path = os.getenv('CONFIG_PATH', '/app/config/config.yaml')
+        config_path = os.getenv("CONFIG_PATH", "/app/config/config.yaml")
         logger.info(f"Loading configuration from: {config_path}")
 
         if not Path(config_path).exists():
             logger.error(f"Configuration file not found: {config_path}")
             return 1
 
-        with open(config_path, 'r') as f:
+        with open(config_path, "r") as f:
             config = yaml.safe_load(f)
 
         logger.info("Configuration loaded successfully")

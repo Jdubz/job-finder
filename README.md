@@ -151,11 +151,36 @@ The `resume_intake_data` can be fed directly into resume generation systems.
 
 ## Development
 
+### Setup Development Environment
+
 Install development dependencies:
 ```bash
 pip install -r requirements.txt
-pip install -e ".[dev]"
 ```
+
+### Pre-commit Hooks (Recommended)
+
+Install pre-commit hooks to automatically check code before commits:
+```bash
+pip install pre-commit
+pre-commit install
+```
+
+This will automatically run on every commit:
+- **black**: Code formatting
+- **isort**: Import sorting
+- **flake8**: Linting
+- **bandit**: Security checks
+- **trailing whitespace**: Remove trailing spaces
+- **end-of-file-fixer**: Ensure files end with newline
+- **check-yaml**: Validate YAML syntax
+
+Run manually on all files:
+```bash
+pre-commit run --all-files
+```
+
+### Manual Code Quality Checks
 
 Run tests:
 ```bash
@@ -167,6 +192,11 @@ Format code:
 black src/ tests/
 ```
 
+Sort imports:
+```bash
+isort src/ tests/
+```
+
 Run linter:
 ```bash
 flake8 src/ tests/
@@ -175,6 +205,11 @@ flake8 src/ tests/
 Type checking:
 ```bash
 mypy src/
+```
+
+Security check:
+```bash
+bandit -r src/
 ```
 
 ## Project Structure

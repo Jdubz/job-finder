@@ -180,6 +180,15 @@ This intake data can be fed into resume generation systems to create tailored re
 
 Configure provider in `config/config.yaml` under the `ai` section.
 
+**Scoring Configuration:**
+The system uses strict matching criteria with a minimum score threshold of 80 points (0-100 scale). Jobs at companies with Portland offices receive a +15 bonus, effectively lowering the threshold to 65 for local opportunities. Priority tiers are: High (85-100), Medium (70-84), Low (0-69). Scoring heavily weights exact title skill matches at Expert/Advanced levels and requires 95%+ of required skills for full points.
+
+**Company Information Fetching:**
+The `CompanyInfoFetcher` (src/job_finder/company_info_fetcher.py) automatically scrapes company websites for about/culture/mission information and caches it in Firestore via `CompaniesManager` (src/job_finder/storage/companies_manager.py). This information is included in AI job analysis prompts to provide better context for cultural fit assessment. The system uses AI extraction with heuristics fallback and smart caching (only re-fetches if cached data is sparse).
+
+**Company Scraping Prioritization:**
+Job listing sources are scored to prioritize scraping: Portland office (+50 points), tech stack alignment (up to 100 points based on user expertise), and company attributes like remote-first (+15) or AI/ML focus (+10). Companies are grouped into tiers: S (150+), A (100-149), B (70-99), C (50-69), D (0-49), with higher-tier companies scraped more frequently in rotation.
+
 ### Profile System
 
 User profiles are managed through Pydantic models in `src/job_finder/profile/schema.py`:

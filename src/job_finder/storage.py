@@ -1,9 +1,9 @@
 """Storage handlers for job postings."""
 
-import json
 import csv
+import json
 from pathlib import Path
-from typing import List, Dict, Any
+from typing import Any, Dict, List
 
 
 class JobStorage:

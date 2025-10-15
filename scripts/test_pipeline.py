@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 """Test the complete AI job matching pipeline with a real job posting."""
-import os
 import json
+import os
+
 from dotenv import load_dotenv
-from job_finder.profile import FirestoreProfileLoader
+
 from job_finder.ai import AIJobMatcher
 from job_finder.ai.providers import create_provider
+from job_finder.profile import FirestoreProfileLoader
 
 # Load environment variables
 load_dotenv()
@@ -54,7 +56,7 @@ Compensation Range: $100,000 - $720,000 annually
 Netflix emphasizes a unique culture of collaboration, high-impact work,
 and continuous feedback.
     """.strip(),
-    "keywords": []  # Will be populated by AI analysis from keywords_to_include
+    "keywords": [],  # Will be populated by AI analysis from keywords_to_include
 }
 
 print("\n📋 JOB POSTING")
@@ -72,10 +74,7 @@ print("🔄 STEP 1: Loading profile from Firestore...")
 print("-" * 70)
 try:
     loader = FirestoreProfileLoader(database_name="portfolio")
-    profile = loader.load_profile(
-        name="Josh Wentworth",
-        email="Contact@joshwentworth.com"
-    )
+    profile = loader.load_profile(name="Josh Wentworth", email="Contact@joshwentworth.com")
     print(f"✓ Profile loaded: {profile.name}")
     print(f"  - {len(profile.experience)} experience entries")
     print(f"  - {len(profile.skills)} skills")
@@ -99,10 +98,7 @@ print("\n🎯 STEP 3: Creating AI job matcher...")
 print("-" * 70)
 try:
     matcher = AIJobMatcher(
-        provider=provider,
-        profile=profile,
-        min_match_score=70,
-        generate_intake=True
+        provider=provider, profile=profile, min_match_score=70, generate_intake=True
     )
     print("✓ AI matcher created")
     print(f"  - Min match score: 70")
@@ -157,41 +153,45 @@ try:
             print(f"  {intake.get('target_summary', 'N/A')[:200]}...")
 
             print(f"\n⭐ Top Skills to Emphasize:")
-            for skill in intake.get('skills_priority', [])[:8]:
+            for skill in intake.get("skills_priority", [])[:8]:
                 print(f"  • {skill}")
 
             print(f"\n📌 Experience Highlights:")
-            for exp in intake.get('experience_highlights', [])[:3]:
+            for exp in intake.get("experience_highlights", [])[:3]:
                 print(f"  • {exp.get('company', 'N/A')}: {exp.get('title', 'N/A')}")
-                for point in exp.get('points_to_emphasize', [])[:2]:
+                for point in exp.get("points_to_emphasize", [])[:2]:
                     print(f"    - {point}")
 
             print(f"\n🔑 Keywords to Include:")
-            keywords = intake.get('keywords_to_include', [])
+            keywords = intake.get("keywords_to_include", [])
             print(f"  {', '.join(keywords[:15])}")
             if len(keywords) > 15:
                 print(f"  ... and {len(keywords) - 15} more")
 
             # Populate keywords field in job dictionary from AI analysis
-            netflix_job['keywords'] = keywords
+            netflix_job["keywords"] = keywords
 
             # Save full results
             output_file = "data/netflix_analysis.json"
-            with open(output_file, 'w') as f:
-                json.dump({
-                    "job": netflix_job,
-                    "analysis": {
-                        "match_score": result.match_score,
-                        "matched_skills": result.matched_skills,
-                        "missing_skills": result.missing_skills,
-                        "experience_match": result.experience_match,
-                        "key_strengths": result.key_strengths,
-                        "potential_concerns": result.potential_concerns,
-                        "application_priority": result.application_priority,
-                        "customization_recommendations": result.customization_recommendations,
-                        "resume_intake_data": result.resume_intake_data,
-                    }
-                }, f, indent=2)
+            with open(output_file, "w") as f:
+                json.dump(
+                    {
+                        "job": netflix_job,
+                        "analysis": {
+                            "match_score": result.match_score,
+                            "matched_skills": result.matched_skills,
+                            "missing_skills": result.missing_skills,
+                            "experience_match": result.experience_match,
+                            "key_strengths": result.key_strengths,
+                            "potential_concerns": result.potential_concerns,
+                            "application_priority": result.application_priority,
+                            "customization_recommendations": result.customization_recommendations,
+                            "resume_intake_data": result.resume_intake_data,
+                        },
+                    },
+                    f,
+                    indent=2,
+                )
 
             print(f"\n💾 Full analysis saved to: {output_file}")
 
@@ -217,5 +217,6 @@ try:
 except Exception as e:
     print(f"\n✗ Error during analysis: {str(e)}")
     import traceback
+
     traceback.print_exc()
     exit(1)

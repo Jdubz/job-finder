@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 """Run a full job search using configured sources."""
 import os
+
 import yaml
 from dotenv import load_dotenv
-from job_finder.search_orchestrator import JobSearchOrchestrator
+
 from job_finder.logging_config import setup_logging
+from job_finder.search_orchestrator import JobSearchOrchestrator
 
 # Load environment variables first
 load_dotenv()

@@ -2,11 +2,17 @@
 
 import logging
 import re
-from typing import List, Dict, Any
+from typing import Any, Dict, List
+
 import feedparser
-from datetime import datetime
 
 from job_finder.scrapers.base import BaseScraper
+from job_finder.scrapers.text_sanitizer import (
+    sanitize_company_name,
+    sanitize_html_description,
+    sanitize_title,
+)
+from job_finder.utils.date_utils import parse_job_date
 
 logger = logging.getLogger(__name__)
 
@@ -104,28 +110,41 @@ class RSSJobScraper(BaseScraper):
         # Extract location
         location = self._extract_location(title, description)
 
-        # Get posted date
-        posted_date = ""
+        # Get and parse posted date
+        posted_date_str = ""
+        posted_date_raw = None
         if hasattr(entry, "published"):
-            posted_date = entry.published
+            posted_date_raw = entry.published
         elif hasattr(entry, "updated"):
-            posted_date = entry.updated
+            posted_date_raw = entry.updated
+
+        # Parse date to datetime and convert to ISO format
+        if posted_date_raw:
+            parsed_date = parse_job_date(posted_date_raw)
+            if parsed_date:
+                posted_date_str = parsed_date.isoformat()
+            else:
+                # Keep raw string if parsing fails
+                posted_date_str = posted_date_raw
 
         # Extract salary if present
         salary = self._extract_salary(title, description)
 
-        # Clean HTML from description
-        description = self._clean_html(description)
+        # Sanitize all text fields
+        title_clean = self._clean_title(title, company)
+        title_clean = sanitize_title(title_clean)
+        company_clean = sanitize_company_name(company or "Unknown")
+        description_clean = sanitize_html_description(description)
 
         job = {
-            "title": self._clean_title(title, company),
-            "company": company or "Unknown",
+            "title": title_clean,
+            "company": company_clean,
             "company_website": "",  # Will be populated later if available
             "company_info": "",  # Will be populated later if available
             "location": location,
-            "description": description,
+            "description": description_clean,
             "url": url,
-            "posted_date": posted_date,
+            "posted_date": posted_date_str,  # ISO format datetime string
             "salary": salary,
             "keywords": [],  # Will be populated by AI
         }
@@ -231,21 +250,3 @@ class RSSJobScraper(BaseScraper):
                 return match.group(0)
 
         return ""
-
-    def _clean_html(self, text: str) -> str:
-        """Remove HTML tags and clean up text."""
-        # Remove HTML tags
-        text = re.sub(r"<[^>]+>", "", text)
-
-        # Decode HTML entities
-        text = text.replace("&amp;", "&")
-        text = text.replace("&lt;", "<")
-        text = text.replace("&gt;", ">")
-        text = text.replace("&quot;", '"')
-        text = text.replace("&#39;", "'")
-        text = text.replace("&nbsp;", " ")
-
-        # Clean up whitespace
-        text = re.sub(r"\s+", " ", text)
-
-        return text.strip()
