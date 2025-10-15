@@ -1,14 +1,11 @@
 """Manage job source listings in Firestore."""
 
 import logging
-from datetime import datetime
-from typing import Dict, Any, List, Optional
-from pathlib import Path
-import os
+from typing import Any, Dict, List, Optional
 
-import firebase_admin
-from firebase_admin import credentials
 from google.cloud import firestore as gcloud_firestore
+
+from .firestore_client import FirestoreClient
 
 logger = logging.getLogger(__name__)
 
@@ -27,44 +24,7 @@ class JobListingsManager:
             database_name: Firestore database name (default: "portfolio-staging").
         """
         self.database_name = database_name
-        self.db: Optional[gcloud_firestore.Client] = None
-
-        # Get credentials path
-        creds_path = credentials_path or os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
-
-        if not creds_path:
-            raise ValueError(
-                "Firebase credentials not found. Set GOOGLE_APPLICATION_CREDENTIALS "
-                "environment variable or pass credentials_path parameter."
-            )
-
-        if not Path(creds_path).exists():
-            raise FileNotFoundError(f"Credentials file not found: {creds_path}")
-
-        # Initialize Firebase Admin if not already initialized
-        try:
-            try:
-                firebase_admin.get_app()
-                logger.info("Using existing Firebase app")
-            except ValueError:
-                cred = credentials.Certificate(creds_path)
-                firebase_admin.initialize_app(cred)
-                logger.info("Initialized new Firebase app")
-
-            # Get credentials for project ID
-            cred = credentials.Certificate(creds_path)
-            project_id = cred.project_id
-
-            # Connect to named database
-            if database_name == "(default)":
-                self.db = gcloud_firestore.Client(project=project_id)
-            else:
-                self.db = gcloud_firestore.Client(project=project_id, database=database_name)
-
-            logger.info(f"Connected to Firestore database: {database_name} in project {project_id}")
-
-        except Exception as e:
-            raise RuntimeError(f"Failed to initialize Firestore: {str(e)}") from e
+        self.db = FirestoreClient.get_client(database_name, credentials_path)
 
     def add_listing(
         self,
@@ -170,8 +130,16 @@ class JobListingsManager:
             logger.info(f"Added job listing: {name} ({source_type}) - ID: {doc_id}")
             return doc_id
 
+        except (RuntimeError, ValueError, AttributeError) as e:
+            # Firestore errors, validation errors, or missing data
+            logger.error(f"Error adding job listing (database/validation): {str(e)}")
+            raise
         except Exception as e:
-            logger.error(f"Error adding job listing: {str(e)}")
+            # Unexpected errors - log with traceback and re-raise
+            logger.error(
+                f"Unexpected error adding job listing ({type(e).__name__}): {str(e)}",
+                exc_info=True,
+            )
             raise
 
     def get_active_listings(
@@ -218,8 +186,16 @@ class JobListingsManager:
             logger.info(f"Retrieved {len(listings)} active job listings")
             return listings
 
+        except (RuntimeError, ValueError, AttributeError) as e:
+            # Firestore query errors or data access issues
+            logger.error(f"Error getting job listings (database): {str(e)}")
+            raise
         except Exception as e:
-            logger.error(f"Error getting job listings: {str(e)}")
+            # Unexpected errors - log with traceback and re-raise
+            logger.error(
+                f"Unexpected error getting job listings ({type(e).__name__}): {str(e)}",
+                exc_info=True,
+            )
             raise
 
     def update_scrape_status(
@@ -265,8 +241,16 @@ class JobListingsManager:
             self.db.collection("job-listings").document(doc_id).update(update_data)
             logger.info(f"Updated listing {doc_id} - status: {status}")
 
+        except (RuntimeError, ValueError) as e:
+            # Firestore errors or invalid document ID
+            logger.error(f"Error updating listing status (database): {str(e)}")
+            raise
         except Exception as e:
-            logger.error(f"Error updating listing status: {str(e)}")
+            # Unexpected errors - log with traceback and re-raise
+            logger.error(
+                f"Unexpected error updating listing status ({type(e).__name__}): {str(e)}",
+                exc_info=True,
+            )
             raise
 
     def disable_listing(self, doc_id: str) -> None:
@@ -283,8 +267,16 @@ class JobListingsManager:
             )
             logger.info(f"Disabled listing {doc_id}")
 
+        except (RuntimeError, ValueError) as e:
+            # Firestore errors or invalid document ID
+            logger.error(f"Error disabling listing (database): {str(e)}")
+            raise
         except Exception as e:
-            logger.error(f"Error disabling listing: {str(e)}")
+            # Unexpected errors - log with traceback and re-raise
+            logger.error(
+                f"Unexpected error disabling listing ({type(e).__name__}): {str(e)}",
+                exc_info=True,
+            )
             raise
 
     def enable_listing(self, doc_id: str) -> None:
@@ -301,6 +293,14 @@ class JobListingsManager:
             )
             logger.info(f"Enabled listing {doc_id}")
 
+        except (RuntimeError, ValueError) as e:
+            # Firestore errors or invalid document ID
+            logger.error(f"Error enabling listing (database): {str(e)}")
+            raise
         except Exception as e:
-            logger.error(f"Error enabling listing: {str(e)}")
+            # Unexpected errors - log with traceback and re-raise
+            logger.error(
+                f"Unexpected error enabling listing ({type(e).__name__}): {str(e)}",
+                exc_info=True,
+            )
             raise

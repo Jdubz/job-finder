@@ -1,15 +1,12 @@
 """Load profile data from Firestore database."""
 
-import os
 import logging
-from typing import Dict, Any, List, Optional
-from pathlib import Path
+from typing import Any, Dict, List, Optional
 
-import firebase_admin
-from firebase_admin import credentials
 from google.cloud import firestore as gcloud_firestore
 
-from job_finder.profile.schema import Profile, Experience, Education, Skill
+from job_finder.profile.schema import Experience, Profile, Skill
+from job_finder.storage.firestore_client import FirestoreClient
 
 logger = logging.getLogger(__name__)
 
@@ -27,48 +24,7 @@ class FirestoreProfileLoader:
             database_name: Firestore database name (default: "portfolio").
         """
         self.database_name = database_name
-        self.db: Optional[gcloud_firestore.Client] = None
-
-        # Get credentials path
-        creds_path = credentials_path or os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
-
-        if not creds_path:
-            raise ValueError(
-                "Firebase credentials not found. Set GOOGLE_APPLICATION_CREDENTIALS "
-                "environment variable or pass credentials_path parameter."
-            )
-
-        if not Path(creds_path).exists():
-            raise FileNotFoundError(f"Credentials file not found: {creds_path}")
-
-        # Initialize Firebase Admin
-        try:
-            # Load credentials for project ID (needed regardless of initialization status)
-            cred = credentials.Certificate(creds_path)
-
-            # Check if already initialized
-            try:
-                firebase_admin.get_app()
-                logger.info("Using existing Firebase app")
-            except ValueError:
-                # Initialize new app
-                firebase_admin.initialize_app(cred)
-                logger.info("Initialized new Firebase app")
-
-            # Get Firestore client for the specified database
-            # Use google-cloud-firestore Client directly to support named databases
-            project_id = cred.project_id
-
-            if database_name == "(default)":
-                self.db = gcloud_firestore.Client(project=project_id)
-            else:
-                # Connect to named database
-                self.db = gcloud_firestore.Client(project=project_id, database=database_name)
-
-            logger.info(f"Connected to Firestore database: {database_name} in project {project_id}")
-
-        except Exception as e:
-            raise RuntimeError(f"Failed to initialize Firestore: {str(e)}") from e
+        self.db = FirestoreClient.get_client(database_name, credentials_path)
 
     def load_profile(
         self, user_id: Optional[str] = None, name: Optional[str] = None, email: Optional[str] = None
@@ -114,7 +70,8 @@ class FirestoreProfileLoader:
         )
 
         logger.info(
-            f"Successfully loaded profile with {len(experiences)} experiences and {len(skills)} skills"
+            f"Successfully loaded profile with {len(experiences)} experiences "
+            f"and {len(skills)} skills"
         )
         return profile
 
@@ -158,12 +115,20 @@ class FirestoreProfileLoader:
                     responsibilities=[],  # Not stored separately in Firestore
                     achievements=[],  # Not stored separately in Firestore
                     technologies=technologies,
-                    is_current=data.get("endDate") is None or data.get("endDate") == "",
+                    is_current=(data.get("endDate") is None or data.get("endDate") == ""),
                 )
                 experiences.append(experience)
 
+        except (RuntimeError, ValueError, AttributeError, KeyError) as e:
+            # Firestore query errors, validation errors, or missing data fields
+            logger.error(f"Error loading experiences (database/validation): {str(e)}")
+            raise
         except Exception as e:
-            logger.error(f"Error loading experiences: {str(e)}")
+            # Unexpected errors - log with traceback and re-raise
+            logger.error(
+                f"Unexpected error loading experiences ({type(e).__name__}): {str(e)}",
+                exc_info=True,
+            )
             raise
 
         return experiences
@@ -200,8 +165,9 @@ class FirestoreProfileLoader:
     def _load_experience_blurbs(self, user_id: Optional[str] = None) -> List[Dict[str, Any]]:
         """Load experience blurbs from Firestore.
 
-        Note: These are content sections (biography, education, etc.) for the portfolio website,
-        not skill data. We keep this for potential summary generation but don't extract skills from it.
+        Note: These are content sections (biography, education, etc.) for the
+        portfolio website, not skill data. We keep this for potential summary
+        generation but don't extract skills from it.
         """
         blurbs = []
 
@@ -217,8 +183,16 @@ class FirestoreProfileLoader:
                 data = doc.to_dict()
                 blurbs.append(data)
 
+        except (RuntimeError, ValueError, AttributeError) as e:
+            # Firestore query errors or data access issues
+            logger.error(f"Error loading experience blurbs (database): {str(e)}")
+            raise
         except Exception as e:
-            logger.error(f"Error loading experience blurbs: {str(e)}")
+            # Unexpected errors - log with traceback and re-raise
+            logger.error(
+                f"Unexpected error loading experience blurbs ({type(e).__name__}): {str(e)}",
+                exc_info=True,
+            )
             raise
 
         return blurbs
@@ -278,7 +252,13 @@ class FirestoreProfileLoader:
         # Firebase Admin SDK doesn't require explicit closing
         # But we can delete the app if needed
         try:
+            import firebase_admin
+
             firebase_admin.delete_app(firebase_admin.get_app())
             logger.info("Closed Firebase connection")
+        except (RuntimeError, ValueError) as e:
+            # Firebase app errors or not initialized - graceful degradation
+            logger.debug(f"Error closing Firebase (app error): {str(e)}")
         except Exception as e:
-            logger.debug(f"Error closing Firebase: {str(e)}")
+            # Unexpected errors - log at debug level (non-critical operation)
+            logger.debug(f"Unexpected error closing Firebase ({type(e).__name__}): {str(e)}")

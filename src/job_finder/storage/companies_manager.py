@@ -1,9 +1,10 @@
 """Firestore companies collection manager."""
 
 import logging
-from typing import Dict, Any, Optional
 from datetime import datetime
-from google.cloud import firestore
+from typing import Any, Dict, Optional
+
+from .firestore_client import FirestoreClient
 
 logger = logging.getLogger(__name__)
 
@@ -11,14 +12,15 @@ logger = logging.getLogger(__name__)
 class CompaniesManager:
     """Manages company information in Firestore."""
 
-    def __init__(self, database_name: str = "portfolio"):
+    def __init__(self, credentials_path: Optional[str] = None, database_name: str = "portfolio"):
         """
         Initialize companies manager.
 
         Args:
+            credentials_path: Path to Firebase service account JSON (optional).
             database_name: Firestore database name
         """
-        self.db = firestore.Client(database=database_name)
+        self.db = FirestoreClient.get_client(database_name, credentials_path)
         self.collection_name = "companies"
 
     def get_company(self, company_name: str) -> Optional[Dict[str, Any]]:
@@ -47,8 +49,16 @@ class CompaniesManager:
 
             return None
 
+        except (RuntimeError, ValueError, AttributeError) as e:
+            # Firestore query errors or data access issues
+            logger.error(f"Error getting company {company_name} (database): {e}")
+            return None
         except Exception as e:
-            logger.error(f"Error getting company {company_name}: {e}")
+            # Unexpected errors - log with traceback and return None
+            logger.error(
+                f"Unexpected error getting company {company_name} ({type(e).__name__}): {e}",
+                exc_info=True,
+            )
             return None
 
     def save_company(self, company_data: Dict[str, Any]) -> str:
@@ -123,8 +133,18 @@ class CompaniesManager:
                 logger.info(f"Created new company: {company_name} (ID: {doc_id})")
                 return doc_id
 
+        except (RuntimeError, ValueError, AttributeError) as e:
+            # Firestore errors, validation errors, or missing data
+            company_name = company_data.get("name")
+            logger.error(f"Error saving company {company_name} (database/validation): {e}")
+            raise
         except Exception as e:
-            logger.error(f"Error saving company {company_data.get('name')}: {e}")
+            # Unexpected errors - log with traceback and re-raise
+            company_name = company_data.get("name")
+            logger.error(
+                f"Unexpected error saving company {company_name} " f"({type(e).__name__}): {e}",
+                exc_info=True,
+            )
             raise
 
     def get_or_create_company(
@@ -168,8 +188,30 @@ class CompaniesManager:
                 # Return the fetched info
                 return fetched_info
 
+            except (RuntimeError, ValueError, AttributeError) as e:
+                # Database, validation, or fetcher errors - return fallback data
+                logger.error(
+                    f"Error fetching company info for {company_name} " f"(fetch/database): {e}"
+                )
+
+                # Return existing data or minimal data
+                if company:
+                    return company
+                else:
+                    return {
+                        "name": company_name,
+                        "website": company_website,
+                        "about": "",
+                        "culture": "",
+                        "mission": "",
+                    }
             except Exception as e:
-                logger.error(f"Error fetching company info for {company_name}: {e}")
+                # Unexpected errors - log with traceback and return fallback
+                logger.error(
+                    f"Unexpected error fetching company info for {company_name} "
+                    f"({type(e).__name__}): {e}",
+                    exc_info=True,
+                )
 
                 # Return existing data or minimal data
                 if company:
@@ -216,6 +258,14 @@ class CompaniesManager:
 
             return companies
 
+        except (RuntimeError, ValueError, AttributeError) as e:
+            # Firestore query errors or data access issues
+            logger.error(f"Error getting all companies (database): {e}")
+            return []
         except Exception as e:
-            logger.error(f"Error getting all companies: {e}")
+            # Unexpected errors - log with traceback and return empty list
+            logger.error(
+                f"Unexpected error getting all companies ({type(e).__name__}): {e}",
+                exc_info=True,
+            )
             return []
