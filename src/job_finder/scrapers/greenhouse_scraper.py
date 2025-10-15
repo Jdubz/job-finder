@@ -12,6 +12,7 @@ from typing import Any, Dict, List, Optional
 import requests
 
 from .base import BaseScraper
+from .text_sanitizer import sanitize_company_name, sanitize_html_description, sanitize_title
 
 logger = logging.getLogger(__name__)
 
@@ -107,13 +108,18 @@ class GreenhouseScraper(BaseScraper):
             # Extract description - combine content fields
             description = self._extract_description(job_data)
 
+            # Sanitize all text fields
+            title_clean = sanitize_title(job_data.get("title", "Unknown"))
+            company_clean = sanitize_company_name(self.company_name)
+            description_clean = sanitize_html_description(description)
+
             job = {
-                "title": job_data.get("title", "Unknown"),
-                "company": self.company_name,
+                "title": title_clean,
+                "company": company_clean,
                 "company_website": self.company_website,
                 "company_info": "",  # Greenhouse doesn't provide this in job data
                 "location": location,
-                "description": description,
+                "description": description_clean,
                 "url": absolute_url,
                 "posted_date": job_data.get("updated_at", ""),
                 "salary": "",  # Usually not in Greenhouse API

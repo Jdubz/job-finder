@@ -2,12 +2,16 @@
 
 import logging
 import re
-from datetime import datetime
 from typing import Any, Dict, List
 
 import feedparser
 
 from job_finder.scrapers.base import BaseScraper
+from job_finder.scrapers.text_sanitizer import (
+    sanitize_company_name,
+    sanitize_html_description,
+    sanitize_title,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -115,16 +119,19 @@ class RSSJobScraper(BaseScraper):
         # Extract salary if present
         salary = self._extract_salary(title, description)
 
-        # Clean HTML from description
-        description = self._clean_html(description)
+        # Sanitize all text fields
+        title_clean = self._clean_title(title, company)
+        title_clean = sanitize_title(title_clean)
+        company_clean = sanitize_company_name(company or "Unknown")
+        description_clean = sanitize_html_description(description)
 
         job = {
-            "title": self._clean_title(title, company),
-            "company": company or "Unknown",
+            "title": title_clean,
+            "company": company_clean,
             "company_website": "",  # Will be populated later if available
             "company_info": "",  # Will be populated later if available
             "location": location,
-            "description": description,
+            "description": description_clean,
             "url": url,
             "posted_date": posted_date,
             "salary": salary,
@@ -232,21 +239,3 @@ class RSSJobScraper(BaseScraper):
                 return match.group(0)
 
         return ""
-
-    def _clean_html(self, text: str) -> str:
-        """Remove HTML tags and clean up text."""
-        # Remove HTML tags
-        text = re.sub(r"<[^>]+>", "", text)
-
-        # Decode HTML entities
-        text = text.replace("&amp;", "&")
-        text = text.replace("&lt;", "<")
-        text = text.replace("&gt;", ">")
-        text = text.replace("&quot;", '"')
-        text = text.replace("&#39;", "'")
-        text = text.replace("&nbsp;", " ")
-
-        # Clean up whitespace
-        text = re.sub(r"\s+", " ", text)
-
-        return text.strip()
