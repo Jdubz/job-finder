@@ -1,0 +1,63 @@
+# Local BUILD and test (builds from local Dockerfile)
+# Usage: docker-compose -f docker-compose.local-build.yml up --build
+
+services:
+  job-finder:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: job-finder:local
+    container_name: job-finder-local-build
+
+    environment:
+      # API Keys - will read from your shell environment
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/credentials/static-sites-257923-firebase-adminsdk.json
+
+      # Environment Configuration
+      - ENVIRONMENT=local-build-test
+
+      # Database Overrides - USE STAGING FOR LOCAL TESTING
+      - PROFILE_DATABASE_NAME=portfolio-staging
+      - STORAGE_DATABASE_NAME=portfolio-staging
+
+      # Config path
+      - CONFIG_PATH=/app/config/config.yaml
+      - LOG_FILE=/app/logs/scheduler.log
+
+      # Timezone
+      - TZ=America/Los_Angeles
+
+    volumes:
+      # Mount your local credentials (adjust path as needed)
+      - ./.firebase:/app/credentials:ro
+
+      # Mount local config
+      - ./config:/app/config:ro
+
+      # Mount logs directory for output
+      - ./logs:/app/logs
+
+      # Mount data directory
+      - ./data:/app/data
+
+    # Override the default CMD to keep container running for inspection
+    # Comment this out to run with default cron behavior
+    command: /bin/bash -c "printenv && echo '=== Container started ===' && tail -f /dev/null"
+
+    # Uncomment to run scheduler once and exit
+    # command: python scheduler.py
+
+    # Uncomment to test cron behavior
+    # command: /bin/bash -c "printenv > /etc/environment && cron && tail -f /var/log/cron.log"
+
+    networks:
+      - job-finder-local
+
+    stdin_open: true
+    tty: true
+
+networks:
+  job-finder-local:
+    driver: bridge
