@@ -272,10 +272,10 @@ class JobSearchOrchestrator:
             # Step 2: Fetch and attach company info to jobs
             self._fetch_and_attach_company_info(listing, jobs)
 
-            # Step 3: Filter for remote jobs
+            # Step 3: Filter for remote jobs or Portland on-site
             remote_jobs = self._filter_remote_only(jobs)
             stats["remote_jobs"] = len(remote_jobs)
-            logger.info(f"✓ {len(remote_jobs)} remote jobs after filtering")
+            logger.info(f"✓ {len(remote_jobs)} remote/Portland jobs after location filtering")
 
             if not remote_jobs:
                 self.listings_manager.update_scrape_status(
@@ -283,8 +283,18 @@ class JobSearchOrchestrator:
                 )
                 return stats
 
+            # Step 3.5: Filter out jobs older than 1 week
+            fresh_jobs = self._filter_by_age(remote_jobs, max_days=7)
+            logger.info(f"✓ {len(fresh_jobs)} jobs after age filtering (<= 7 days)")
+
+            if not fresh_jobs:
+                self.listings_manager.update_scrape_status(
+                    doc_id=listing["id"], status="success", jobs_found=len(jobs)
+                )
+                return stats
+
             # Step 4: Check for duplicates
-            jobs_to_process = remote_jobs[:remaining_slots]
+            jobs_to_process = fresh_jobs[:remaining_slots]
             logger.info(f"✓ Processing {len(jobs_to_process)} jobs (limit: {remaining_slots})")
 
             existing_jobs, duplicates_count, new_jobs_count = self._check_for_duplicates(
@@ -544,21 +554,72 @@ class JobSearchOrchestrator:
         return stats
 
     def _filter_remote_only(self, jobs: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """Filter jobs to only include remote positions."""
+        """Filter jobs to only include remote positions or Portland, OR on-site/hybrid."""
         remote_keywords = ["remote", "work from home", "wfh", "anywhere", "distributed"]
 
-        remote_jobs = []
+        filtered_jobs = []
         for job in jobs:
             location = job.get("location", "").lower()
             title = job.get("title", "").lower()
             description = job.get("description", "").lower()
 
-            # Check if any remote keyword is in location, title, or description
-            if any(keyword in location for keyword in remote_keywords):
-                remote_jobs.append(job)
-            elif any(keyword in title for keyword in remote_keywords):
-                remote_jobs.append(job)
-            elif any(keyword in description[:500] for keyword in remote_keywords):
-                remote_jobs.append(job)
+            # Check if remote
+            is_remote = (
+                any(keyword in location for keyword in remote_keywords)
+                or any(keyword in title for keyword in remote_keywords)
+                or any(keyword in description[:500] for keyword in remote_keywords)
+            )
 
-        return remote_jobs
+            # Check if Portland, OR location
+            is_portland = "portland" in location and ("or" in location or "oregon" in location)
+
+            # Include if remote OR Portland location (on-site/hybrid in Portland is OK)
+            if is_remote or is_portland:
+                filtered_jobs.append(job)
+
+        return filtered_jobs
+
+    def _filter_by_age(self, jobs: List[Dict[str, Any]], max_days: int = 7) -> List[Dict[str, Any]]:
+        """
+        Filter jobs to only include those posted within the last N days.
+
+        Args:
+            jobs: List of jobs to filter
+            max_days: Maximum age in days (default: 7)
+
+        Returns:
+            List of jobs posted within max_days
+        """
+        from datetime import datetime, timedelta, timezone
+
+        from job_finder.utils.date_utils import parse_job_date
+
+        cutoff_date = datetime.now(timezone.utc) - timedelta(days=max_days)
+        fresh_jobs = []
+
+        for job in jobs:
+            posted_date_str = job.get("posted_date", "")
+
+            # If no date, skip (can't verify age)
+            if not posted_date_str:
+                logger.debug(f"Skipping job with no posted_date: {job.get('title')}")
+                continue
+
+            # Parse the date
+            posted_date = parse_job_date(posted_date_str)
+
+            # If we couldn't parse it, skip (can't verify age)
+            if not posted_date:
+                logger.debug(f"Could not parse posted_date for: {job.get('title')}")
+                continue
+
+            # Check if within age limit
+            if posted_date >= cutoff_date:
+                fresh_jobs.append(job)
+            else:
+                days_old = (datetime.now(timezone.utc) - posted_date).days
+                logger.debug(
+                    f"Skipping old job ({days_old} days): {job.get('title')} at {job.get('company')}"
+                )
+
+        return fresh_jobs

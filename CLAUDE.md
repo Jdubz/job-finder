@@ -126,9 +126,15 @@ When adding a new job site scraper:
 ### Filtering System
 
 The `JobFilter` class (src/job_finder/filters.py:6) applies multiple filter stages:
-1. Keyword matching (inclusive) - Jobs must contain at least one keyword
-2. Location filtering - Jobs must be in preferred locations
-3. Keyword exclusion - Jobs cannot contain excluded keywords
+1. **Work location filtering** - Only remote jobs or Portland, OR hybrid jobs are allowed (always applied)
+2. **Keyword matching** (inclusive) - Jobs must contain at least one keyword
+3. **Location filtering** - Jobs must be in preferred locations
+4. **Keyword exclusion** - Jobs cannot contain excluded keywords
+
+The work location filter (src/job_finder/filters.py:42) ensures:
+- Remote jobs are always included
+- Portland, OR hybrid jobs are included
+- All other in-office or hybrid jobs are filtered out
 
 Filters are configured in `config/config.yaml` under the `profile` section.
 
@@ -183,8 +189,52 @@ Configure provider in `config/config.yaml` under the `ai` section.
 **Scoring Configuration:**
 The system uses strict matching criteria with a minimum score threshold of 80 points (0-100 scale). Jobs at companies with Portland offices receive a +15 bonus, effectively lowering the threshold to 65 for local opportunities. Priority tiers are: High (85-100), Medium (70-84), Low (0-69). Scoring heavily weights exact title skill matches at Expert/Advanced levels and requires 95%+ of required skills for full points.
 
+**Timezone Scoring:**
+The system applies timezone-based score adjustments (src/job_finder/utils/timezone_utils.py) to prioritize jobs with teams in compatible timezones:
+- Same timezone (Pacific): +5 bonus points
+- 1-2 hour difference: -2 penalty
+- 3-4 hour difference: -5 penalty
+- 5-8 hour difference: -10 penalty
+- 9+ hour difference: -15 penalty
+- Unknown timezone: no adjustment
+
+**Smart Timezone Detection** (src/job_finder/utils/timezone_utils.py:225):
+The system uses intelligent prioritization when detecting timezones:
+1. **Team location** mentioned in job description (e.g., "reporting to our Seattle team")
+2. **Job location** specified in the listing
+3. **Company headquarters** (only for small/medium companies)
+4. **Large companies**: Assumed to be global, no HQ-based timezone penalty unless specific team location is mentioned
+
+This prevents penalizing remote jobs at large global companies (Google, Microsoft, etc.) when the actual team timezone is unknown, while still applying timezone scoring for small/medium companies where HQ location is more relevant.
+
+The timezone detection system recognizes US cities/states, major international cities, and explicit timezone mentions (PT, ET, GMT, etc.). Configure your timezone offset in `config.yaml` under `ai.user_timezone` (default: -8 for Pacific Time).
+
+**Company Size Scoring:**
+The system applies company size-based score adjustments (src/job_finder/utils/company_size_utils.py) based on your preference:
+- Large companies (when prefer_large_companies=true): +10 bonus points
+- Medium companies: no adjustment (neutral)
+- Small companies/startups (when prefer_large_companies=true): -5 penalty
+
+Large companies are detected through:
+- Known major companies (Fortune 500, tech giants like Google, Microsoft, Amazon, etc.)
+- Keywords: "Fortune 500", "10,000+ employees", "publicly traded", "enterprise", "multinational"
+- Patterns indicating size in company info and job descriptions
+
+Small companies/startups are detected through:
+- Keywords: "startup", "small team", "Series A/B funding", "seed stage", "bootstrapped"
+- Employee count mentions under 100
+
+Configure your preference in `config.yaml` under `ai.prefer_large_companies` (default: true).
+
 **Company Information Fetching:**
 The `CompanyInfoFetcher` (src/job_finder/company_info_fetcher.py) automatically scrapes company websites for about/culture/mission information and caches it in Firestore via `CompaniesManager` (src/job_finder/storage/companies_manager.py). This information is included in AI job analysis prompts to provide better context for cultural fit assessment. The system uses AI extraction with heuristics fallback and smart caching (only re-fetches if cached data is sparse).
+
+**Company Data Storage:**
+Company records in Firestore (src/job_finder/storage/companies_manager.py:64) include:
+- Basic info: name, website, about, culture, mission, industry, founded
+- **company_size_category**: Detected size ("large", "medium", "small") - used for scoring and timezone logic
+- **headquarters_location**: Company HQ location - used as timezone fallback for small/medium companies
+- Size and HQ data are automatically detected and stored for use in match scoring
 
 **Company Scraping Prioritization:**
 Job listing sources are scored to prioritize scraping: Portland office (+50 points), tech stack alignment (up to 100 points based on user expertise), and company attributes like remote-first (+15) or AI/ML focus (+10). Companies are grouped into tiers: S (150+), A (100-149), B (70-99), C (50-69), D (0-49), with higher-tier companies scraped more frequently in rotation.

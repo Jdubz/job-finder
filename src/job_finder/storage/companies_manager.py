@@ -72,7 +72,9 @@ class CompaniesManager:
                 - about: Company description
                 - culture: Culture/values info
                 - mission: Mission statement
-                - size: Company size
+                - size: Company size (employee count or description)
+                - company_size_category: Detected size category ("large", "medium", "small")
+                - headquarters_location: Company headquarters location
                 - industry: Industry/sector
                 - founded: Year founded
 
@@ -96,6 +98,8 @@ class CompaniesManager:
                 "culture": company_data.get("culture", ""),
                 "mission": company_data.get("mission", ""),
                 "size": company_data.get("size", ""),
+                "company_size_category": company_data.get("company_size_category", ""),
+                "headquarters_location": company_data.get("headquarters_location", ""),
                 "industry": company_data.get("industry", ""),
                 "founded": company_data.get("founded", ""),
                 "updatedAt": datetime.now(),
@@ -107,12 +111,21 @@ class CompaniesManager:
 
                 # Only update if we have new/better information
                 should_update = False
-                for field in ["about", "culture", "mission", "size", "industry", "founded"]:
+                for field in [
+                    "about",
+                    "culture",
+                    "mission",
+                    "size",
+                    "company_size_category",
+                    "headquarters_location",
+                    "industry",
+                    "founded",
+                ]:
                     new_value = save_data.get(field, "")
                     existing_value = existing.get(field, "")
 
                     # Update if new value is longer/better
-                    if new_value and len(new_value) > len(existing_value):
+                    if new_value and len(str(new_value)) > len(str(existing_value)):
                         should_update = True
                         break
 
