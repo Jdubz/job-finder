@@ -546,3 +546,187 @@ class TestBuildCompanyInfoString:
         info_str = orchestrator._build_company_info_string(company_info)
 
         assert info_str == ""
+
+
+class TestLogListingHeader:
+    """Test listing header logging."""
+
+    def test_log_listing_header_with_all_fields(self, mock_config):
+        """Test logging header with all listing fields."""
+        listing = {
+            "name": "Test Company",
+            "sourceType": "greenhouse",
+            "priorityScore": 100,
+            "tier": "A",
+            "hasPortlandOffice": True,
+        }
+
+        orchestrator = JobSearchOrchestrator(mock_config)
+        # Should not raise any errors
+        orchestrator._log_listing_header(listing)
+
+    def test_log_listing_header_with_minimal_fields(self, mock_config):
+        """Test logging header with minimal fields."""
+        listing = {"name": "Minimal Company"}
+
+        orchestrator = JobSearchOrchestrator(mock_config)
+        # Should not raise any errors, uses defaults
+        orchestrator._log_listing_header(listing)
+
+    def test_log_listing_header_tier_emojis(self, mock_config):
+        """Test different tier emojis."""
+        orchestrator = JobSearchOrchestrator(mock_config)
+
+        for tier in ["S", "A", "B", "C", "D"]:
+            listing = {"name": "Company", "tier": tier}
+            # Should not raise any errors
+            orchestrator._log_listing_header(listing)
+
+
+class TestFetchAndAttachCompanyInfo:
+    """Test company info fetching and attachment."""
+
+    def test_fetch_and_attach_with_valid_website(self, mock_config, sample_job):
+        """Test fetching and attaching company info with valid website."""
+        orchestrator = JobSearchOrchestrator(mock_config)
+        orchestrator.companies_manager = Mock()
+        orchestrator.company_info_fetcher = Mock()
+
+        company_info = {
+            "about": "Great company",
+            "culture": "Innovation focused",
+            "mission": "Change the world",
+        }
+        orchestrator.companies_manager.get_or_create_company.return_value = company_info
+
+        listing = {
+            "name": "Test Company",
+            "company_website": "https://test.com",
+        }
+        jobs = [sample_job.copy(), sample_job.copy()]
+
+        orchestrator._fetch_and_attach_company_info(listing, jobs)
+
+        # All jobs should have company info attached (format is "About: ..." with capital A)
+        assert "great company" in jobs[0]["company_info"].lower()
+        assert "great company" in jobs[1]["company_info"].lower()
+
+    def test_fetch_and_attach_without_website(self, mock_config, sample_job):
+        """Test handling jobs when no company website is available."""
+        orchestrator = JobSearchOrchestrator(mock_config)
+
+        listing = {"name": "Test Company", "company_website": ""}
+        jobs = [sample_job.copy()]
+
+        orchestrator._fetch_and_attach_company_info(listing, jobs)
+
+        # Should set empty company_info
+        assert jobs[0]["company_info"] == ""
+
+    def test_fetch_and_attach_handles_errors(self, mock_config, sample_job):
+        """Test error handling when company info fetch fails."""
+        orchestrator = JobSearchOrchestrator(mock_config)
+        orchestrator.companies_manager = Mock()
+        orchestrator.company_info_fetcher = Mock()
+
+        # Simulate fetch error
+        orchestrator.companies_manager.get_or_create_company.side_effect = Exception(
+            "Network error"
+        )
+
+        listing = {
+            "name": "Test Company",
+            "company_website": "https://test.com",
+        }
+        jobs = [sample_job.copy()]
+
+        # Should not raise, but log warning and continue
+        orchestrator._fetch_and_attach_company_info(listing, jobs)
+
+        # Should set empty company_info on error
+        assert jobs[0]["company_info"] == ""
+
+
+class TestMatchAndSaveJobs:
+    """Test AI matching and saving logic."""
+
+    def test_match_and_save_with_matched_jobs(self, mock_config, sample_job):
+        """Test matching and saving jobs that meet threshold."""
+        orchestrator = JobSearchOrchestrator(mock_config)
+        orchestrator.ai_matcher = Mock()
+        orchestrator.job_storage = Mock()
+
+        # Mock successful match
+        mock_result = Mock()
+        mock_result.match_score = 85
+        mock_result.application_priority = "High"
+        orchestrator.ai_matcher.analyze_job.return_value = mock_result
+        orchestrator.job_storage.save_job_match.return_value = "job-id-123"
+
+        jobs = [sample_job.copy()]
+        existing_jobs = {sample_job["url"]: False}  # Not a duplicate
+        listing = {"hasPortlandOffice": True}
+
+        stats = orchestrator._match_and_save_jobs(jobs, existing_jobs, 1, listing)
+
+        assert stats["jobs_analyzed"] == 1
+        assert stats["jobs_matched"] == 1
+        assert stats["jobs_saved"] == 1
+
+    def test_match_and_save_below_threshold(self, mock_config, sample_job):
+        """Test handling jobs below match threshold."""
+        orchestrator = JobSearchOrchestrator(mock_config)
+        orchestrator.ai_matcher = Mock()
+
+        # Mock below threshold (returns None)
+        orchestrator.ai_matcher.analyze_job.return_value = None
+
+        jobs = [sample_job.copy()]
+        existing_jobs = {sample_job["url"]: False}
+        listing = {}
+
+        stats = orchestrator._match_and_save_jobs(jobs, existing_jobs, 1, listing)
+
+        assert stats["jobs_analyzed"] == 1
+        assert stats["jobs_matched"] == 0
+        assert stats["jobs_saved"] == 0
+
+    def test_match_and_save_skips_duplicates(self, mock_config, sample_job):
+        """Test skipping jobs that already exist."""
+        orchestrator = JobSearchOrchestrator(mock_config)
+        orchestrator.ai_matcher = Mock()
+
+        jobs = [sample_job.copy()]
+        existing_jobs = {sample_job["url"]: True}  # Is a duplicate
+        listing = {}
+
+        stats = orchestrator._match_and_save_jobs(jobs, existing_jobs, 0, listing)
+
+        # Should not analyze duplicates
+        assert stats["jobs_analyzed"] == 0
+        assert stats["jobs_matched"] == 0
+        assert stats["jobs_saved"] == 0
+        orchestrator.ai_matcher.analyze_job.assert_not_called()
+
+    def test_match_and_save_handles_errors(self, mock_config, sample_job):
+        """Test error handling during matching."""
+        orchestrator = JobSearchOrchestrator(mock_config)
+        orchestrator.ai_matcher = Mock()
+
+        # Simulate error during matching
+        orchestrator.ai_matcher.analyze_job.side_effect = Exception("AI error")
+
+        jobs = [sample_job.copy(), sample_job.copy()]
+        existing_jobs = {
+            jobs[0]["url"]: False,
+            jobs[1]["url"]: False,
+        }
+        listing = {}
+
+        # Should continue despite errors
+        stats = orchestrator._match_and_save_jobs(jobs, existing_jobs, 2, listing)
+
+        # Both jobs attempted (counter incremented before AI analysis)
+        assert stats["jobs_analyzed"] == 2  # Both attempted (counter before AI call)
+        assert stats["jobs_matched"] == 0  # None matched (errors occurred)
+        assert stats["jobs_saved"] == 0  # None saved (errors occurred)
