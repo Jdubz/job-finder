@@ -1,12 +1,14 @@
 """Store job matches and analysis in Firestore."""
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from google.cloud import firestore as gcloud_firestore
 
-from job_finder.ai.matcher import JobMatchResult
 from job_finder.storage.firestore_client import FirestoreClient
+
+if TYPE_CHECKING:
+    from job_finder.ai.matcher import JobMatchResult
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +56,7 @@ class FirestoreJobStorage:
         return role.strip()
 
     def save_job_match(
-        self, job: Dict[str, Any], match_result: JobMatchResult, user_id: Optional[str] = None
+        self, job: Dict[str, Any], match_result: "JobMatchResult", user_id: Optional[str] = None
     ) -> str:
         """
         Save a job match to Firestore.
