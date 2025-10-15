@@ -61,12 +61,20 @@ class FirestoreProfileLoader:
         profile = Profile(
             name=name or "User",
             email=email,
+            phone=None,
+            location=None,
+            linkedin_url=None,
+            github_url=None,
+            portfolio_url=None,
             summary=self._generate_summary(experiences, blurbs),
             years_of_experience=self._calculate_years_experience(experiences),
             skills=skills,
             experience=experiences,
             education=[],  # TODO: Add education collection if available
             projects=[],  # TODO: Add projects collection if available
+            preferences=None,
+            certifications=[],
+            languages=[],
         )
 
         logger.info(
@@ -238,7 +246,12 @@ class FirestoreProfileLoader:
         for exp in experiences:
             for tech in exp.technologies:
                 if tech and tech not in skills_dict:
-                    skills_dict[tech] = Skill(name=tech, category="technology")
+                    skills_dict[tech] = Skill(
+                        name=tech,
+                        level=None,
+                        years_experience=None,
+                        category="technology",
+                    )
 
         return list(skills_dict.values())
 
