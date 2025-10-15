@@ -1,19 +1,19 @@
 """Main job search orchestrator that coordinates scraping, matching, and storage."""
 
-import os
 import logging
-from typing import Dict, Any, List, Optional
+import os
 import time
+from typing import Any, Dict, List, Optional
 
-from job_finder.profile import FirestoreProfileLoader
-from job_finder.profile.schema import Profile
 from job_finder.ai import AIJobMatcher
 from job_finder.ai.providers import create_provider
-from job_finder.scrapers.rss_scraper import RSSJobScraper
+from job_finder.company_info_fetcher import CompanyInfoFetcher
+from job_finder.profile import FirestoreProfileLoader
+from job_finder.profile.schema import Profile
 from job_finder.scrapers.greenhouse_scraper import GreenhouseScraper
+from job_finder.scrapers.rss_scraper import RSSJobScraper
 from job_finder.storage import FirestoreJobStorage, JobListingsManager
 from job_finder.storage.companies_manager import CompaniesManager
-from job_finder.company_info_fetcher import CompanyInfoFetcher
 
 logger = logging.getLogger(__name__)
 
@@ -112,7 +112,7 @@ class JobSearchOrchestrator:
         logger.info("\n" + "=" * 70)
         logger.info("✅ JOB SEARCH COMPLETE!")
         logger.info("=" * 70)
-        logger.info(f"\n📊 STATISTICS:")
+        logger.info("\n📊 STATISTICS:")
         logger.info(f"  Sources scraped: {stats['sources_scraped']}")
         logger.info(f"  Total jobs found: {stats['total_jobs_found']}")
         logger.info(f"  Remote jobs: {stats['jobs_after_remote_filter']}")
@@ -217,7 +217,7 @@ class JobSearchOrchestrator:
             tier = listing.get("tier", "Unknown")
             tier_counts[tier] = tier_counts.get(tier, 0) + 1
 
-        logger.info(f"  Priority distribution:")
+        logger.info("  Priority distribution:")
         tier_order = ["S", "A", "B", "C", "D"]
         for tier in tier_order:
             if tier in tier_counts:
@@ -244,21 +244,9 @@ class JobSearchOrchestrator:
             Statistics for this source
         """
         listing_name = listing.get("name", "Unknown")
-        source_type = listing.get("sourceType", "unknown")
-        priority_score = listing.get("priorityScore", 0)
-        tier = listing.get("tier", "?")
 
-        # Add tier emoji
-        tier_emoji = {"S": "⭐", "A": "🔷", "B": "🟢", "C": "🟡", "D": "⚪"}.get(tier, "❓")
-
-        # Add Portland icon if applicable
-        portland_icon = "🏙️ " if listing.get("hasPortlandOffice", False) else ""
-
-        logger.info(
-            f"\n{tier_emoji} {portland_icon}Processing: {listing_name} (Tier {tier}, Score: {priority_score})"
-        )
-        logger.info(f"   Source Type: {source_type}")
-        logger.info("-" * 70)
+        # Log listing header
+        self._log_listing_header(listing)
 
         stats = {
             "jobs_found": 0,
@@ -270,37 +258,8 @@ class JobSearchOrchestrator:
         }
 
         try:
-            # Scrape based on source type
-            jobs = []
-
-            if source_type == "rss":
-                scraper = RSSJobScraper(
-                    config=self.config.get("scraping", {}), listing_config=listing.get("config", {})
-                )
-                jobs = scraper.scrape()
-
-            elif source_type == "greenhouse":
-                # Greenhouse ATS scraper
-                greenhouse_config = {
-                    "board_token": listing.get("board_token"),
-                    "name": listing.get("name", "Unknown"),
-                    "company_website": listing.get("company_website", ""),
-                }
-                scraper = GreenhouseScraper(greenhouse_config)
-                jobs = scraper.scrape()
-
-            elif source_type == "api":
-                logger.warning(f"API scraping not yet implemented for {listing_name}")
-                return stats
-
-            elif source_type == "company-page":
-                logger.warning(f"Company page scraping not yet implemented for {listing_name}")
-                return stats
-
-            else:
-                logger.warning(f"Unknown source type: {source_type}")
-                return stats
-
+            # Step 1: Scrape jobs from source
+            jobs = self._scrape_jobs_from_listing(listing)
             stats["jobs_found"] = len(jobs)
             logger.info(f"✓ Found {len(jobs)} jobs")
 
@@ -310,55 +269,10 @@ class JobSearchOrchestrator:
                 )
                 return stats
 
-            # Fetch and cache company information
-            company_name = listing.get("name", "Unknown")
-            company_website = listing.get("company_website", "")
+            # Step 2: Fetch and attach company info to jobs
+            self._fetch_and_attach_company_info(listing, jobs)
 
-            if company_website:
-                logger.info(f"🏢 Fetching company info for {company_name}...")
-                try:
-                    company_info = self.companies_manager.get_or_create_company(
-                        company_name=company_name,
-                        company_website=company_website,
-                        fetch_info_func=self.company_info_fetcher.fetch_company_info,
-                    )
-
-                    # Extract about/culture fields
-                    company_about = company_info.get("about", "")
-                    company_culture = company_info.get("culture", "")
-                    company_mission = company_info.get("mission", "")
-
-                    # Combine into a single company_info string
-                    company_info_parts = []
-                    if company_about:
-                        company_info_parts.append(f"About: {company_about}")
-                    if company_culture:
-                        company_info_parts.append(f"Culture: {company_culture}")
-                    if company_mission:
-                        company_info_parts.append(f"Mission: {company_mission}")
-
-                    company_info_str = "\n\n".join(company_info_parts)
-
-                    # Update all jobs with company info
-                    for job in jobs:
-                        job["company_info"] = company_info_str
-
-                    if company_info_str:
-                        logger.info(f"✓ Company info cached ({len(company_info_str)} chars)")
-                    else:
-                        logger.info(f"⚠️  No company info found")
-
-                except Exception as e:
-                    logger.warning(f"⚠️  Failed to fetch company info: {e}")
-                    # Continue without company info
-                    for job in jobs:
-                        job["company_info"] = ""
-            else:
-                logger.debug("No company website available, skipping company info fetch")
-                for job in jobs:
-                    job["company_info"] = ""
-
-            # Filter for remote jobs
+            # Step 3: Filter for remote jobs
             remote_jobs = self._filter_remote_only(jobs)
             stats["remote_jobs"] = len(remote_jobs)
             logger.info(f"✓ {len(remote_jobs)} remote jobs after filtering")
@@ -369,67 +283,22 @@ class JobSearchOrchestrator:
                 )
                 return stats
 
-            # Process up to remaining_slots
+            # Step 4: Check for duplicates
             jobs_to_process = remote_jobs[:remaining_slots]
             logger.info(f"✓ Processing {len(jobs_to_process)} jobs (limit: {remaining_slots})")
 
-            # Batch check which jobs already exist
-            job_urls = [job.get("url", "") for job in jobs_to_process]
-            existing_jobs = self.job_storage.batch_check_exists(job_urls)
-
-            duplicates_count = sum(1 for exists in existing_jobs.values() if exists)
-            new_jobs_count = sum(1 for exists in existing_jobs.values() if not exists)
-
+            existing_jobs, duplicates_count, new_jobs_count = self._check_for_duplicates(
+                jobs_to_process
+            )
             stats["duplicates_skipped"] = duplicates_count
 
-            if duplicates_count > 0:
-                logger.info(f"⏭️  Skipping {duplicates_count} duplicate jobs (already in database)")
-            logger.info(f"✓ {new_jobs_count} new jobs to analyze")
-
-            # Run AI matching and save for new jobs only
-            processed = 0
-            for i, job in enumerate(jobs_to_process, 1):
-                try:
-                    job_url = job.get("url", "")
-
-                    # Skip if already exists
-                    if existing_jobs.get(job_url, False):
-                        logger.debug(
-                            f"  [{i}/{len(jobs_to_process)}] Duplicate: {job.get('title')}"
-                        )
-                        continue
-
-                    processed += 1
-                    stats["jobs_analyzed"] += 1
-
-                    # Run AI matching (pass Portland office status for bonus)
-                    logger.info(
-                        f"  [{processed}/{new_jobs_count}] Analyzing: {job.get('title')} at {job.get('company')}"
-                    )
-                    has_portland_office = listing.get("hasPortlandOffice", False)
-                    result = self.ai_matcher.analyze_job(
-                        job, has_portland_office=has_portland_office
-                    )
-
-                    if result:
-                        # Save to Firestore
-                        doc_id = self.job_storage.save_job_match(job, result)
-                        stats["jobs_matched"] += 1
-                        stats["jobs_saved"] += 1
-                        logger.info(
-                            f"    ✓ Matched! Score: {result.match_score}, Priority: {result.application_priority} (ID: {doc_id})"
-                        )
-
-                    else:
-                        logger.debug(f"    ⚠️  Below match threshold")
-
-                    # Rate limiting
-                    delay = self.config.get("scraping", {}).get("delay_between_requests", 2)
-                    time.sleep(delay)
-
-                except Exception as e:
-                    logger.warning(f"  Error processing job: {str(e)}")
-                    continue
+            # Step 5: Match and save new jobs
+            matched_stats = self._match_and_save_jobs(
+                jobs_to_process, existing_jobs, new_jobs_count, listing
+            )
+            stats["jobs_analyzed"] = matched_stats["jobs_analyzed"]
+            stats["jobs_matched"] = matched_stats["jobs_matched"]
+            stats["jobs_saved"] = matched_stats["jobs_saved"]
 
             # Update listing stats
             self.listings_manager.update_scrape_status(
@@ -447,6 +316,230 @@ class JobSearchOrchestrator:
                 doc_id=listing["id"], status="error", error=str(e)
             )
             raise
+
+        return stats
+
+    def _log_listing_header(self, listing: Dict[str, Any]) -> None:
+        """
+        Log formatted header for a job listing source.
+
+        Args:
+            listing: Job listing configuration
+        """
+        listing_name = listing.get("name", "Unknown")
+        source_type = listing.get("sourceType", "unknown")
+        priority_score = listing.get("priorityScore", 0)
+        tier = listing.get("tier", "?")
+
+        # Add tier emoji
+        tier_emoji = {"S": "⭐", "A": "🔷", "B": "🟢", "C": "🟡", "D": "⚪"}.get(tier, "❓")
+
+        # Add Portland icon if applicable
+        portland_icon = "🏙️ " if listing.get("hasPortlandOffice", False) else ""
+
+        logger.info(
+            f"\n{tier_emoji} {portland_icon}Processing: {listing_name} "
+            f"(Tier {tier}, Score: {priority_score})"
+        )
+        logger.info(f"   Source Type: {source_type}")
+        logger.info("-" * 70)
+
+    def _scrape_jobs_from_listing(self, listing: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """
+        Scrape jobs from a listing based on its source type.
+
+        Args:
+            listing: Job listing configuration
+
+        Returns:
+            List of scraped job dictionaries
+
+        Raises:
+            ValueError: If source type is unsupported
+        """
+        source_type = listing.get("sourceType", "unknown")
+        listing_name = listing.get("name", "Unknown")
+
+        if source_type == "rss":
+            scraper = RSSJobScraper(
+                config=self.config.get("scraping", {}), listing_config=listing.get("config", {})
+            )
+            return scraper.scrape()
+
+        elif source_type == "greenhouse":
+            greenhouse_config = {
+                "board_token": listing.get("board_token"),
+                "name": listing.get("name", "Unknown"),
+                "company_website": listing.get("company_website", ""),
+            }
+            scraper = GreenhouseScraper(greenhouse_config)
+            return scraper.scrape()
+
+        elif source_type == "api":
+            logger.warning(f"API scraping not yet implemented for {listing_name}")
+            return []
+
+        elif source_type == "company-page":
+            logger.warning(f"Company page scraping not yet implemented for {listing_name}")
+            return []
+
+        else:
+            logger.warning(f"Unknown source type: {source_type}")
+            return []
+
+    def _fetch_and_attach_company_info(
+        self, listing: Dict[str, Any], jobs: List[Dict[str, Any]]
+    ) -> None:
+        """
+        Fetch company information and attach it to all jobs.
+
+        Args:
+            listing: Job listing configuration
+            jobs: List of job dictionaries to update (modified in place)
+        """
+        company_name = listing.get("name", "Unknown")
+        company_website = listing.get("company_website", "")
+
+        if not company_website:
+            logger.debug("No company website available, skipping company info fetch")
+            for job in jobs:
+                job["company_info"] = ""
+            return
+
+        logger.info(f"🏢 Fetching company info for {company_name}...")
+
+        try:
+            company_info = self.companies_manager.get_or_create_company(
+                company_name=company_name,
+                company_website=company_website,
+                fetch_info_func=self.company_info_fetcher.fetch_company_info,
+            )
+
+            # Build company info string
+            company_info_str = self._build_company_info_string(company_info)
+
+            # Update all jobs with company info
+            for job in jobs:
+                job["company_info"] = company_info_str
+
+            if company_info_str:
+                logger.info(f"✓ Company info cached ({len(company_info_str)} chars)")
+            else:
+                logger.info("⚠️  No company info found")
+
+        except Exception as e:
+            logger.warning(f"⚠️  Failed to fetch company info: {e}")
+            # Continue without company info
+            for job in jobs:
+                job["company_info"] = ""
+
+    def _build_company_info_string(self, company_info: Dict[str, Any]) -> str:
+        """
+        Build a formatted company info string from company data.
+
+        Args:
+            company_info: Company data dictionary
+
+        Returns:
+            Formatted company info string
+        """
+        company_about = company_info.get("about", "")
+        company_culture = company_info.get("culture", "")
+        company_mission = company_info.get("mission", "")
+
+        company_info_parts = []
+        if company_about:
+            company_info_parts.append(f"About: {company_about}")
+        if company_culture:
+            company_info_parts.append(f"Culture: {company_culture}")
+        if company_mission:
+            company_info_parts.append(f"Mission: {company_mission}")
+
+        return "\n\n".join(company_info_parts)
+
+    def _check_for_duplicates(self, jobs: List[Dict[str, Any]]) -> tuple[Dict[str, bool], int, int]:
+        """
+        Batch check which jobs already exist in the database.
+
+        Args:
+            jobs: List of jobs to check
+
+        Returns:
+            Tuple of (existing_jobs_dict, duplicates_count, new_jobs_count)
+        """
+        job_urls = [job.get("url", "") for job in jobs]
+        existing_jobs = self.job_storage.batch_check_exists(job_urls)
+
+        duplicates_count = sum(1 for exists in existing_jobs.values() if exists)
+        new_jobs_count = sum(1 for exists in existing_jobs.values() if not exists)
+
+        if duplicates_count > 0:
+            logger.info(f"⏭️  Skipping {duplicates_count} duplicate jobs (already in database)")
+        logger.info(f"✓ {new_jobs_count} new jobs to analyze")
+
+        return existing_jobs, duplicates_count, new_jobs_count
+
+    def _match_and_save_jobs(
+        self,
+        jobs: List[Dict[str, Any]],
+        existing_jobs: Dict[str, bool],
+        new_jobs_count: int,
+        listing: Dict[str, Any],
+    ) -> Dict[str, int]:
+        """
+        Run AI matching on new jobs and save matched results.
+
+        Args:
+            jobs: List of jobs to process
+            existing_jobs: Dictionary mapping job URLs to existence status
+            new_jobs_count: Number of new (non-duplicate) jobs
+            listing: Job listing configuration
+
+        Returns:
+            Statistics dictionary with jobs_analyzed, jobs_matched, jobs_saved
+        """
+        stats = {"jobs_analyzed": 0, "jobs_matched": 0, "jobs_saved": 0}
+
+        processed = 0
+        for i, job in enumerate(jobs, 1):
+            try:
+                job_url = job.get("url", "")
+
+                # Skip if already exists
+                if existing_jobs.get(job_url, False):
+                    logger.debug(f"  [{i}/{len(jobs)}] Duplicate: {job.get('title')}")
+                    continue
+
+                processed += 1
+                stats["jobs_analyzed"] += 1
+
+                # Run AI matching (pass Portland office status for bonus)
+                logger.info(
+                    f"  [{processed}/{new_jobs_count}] Analyzing: "
+                    f"{job.get('title')} at {job.get('company')}"
+                )
+                has_portland_office = listing.get("hasPortlandOffice", False)
+                result = self.ai_matcher.analyze_job(job, has_portland_office=has_portland_office)
+
+                if result:
+                    # Save to Firestore
+                    doc_id = self.job_storage.save_job_match(job, result)
+                    stats["jobs_matched"] += 1
+                    stats["jobs_saved"] += 1
+                    logger.info(
+                        f"    ✓ Matched! Score: {result.match_score}, "
+                        f"Priority: {result.application_priority} (ID: {doc_id})"
+                    )
+                else:
+                    logger.debug("    ⚠️  Below match threshold")
+
+                # Rate limiting
+                delay = self.config.get("scraping", {}).get("delay_between_requests", 2)
+                time.sleep(delay)
+
+            except Exception as e:
+                logger.warning(f"  Error processing job: {str(e)}")
+                continue
 
         return stats
 

@@ -81,42 +81,11 @@ class FirestoreProfileLoader:
 
         try:
             # Query experience-entries collection
-            query = self.db.collection("experience-entries")
-            if user_id:
-                query = query.where("userId", "==", user_id)
+            docs = self._query_experience_docs(user_id)
 
-            # Order by start date descending (most recent first)
-            query = query.order_by("startDate", direction=gcloud_firestore.Query.DESCENDING)
-
-            docs = query.stream()
-
+            # Process each document
             for doc in docs:
-                data = doc.to_dict()
-
-                # Firestore schema:
-                # - title = Company name
-                # - role = Job title
-                # - body = Description (may contain "Stack: ..." section)
-                company = data.get("title", "")
-                title = data.get("role", "")
-                body = data.get("body", "")
-
-                # Parse technologies from body (look for "Stack:" section)
-                technologies = self._parse_technologies_from_body(body)
-
-                # Map Firestore data to Experience model
-                experience = Experience(
-                    company=company,
-                    title=title,
-                    start_date=data.get("startDate", ""),
-                    end_date=data.get("endDate"),
-                    location=data.get("location", ""),
-                    description=body,
-                    responsibilities=[],  # Not stored separately in Firestore
-                    achievements=[],  # Not stored separately in Firestore
-                    technologies=technologies,
-                    is_current=(data.get("endDate") is None or data.get("endDate") == ""),
-                )
+                experience = self._process_experience_doc(doc)
                 experiences.append(experience)
 
         except (RuntimeError, ValueError, AttributeError, KeyError) as e:
@@ -132,6 +101,64 @@ class FirestoreProfileLoader:
             raise
 
         return experiences
+
+    def _query_experience_docs(self, user_id: Optional[str] = None):
+        """
+        Query experience documents from Firestore.
+
+        Args:
+            user_id: Optional user ID to filter by
+
+        Returns:
+            Stream of experience documents ordered by start date (descending)
+        """
+        query = self.db.collection("experience-entries")
+        if user_id:
+            query = query.where("userId", "==", user_id)
+
+        # Order by start date descending (most recent first)
+        query = query.order_by("startDate", direction=gcloud_firestore.Query.DESCENDING)
+
+        return query.stream()
+
+    def _process_experience_doc(self, doc) -> Experience:
+        """
+        Process a Firestore experience document into an Experience object.
+
+        Args:
+            doc: Firestore document snapshot
+
+        Returns:
+            Experience object
+
+        Note:
+            Firestore schema mapping:
+            - title -> company name
+            - role -> job title
+            - body -> description (may contain "Stack: ..." section)
+        """
+        data = doc.to_dict()
+
+        company = data.get("title", "")
+        title = data.get("role", "")
+        body = data.get("body", "")
+
+        # Parse technologies from body (look for "Stack:" section)
+        technologies = self._parse_technologies_from_body(body)
+
+        # Map Firestore data to Experience model
+        return Experience(
+            company=company,
+            title=title,
+            start_date=data.get("startDate", ""),
+            end_date=data.get("endDate"),
+            location=data.get("location", ""),
+            description=body,
+            responsibilities=[],  # Not stored separately in Firestore
+            achievements=[],  # Not stored separately in Firestore
+            technologies=technologies,
+            is_current=(data.get("endDate") is None or data.get("endDate") == ""),
+        )
 
     def _parse_technologies_from_body(self, body: str) -> List[str]:
         """Extract technologies from experience body text.
