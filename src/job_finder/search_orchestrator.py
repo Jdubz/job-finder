@@ -14,6 +14,7 @@ from job_finder.scrapers.greenhouse_scraper import GreenhouseScraper
 from job_finder.scrapers.rss_scraper import RSSJobScraper
 from job_finder.storage import FirestoreJobStorage, JobListingsManager
 from job_finder.storage.companies_manager import CompaniesManager
+from job_finder.utils.job_type_filter import FilterDecision, filter_job
 
 logger = logging.getLogger(__name__)
 
@@ -74,6 +75,7 @@ class JobSearchOrchestrator:
             "sources_scraped": 0,
             "total_jobs_found": 0,
             "jobs_after_remote_filter": 0,
+            "jobs_filtered_by_role": 0,
             "duplicates_skipped": 0,
             "jobs_analyzed": 0,
             "jobs_matched": 0,
@@ -97,6 +99,7 @@ class JobSearchOrchestrator:
                 stats["sources_scraped"] += 1
                 stats["total_jobs_found"] += source_stats["jobs_found"]
                 stats["jobs_after_remote_filter"] += source_stats["remote_jobs"]
+                stats["jobs_filtered_by_role"] += source_stats["jobs_filtered_by_role"]
                 stats["duplicates_skipped"] += source_stats["duplicates_skipped"]
                 stats["jobs_analyzed"] += source_stats["jobs_analyzed"]
                 stats["jobs_matched"] += source_stats["jobs_matched"]
@@ -116,6 +119,7 @@ class JobSearchOrchestrator:
         logger.info(f"  Sources scraped: {stats['sources_scraped']}")
         logger.info(f"  Total jobs found: {stats['total_jobs_found']}")
         logger.info(f"  Remote jobs: {stats['jobs_after_remote_filter']}")
+        logger.info(f"  Filtered by role/seniority: {stats['jobs_filtered_by_role']}")
         logger.info(f"  Duplicates skipped: {stats['duplicates_skipped']}")
         logger.info(f"  New jobs analyzed: {stats['jobs_analyzed']}")
         logger.info(f"  Jobs matched (>= threshold): {stats['jobs_matched']}")
@@ -251,6 +255,7 @@ class JobSearchOrchestrator:
         stats = {
             "jobs_found": 0,
             "remote_jobs": 0,
+            "jobs_filtered_by_role": 0,
             "duplicates_skipped": 0,
             "jobs_analyzed": 0,
             "jobs_matched": 0,
@@ -293,8 +298,19 @@ class JobSearchOrchestrator:
                 )
                 return stats
 
+            # Step 3.75: Filter by job type and seniority (BEFORE AI analysis to save costs)
+            role_filtered_jobs, filter_stats = self._filter_by_job_type(fresh_jobs)
+            stats["jobs_filtered_by_role"] = sum(filter_stats.values())
+            logger.info(f"✓ {len(role_filtered_jobs)} jobs after role/seniority filtering")
+
+            if not role_filtered_jobs:
+                self.listings_manager.update_scrape_status(
+                    doc_id=listing["id"], status="success", jobs_found=len(jobs)
+                )
+                return stats
+
             # Step 4: Check for duplicates
-            jobs_to_process = fresh_jobs[:remaining_slots]
+            jobs_to_process = role_filtered_jobs[:remaining_slots]
             logger.info(f"✓ Processing {len(jobs_to_process)} jobs (limit: {remaining_slots})")
 
             existing_jobs, duplicates_count, new_jobs_count = self._check_for_duplicates(
@@ -619,7 +635,57 @@ class JobSearchOrchestrator:
             else:
                 days_old = (datetime.now(timezone.utc) - posted_date).days
                 logger.debug(
-                    f"Skipping old job ({days_old} days): {job.get('title')} at {job.get('company')}"
+                    f"Skipping old job ({days_old} days): "
+                    f"{job.get('title')} at {job.get('company')}"
                 )
 
         return fresh_jobs
+
+    def _filter_by_job_type(
+        self, jobs: List[Dict[str, Any]]
+    ) -> tuple[List[Dict[str, Any]], Dict[str, int]]:
+        """
+        Filter jobs by role type and seniority before AI analysis to save costs.
+
+        Args:
+            jobs: List of jobs to filter
+
+        Returns:
+            Tuple of (filtered_jobs, filter_stats) where filter_stats contains
+            counts of jobs filtered by each reason
+        """
+        # Get filter configuration
+        filters_config = self.config.get("filters", {})
+        strict_role_filter = filters_config.get("strict_role_filtering", True)
+        min_seniority = filters_config.get("min_seniority_level", None)
+
+        filtered_jobs = []
+        filter_stats = {}
+
+        for job in jobs:
+            title = job.get("title", "")
+            description = job.get("description", "")
+
+            # Apply all filters
+            decision, reason = filter_job(
+                title=title,
+                description=description,
+                strict_role_filter=strict_role_filter,
+                min_seniority=min_seniority,
+            )
+
+            if decision == FilterDecision.ACCEPT:
+                filtered_jobs.append(job)
+            else:
+                # Track rejection reasons
+                filter_stats[reason] = filter_stats.get(reason, 0) + 1
+                logger.debug(f"  ❌ Filtered: {title} - {reason}")
+
+        # Log summary of filtered jobs
+        if filter_stats:
+            total_filtered = sum(filter_stats.values())
+            logger.info(f"  Filtered out {total_filtered} jobs by role/seniority:")
+            for reason, count in sorted(filter_stats.items(), key=lambda x: -x[1]):
+                logger.info(f"    - {count}: {reason}")
+
+        return filtered_jobs, filter_stats

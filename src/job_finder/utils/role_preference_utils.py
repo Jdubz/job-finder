@@ -30,10 +30,17 @@ LESS_DESIRABLE_KEYWORDS = [
     "manager",
     "director",
     "vp",
+    "vice president",
     "head of",
     "chief",
+    "cto",
+    "cio",
     "executive",
+    "supervisor",
+    "coordinator",
     "sales",
+    "account executive",
+    "account manager",
     "account",
     "business development",
     "bd",
@@ -43,6 +50,17 @@ LESS_DESIRABLE_KEYWORDS = [
     "pm",
     "program manager",
     "project manager",
+    "delivery manager",
+    "recruiter",
+    "talent acquisition",
+    "customer success",
+    "support engineer",
+    "success engineer",
+    "consultant",
+    "analyst",
+    "data analyst",
+    "business analyst",
+    "designer",
     "lead",  # "lead" without "tech lead" or "technical lead"
 ]
 
@@ -51,10 +69,15 @@ ROLE_DEFINING_KEYWORDS = [
     "manager",
     "director",
     "vp",
+    "vice president",
     "head of",
     "chief",
+    "cto",
+    "cio",
     "executive",
     "sales",
+    "account executive",
+    "account manager",
     "account",
     "business development",
     "bd",
@@ -64,6 +87,10 @@ ROLE_DEFINING_KEYWORDS = [
     "pm",
     "program manager",
     "project manager",
+    "delivery manager",
+    "recruiter",
+    "consultant",
+    "analyst",
 ]
 
 # Acceptable "lead" variants (technical leadership is OK)
@@ -131,6 +158,7 @@ def calculate_role_preference_adjustment(job_title: str) -> Tuple[int, str]:
     if role_type == "preferred":
         return (5, "Engineering/Developer role +5")
     elif role_type == "less_desirable":
-        return (-10, "Management/Sales role -10")
+        # Increased penalty from -10 to -25 to more aggressively filter out unwanted roles
+        return (-25, "Management/Sales role -25")
     else:
         return (0, "Neutral role type")
