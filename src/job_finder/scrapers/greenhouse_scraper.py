@@ -11,6 +11,8 @@ from typing import Any, Dict, List, Optional
 
 import requests
 
+from job_finder.utils.date_utils import parse_job_date
+
 from .base import BaseScraper
 from .text_sanitizer import sanitize_company_name, sanitize_html_description, sanitize_title
 
@@ -108,6 +110,16 @@ class GreenhouseScraper(BaseScraper):
             # Extract description - combine content fields
             description = self._extract_description(job_data)
 
+            # Parse posted date
+            posted_date_str = ""
+            posted_date_raw = job_data.get("updated_at") or job_data.get("created_at")
+            if posted_date_raw:
+                parsed_date = parse_job_date(posted_date_raw)
+                if parsed_date:
+                    posted_date_str = parsed_date.isoformat()
+                else:
+                    posted_date_str = posted_date_raw
+
             # Sanitize all text fields
             title_clean = sanitize_title(job_data.get("title", "Unknown"))
             company_clean = sanitize_company_name(self.company_name)
@@ -121,7 +133,7 @@ class GreenhouseScraper(BaseScraper):
                 "location": location,
                 "description": description_clean,
                 "url": absolute_url,
-                "posted_date": job_data.get("updated_at", ""),
+                "posted_date": posted_date_str,  # ISO format datetime string
                 "salary": "",  # Usually not in Greenhouse API
                 "keywords": departments,  # Use departments as keywords
             }

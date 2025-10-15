@@ -12,6 +12,7 @@ from job_finder.scrapers.text_sanitizer import (
     sanitize_html_description,
     sanitize_title,
 )
+from job_finder.utils.date_utils import parse_job_date
 
 logger = logging.getLogger(__name__)
 
@@ -109,12 +110,22 @@ class RSSJobScraper(BaseScraper):
         # Extract location
         location = self._extract_location(title, description)
 
-        # Get posted date
-        posted_date = ""
+        # Get and parse posted date
+        posted_date_str = ""
+        posted_date_raw = None
         if hasattr(entry, "published"):
-            posted_date = entry.published
+            posted_date_raw = entry.published
         elif hasattr(entry, "updated"):
-            posted_date = entry.updated
+            posted_date_raw = entry.updated
+
+        # Parse date to datetime and convert to ISO format
+        if posted_date_raw:
+            parsed_date = parse_job_date(posted_date_raw)
+            if parsed_date:
+                posted_date_str = parsed_date.isoformat()
+            else:
+                # Keep raw string if parsing fails
+                posted_date_str = posted_date_raw
 
         # Extract salary if present
         salary = self._extract_salary(title, description)
@@ -133,7 +144,7 @@ class RSSJobScraper(BaseScraper):
             "location": location,
             "description": description_clean,
             "url": url,
-            "posted_date": posted_date,
+            "posted_date": posted_date_str,  # ISO format datetime string
             "salary": salary,
             "keywords": [],  # Will be populated by AI
         }

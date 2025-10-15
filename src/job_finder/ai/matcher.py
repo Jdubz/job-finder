@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 from job_finder.ai.prompts import JobMatchPrompts
 from job_finder.ai.providers import AIProvider
 from job_finder.profile.schema import Profile
+from job_finder.utils.date_utils import calculate_freshness_adjustment, parse_job_date
 
 logger = logging.getLogger(__name__)
 
@@ -87,10 +88,8 @@ class AIJobMatcher:
                 logger.warning(f"Failed to analyze job: {job.get('title')}")
                 return None
 
-            # Step 2: Apply score adjustments (Portland office bonus, etc.)
-            match_score = self._calculate_adjusted_score(
-                match_analysis, has_portland_office, job.get("title", "")
-            )
+            # Step 2: Apply score adjustments (Portland office bonus, freshness multiplier, etc.)
+            match_score = self._calculate_adjusted_score(match_analysis, has_portland_office, job)
 
             # Step 3: Check if adjusted score meets minimum threshold
             if match_score < self.min_match_score:
@@ -119,28 +118,52 @@ class AIJobMatcher:
             return None
 
     def _calculate_adjusted_score(
-        self, match_analysis: Dict[str, Any], has_portland_office: bool, job_title: str
+        self, match_analysis: Dict[str, Any], has_portland_office: bool, job: Dict[str, Any]
     ) -> int:
         """
-        Calculate adjusted match score with bonuses applied.
+        Calculate adjusted match score with bonuses and adjustments applied.
 
         Args:
             match_analysis: Raw match analysis from AI
             has_portland_office: Whether company has Portland, OR office
-            job_title: Job title for logging
+            job: Job dictionary with posted_date and other fields
 
         Returns:
-            Adjusted match score (0-100)
+            Adjusted match score (clamped to 0-100)
         """
         base_score = match_analysis.get("match_score", 0)
         match_score = base_score
+        adjustments = []
 
         # Apply Portland office bonus
         if has_portland_office and self.portland_office_bonus > 0:
-            match_score = min(100, base_score + self.portland_office_bonus)
+            match_score += self.portland_office_bonus
+            adjustments.append(f"🏙️ Portland office: +{self.portland_office_bonus}")
+
+        # Apply freshness adjustment
+        posted_date_str = job.get("posted_date", "")
+        if posted_date_str:
+            posted_date = parse_job_date(posted_date_str)
+            freshness_adj = calculate_freshness_adjustment(posted_date)
+            match_score += freshness_adj
+            if freshness_adj > 0:
+                adjustments.append(f"🆕 Fresh job: +{freshness_adj}")
+            elif freshness_adj < 0:
+                adjustments.append(f"📅 Job age: {freshness_adj}")
+        else:
+            # No date info penalty
+            freshness_adj = calculate_freshness_adjustment(None)
+            match_score += freshness_adj
+            adjustments.append(f"❓ No date info: {freshness_adj}")
+
+        # Clamp score to valid range (0-100)
+        match_score = max(0, min(100, match_score))
+
+        # Log adjustments if any were made
+        if adjustments:
             logger.info(
-                f"  🏙️ Portland office bonus: +{self.portland_office_bonus} points "
-                f"(Base: {base_score} → Adjusted: {match_score})"
+                f"  Score adjustments: {', '.join(adjustments)} "
+                f"(Base: {base_score} → Final: {match_score})"
             )
 
         # Recalculate priority tier based on adjusted score
