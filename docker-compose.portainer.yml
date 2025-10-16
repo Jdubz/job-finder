@@ -3,7 +3,7 @@ version: '3.8'
 services:
   job-finder:
     image: ghcr.io/jdubz/job-finder:latest
-    container_name: job-finder-staging
+    container_name: job-finder-production
     restart: unless-stopped
 
     environment:
@@ -13,14 +13,14 @@ services:
       - GOOGLE_APPLICATION_CREDENTIALS=/app/credentials/serviceAccountKey.json
 
       # Environment Configuration
-      - ENVIRONMENT=staging
+      - ENVIRONMENT=production
 
       # Queue Mode - Enable dual-process mode (cron + queue worker)
       - ENABLE_QUEUE_MODE=true
 
-      # Database Overrides - USE STAGING DATABASES
-      - PROFILE_DATABASE_NAME=portfolio-staging
-      - STORAGE_DATABASE_NAME=portfolio-staging
+      # Database Configuration - PRODUCTION DATABASES
+      - PROFILE_DATABASE_NAME=portfolio
+      - STORAGE_DATABASE_NAME=portfolio
 
       # Config path
       - CONFIG_PATH=/app/config/config.yaml
@@ -45,7 +45,7 @@ services:
     labels:
       # Watchtower auto-update labels
       - "com.centurylinklabs.watchtower.enable=true"
-      - "environment=staging"
+      - "environment=production"
 
     networks:
       - job-finder-network
@@ -70,7 +70,7 @@ services:
   # Watchtower for auto-updates
   watchtower:
     image: containrrr/watchtower:latest
-    container_name: watchtower-job-finder-staging
+    container_name: watchtower-job-finder-production
     restart: unless-stopped
 
     environment:
