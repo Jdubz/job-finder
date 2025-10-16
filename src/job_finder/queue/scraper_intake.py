@@ -1,0 +1,116 @@
+"""Helper for scrapers to submit jobs to the queue."""
+
+import logging
+from typing import Any, Dict, List, Optional
+
+from job_finder.queue.manager import QueueManager
+from job_finder.queue.models import JobQueueItem, QueueItemType
+
+logger = logging.getLogger(__name__)
+
+
+class ScraperIntake:
+    """
+    Helper class for scrapers to submit jobs to the intake queue.
+
+    This provides a simple interface for scrapers to add jobs without
+    worrying about queue implementation details.
+    """
+
+    def __init__(self, queue_manager: QueueManager):
+        """
+        Initialize scraper intake.
+
+        Args:
+            queue_manager: Queue manager for adding items
+        """
+        self.queue_manager = queue_manager
+
+    def submit_jobs(
+        self,
+        jobs: List[Dict[str, Any]],
+        source: str = "scraper",
+        company_id: Optional[str] = None,
+    ) -> int:
+        """
+        Submit multiple jobs to the queue.
+
+        Args:
+            jobs: List of job dictionaries from scraper
+            source: Source identifier (e.g., "greenhouse_scraper", "rss_feed")
+            company_id: Optional company ID if known
+
+        Returns:
+            Number of jobs successfully added to queue
+        """
+        added_count = 0
+        skipped_count = 0
+
+        for job in jobs:
+            try:
+                # Check if URL already in queue
+                if self.queue_manager.url_exists_in_queue(job.get("url", "")):
+                    skipped_count += 1
+                    logger.debug(f"Job already in queue: {job.get('url')}")
+                    continue
+
+                # Create queue item
+                queue_item = JobQueueItem(
+                    type=QueueItemType.JOB,
+                    url=job.get("url", ""),
+                    company_name=job.get("company", ""),
+                    company_id=company_id,
+                    source=source,
+                    scraped_data=job,  # Store full job data for later processing
+                )
+
+                # Add to queue
+                self.queue_manager.add_item(queue_item)
+                added_count += 1
+
+            except Exception as e:
+                logger.error(f"Error adding job to queue: {e}")
+                continue
+
+        logger.info(
+            f"Submitted {added_count} jobs to queue from {source} "
+            f"({skipped_count} skipped as duplicates)"
+        )
+        return added_count
+
+    def submit_company(
+        self, company_name: str, company_website: str, source: str = "scraper"
+    ) -> bool:
+        """
+        Submit a company for analysis to the queue.
+
+        Args:
+            company_name: Company name
+            company_website: Company website URL
+            source: Source identifier
+
+        Returns:
+            True if added successfully, False otherwise
+        """
+        try:
+            # Check if URL already in queue
+            if self.queue_manager.url_exists_in_queue(company_website):
+                logger.debug(f"Company already in queue: {company_website}")
+                return False
+
+            # Create queue item
+            queue_item = JobQueueItem(
+                type=QueueItemType.COMPANY,
+                url=company_website,
+                company_name=company_name,
+                source=source,
+            )
+
+            # Add to queue
+            self.queue_manager.add_item(queue_item)
+            logger.info(f"Submitted company to queue: {company_name}")
+            return True
+
+        except Exception as e:
+            logger.error(f"Error adding company to queue: {e}")
+            return False

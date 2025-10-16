@@ -136,7 +136,7 @@ class RSSJobScraper(BaseScraper):
         company_clean = sanitize_company_name(company or "Unknown")
         description_clean = sanitize_html_description(description)
 
-        job = {
+        job: Dict[str, Any] = {
             "title": title_clean,
             "company": company_clean,
             "company_website": "",  # Will be populated later if available

@@ -1,0 +1,348 @@
+"""Process queue items (jobs and companies)."""
+
+import logging
+from typing import Any, Dict, Optional
+
+from job_finder.ai import AIJobMatcher
+from job_finder.company_info_fetcher import CompanyInfoFetcher
+from job_finder.queue.config_loader import ConfigLoader
+from job_finder.queue.manager import QueueManager
+from job_finder.queue.models import JobQueueItem, QueueItemType, QueueStatus
+from job_finder.storage import FirestoreJobStorage
+from job_finder.storage.companies_manager import CompaniesManager
+from job_finder.storage.job_sources_manager import JobSourcesManager
+
+logger = logging.getLogger(__name__)
+
+
+class QueueItemProcessor:
+    """
+    Processes individual queue items (jobs and companies).
+
+    Handles scraping, AI analysis, and storage based on item type.
+    """
+
+    def __init__(
+        self,
+        queue_manager: QueueManager,
+        config_loader: ConfigLoader,
+        job_storage: FirestoreJobStorage,
+        companies_manager: CompaniesManager,
+        sources_manager: JobSourcesManager,
+        company_info_fetcher: CompanyInfoFetcher,
+        ai_matcher: AIJobMatcher,
+    ):
+        """
+        Initialize processor with required managers.
+
+        Args:
+            queue_manager: Queue manager for updating item status
+            config_loader: Configuration loader for stop lists
+            job_storage: Firestore job storage
+            companies_manager: Company data manager
+            sources_manager: Job sources manager
+            company_info_fetcher: Company info scraper
+            ai_matcher: AI job matcher
+        """
+        self.queue_manager = queue_manager
+        self.config_loader = config_loader
+        self.job_storage = job_storage
+        self.companies_manager = companies_manager
+        self.sources_manager = sources_manager
+        self.company_info_fetcher = company_info_fetcher
+        self.ai_matcher = ai_matcher
+
+    def process_item(self, item: JobQueueItem) -> None:
+        """
+        Process a queue item based on its type.
+
+        Args:
+            item: Queue item to process
+        """
+        if not item.id:
+            logger.error("Cannot process item without ID")
+            return
+
+        logger.info(f"Processing queue item {item.id}: {item.type} - {item.url[:50]}...")
+
+        try:
+            # Update status to processing
+            self.queue_manager.update_status(item.id, QueueStatus.PROCESSING)
+
+            # Check stop list
+            if self._should_skip_by_stop_list(item):
+                self.queue_manager.update_status(
+                    item.id, QueueStatus.SKIPPED, "Excluded by stop list"
+                )
+                return
+
+            # Check if URL already exists in job-matches
+            if item.type == QueueItemType.JOB and self.job_storage.job_exists(item.url):
+                self.queue_manager.update_status(
+                    item.id, QueueStatus.SKIPPED, "Job already exists in database"
+                )
+                return
+
+            # Process based on type
+            if item.type == QueueItemType.COMPANY:
+                self._process_company(item)
+            elif item.type == QueueItemType.JOB:
+                self._process_job(item)
+            else:
+                raise ValueError(f"Unknown item type: {item.type}")
+
+        except Exception as e:
+            logger.error(f"Error processing item {item.id}: {e}", exc_info=True)
+            self._handle_failure(item, str(e))
+
+    def _should_skip_by_stop_list(self, item: JobQueueItem) -> bool:
+        """
+        Check if item should be skipped based on stop list.
+
+        Args:
+            item: Queue item to check
+
+        Returns:
+            True if item should be skipped, False otherwise
+        """
+        stop_list = self.config_loader.get_stop_list()
+
+        # Check excluded companies
+        if item.company_name:
+            for excluded in stop_list["excludedCompanies"]:
+                if excluded.lower() in item.company_name.lower():
+                    logger.info(f"Skipping due to excluded company: {item.company_name}")
+                    return True
+
+        # Check excluded domains
+        for excluded_domain in stop_list["excludedDomains"]:
+            if excluded_domain.lower() in item.url.lower():
+                logger.info(f"Skipping due to excluded domain: {excluded_domain}")
+                return True
+
+        # Check excluded keywords in URL
+        for keyword in stop_list["excludedKeywords"]:
+            if keyword.lower() in item.url.lower():
+                logger.info(f"Skipping due to excluded keyword in URL: {keyword}")
+                return True
+
+        return False
+
+    def _process_company(self, item: JobQueueItem) -> None:
+        """
+        Process a company queue item.
+
+        Steps:
+        1. Check if company already exists
+        2. Scrape company website
+        3. Run AI analysis
+        4. Save to companies collection
+        5. Look for job board URLs
+
+        Args:
+            item: Company queue item
+        """
+        company_name = item.company_name or "Unknown Company"
+
+        # Check if company already analyzed
+        existing_company = self.companies_manager.get_company(company_name)
+        if existing_company and existing_company.get("analysis_status") == "complete":
+            logger.info(f"Company {company_name} already analyzed, skipping")
+            if item.id:
+                self.queue_manager.update_status(
+                    item.id, QueueStatus.SKIPPED, "Company already analyzed"
+                )
+            return
+
+        # Scrape and analyze company
+        try:
+            company_info = self.company_info_fetcher.fetch_company_info(company_name, item.url)
+
+            if not company_info:
+                if item.id:
+                    self.queue_manager.update_status(
+                        item.id, QueueStatus.FAILED, "Could not fetch company info"
+                    )
+                return
+
+            # Add analysis status
+            company_info["analysis_status"] = "complete"
+
+            # Save to companies collection
+            company_id = self.companies_manager.save_company(company_info)
+
+            logger.info(f"Successfully processed company: {company_name} (ID: {company_id})")
+            if item.id:
+                self.queue_manager.update_status(
+                    item.id,
+                    QueueStatus.SUCCESS,
+                    f"Company analyzed and saved (ID: {company_id})",
+                    scraped_data=company_info,
+                )
+
+        except Exception as e:
+            logger.error(f"Error processing company {company_name}: {e}")
+            raise
+
+    def _process_job(self, item: JobQueueItem) -> None:
+        """
+        Process a job queue item.
+
+        Steps:
+        1. Scrape job details from URL
+        2. Ensure company exists and is analyzed
+        3. Run AI matching
+        4. Save to job-matches if score meets threshold
+
+        Args:
+            item: Job queue item
+        """
+        # Scrape job details
+        job_data = self._scrape_job(item)
+
+        if not job_data:
+            if item.id:
+                self.queue_manager.update_status(
+                    item.id, QueueStatus.FAILED, "Could not scrape job details"
+                )
+            return
+
+        # Ensure company exists
+        company_name = job_data.get("company", item.company_name)
+        company_website = job_data.get("company_website", "")
+
+        if company_name and company_website:
+            company = self.companies_manager.get_or_create_company(
+                company_name=company_name,
+                company_website=company_website,
+                fetch_info_func=self.company_info_fetcher.fetch_company_info,
+            )
+            company_id = company.get("id")
+            job_data["companyId"] = company_id
+            job_data["company_info"] = self._build_company_info_string(company)
+
+        # Run AI matching
+        try:
+            result = self.ai_matcher.analyze_job(job_data)
+
+            if not result:
+                # Below match threshold
+                if item.id:
+                    self.queue_manager.update_status(
+                        item.id,
+                        QueueStatus.SKIPPED,
+                        f"Job score below threshold "
+                        f"(likely < {self.ai_matcher.min_match_score})",
+                    )
+                return
+
+            # Save to job-matches
+            doc_id = self.job_storage.save_job_match(job_data, result)
+
+            logger.info(
+                f"Job matched and saved: {job_data.get('title')} at {company_name} "
+                f"(Score: {result.match_score}, ID: {doc_id})"
+            )
+            if item.id:
+                self.queue_manager.update_status(
+                    item.id,
+                    QueueStatus.SUCCESS,
+                    f"Job matched with score {result.match_score} " f"and saved (ID: {doc_id})",
+                )
+
+        except Exception as e:
+            logger.error(f"Error analyzing job: {e}")
+            raise
+
+    def _scrape_job(self, item: JobQueueItem) -> Optional[Dict[str, Any]]:
+        """
+        Scrape job details from URL.
+
+        Currently supports basic URL extraction. Can be extended to support
+        different job board formats.
+
+        Args:
+            item: Job queue item
+
+        Returns:
+            Job data dictionary or None if scraping failed
+        """
+        # For now, return basic job data from the queue item
+        # In future, can detect job board type and use appropriate scraper
+        job_data = {
+            "url": item.url,
+            "title": "Unknown",  # Would be scraped
+            "company": item.company_name or "Unknown",
+            "company_website": "",
+            "location": "Unknown",
+            "description": "",
+            "posted_date": None,
+            "salary": None,
+        }
+
+        # If we have scraped_data from a previous scraper run, use it
+        if item.scraped_data:
+            job_data.update(item.scraped_data)
+
+        logger.debug(f"Job data prepared: {job_data.get('title')} " f"at {job_data.get('company')}")
+        return job_data
+
+    def _build_company_info_string(self, company_info: Dict[str, Any]) -> str:
+        """
+        Build formatted company info string.
+
+        Args:
+            company_info: Company data dictionary
+
+        Returns:
+            Formatted company info string
+        """
+        company_about = company_info.get("about", "")
+        company_culture = company_info.get("culture", "")
+        company_mission = company_info.get("mission", "")
+
+        company_info_parts = []
+        if company_about:
+            company_info_parts.append(f"About: {company_about}")
+        if company_culture:
+            company_info_parts.append(f"Culture: {company_culture}")
+        if company_mission:
+            company_info_parts.append(f"Mission: {company_mission}")
+
+        return "\n\n".join(company_info_parts)
+
+    def _handle_failure(self, item: JobQueueItem, error_message: str) -> None:
+        """
+        Handle item processing failure with retry logic.
+
+        Args:
+            item: Failed queue item
+            error_message: Error description
+        """
+        if not item.id:
+            logger.error("Cannot handle failure for item without ID")
+            return
+
+        queue_settings = self.config_loader.get_queue_settings()
+        max_retries = queue_settings["maxRetries"]
+
+        # Increment retry count
+        self.queue_manager.increment_retry(item.id)
+
+        # Check if we should retry
+        if item.retry_count + 1 < max_retries:
+            # Reset to pending for retry
+            self.queue_manager.update_status(
+                item.id,
+                QueueStatus.PENDING,
+                f"Retry {item.retry_count + 1}/{max_retries}: {error_message}",
+            )
+            logger.info(f"Item {item.id} will be retried " f"(attempt {item.retry_count + 1})")
+        else:
+            # Max retries exceeded, mark as failed
+            self.queue_manager.update_status(
+                item.id,
+                QueueStatus.FAILED,
+                f"Max retries exceeded: {error_message}",
+            )
+            logger.error(f"Item {item.id} failed after {max_retries} retries: " f"{error_message}")
