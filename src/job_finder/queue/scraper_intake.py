@@ -48,16 +48,23 @@ class ScraperIntake:
 
         for job in jobs:
             try:
-                # Check if URL already in queue
-                if self.queue_manager.url_exists_in_queue(job.get("url", "")):
+                # Validate URL exists and is non-empty
+                url = job.get("url", "").strip()
+                if not url:
                     skipped_count += 1
-                    logger.debug(f"Job already in queue: {job.get('url')}")
+                    logger.debug("Skipping job with missing or empty URL")
+                    continue
+
+                # Check if URL already in queue
+                if self.queue_manager.url_exists_in_queue(url):
+                    skipped_count += 1
+                    logger.debug(f"Job already in queue: {url}")
                     continue
 
                 # Create queue item
                 queue_item = JobQueueItem(
                     type=QueueItemType.JOB,
-                    url=job.get("url", ""),
+                    url=url,
                     company_name=job.get("company", ""),
                     company_id=company_id,
                     source=source,
@@ -93,15 +100,21 @@ class ScraperIntake:
             True if added successfully, False otherwise
         """
         try:
+            # Validate URL exists and is non-empty
+            url = company_website.strip()
+            if not url:
+                logger.debug(f"Skipping company {company_name} with missing or empty URL")
+                return False
+
             # Check if URL already in queue
-            if self.queue_manager.url_exists_in_queue(company_website):
-                logger.debug(f"Company already in queue: {company_website}")
+            if self.queue_manager.url_exists_in_queue(url):
+                logger.debug(f"Company already in queue: {url}")
                 return False
 
             # Create queue item
             queue_item = JobQueueItem(
                 type=QueueItemType.COMPANY,
-                url=company_website,
+                url=url,
                 company_name=company_name,
                 source=source,
             )

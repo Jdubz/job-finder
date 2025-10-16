@@ -126,7 +126,7 @@ class QueueManager:
         if result_message:
             update_data["result_message"] = result_message
 
-        if scraped_data:
+        if scraped_data is not None:
             update_data["scraped_data"] = scraped_data
 
         # Set processed_at when starting processing

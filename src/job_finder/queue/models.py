@@ -4,7 +4,7 @@ from datetime import datetime
 from enum import Enum
 from typing import Any, Dict, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class QueueItemType(str, Enum):
@@ -71,10 +71,7 @@ class JobQueueItem(BaseModel):
         default=None, description="When processing finished (success/failed/skipped)"
     )
 
-    class Config:
-        """Pydantic config."""
-
-        use_enum_values = True
+    model_config = ConfigDict(use_enum_values=True)
 
     def to_firestore(self) -> Dict[str, Any]:
         """

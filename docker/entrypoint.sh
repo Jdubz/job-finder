@@ -51,6 +51,9 @@ if [ "${ENABLE_QUEUE_MODE}" = "true" ]; then
     echo "Queue worker will process jobs from Firestore queue"
     echo ""
 
+    # Ensure logs directory exists
+    mkdir -p /app/logs
+
     # Start queue worker in background
     /usr/local/bin/python /app/queue_worker.py >> /app/logs/queue_worker.log 2>&1 &
     QUEUE_WORKER_PID=$!
