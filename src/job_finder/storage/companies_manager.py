@@ -77,6 +77,10 @@ class CompaniesManager:
                 - headquarters_location: Company headquarters location
                 - industry: Industry/sector
                 - founded: Year founded
+                - hasPortlandOffice: Whether company has Portland office (boolean)
+                - techStack: List of technologies/skills (list)
+                - tier: Priority tier S/A/B/C/D (computed from scoring)
+                - priorityScore: Numeric priority score (computed)
 
         Returns:
             Document ID of saved company
@@ -102,6 +106,11 @@ class CompaniesManager:
                 "headquarters_location": company_data.get("headquarters_location", ""),
                 "industry": company_data.get("industry", ""),
                 "founded": company_data.get("founded", ""),
+                # New fields for source separation
+                "hasPortlandOffice": company_data.get("hasPortlandOffice", False),
+                "techStack": company_data.get("techStack", []),
+                "tier": company_data.get("tier", ""),
+                "priorityScore": company_data.get("priorityScore", 0),
                 "updatedAt": datetime.now(),
             }
 
@@ -120,6 +129,10 @@ class CompaniesManager:
                     "headquarters_location",
                     "industry",
                     "founded",
+                    "hasPortlandOffice",
+                    "techStack",
+                    "tier",
+                    "priorityScore",
                 ]:
                     new_value = save_data.get(field, "")
                     existing_value = existing.get(field, "")
