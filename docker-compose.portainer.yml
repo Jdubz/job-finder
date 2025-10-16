@@ -7,40 +7,22 @@ services:
     restart: unless-stopped
 
     environment:
-      # API Keys - SET THESE IN PORTAINER
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
       - GOOGLE_APPLICATION_CREDENTIALS=/app/credentials/serviceAccountKey.json
-
-      # Environment Configuration
       - ENVIRONMENT=production
-
-      # Queue Mode - Enable dual-process mode (cron + queue worker)
       - ENABLE_QUEUE_MODE=true
-
-      # Database Configuration - PRODUCTION DATABASES
       - PROFILE_DATABASE_NAME=portfolio
       - STORAGE_DATABASE_NAME=portfolio
-
-      # Config path
       - CONFIG_PATH=/app/config/config.yaml
       - LOG_FILE=/app/logs/scheduler.log
-
-      # Timezone for cron
       - TZ=America/Los_Angeles
 
     volumes:
-      # Mount credentials (REQUIRED)
-      - ./credentials:/app/credentials:ro
-
-      # Mount config (optional - use if you want to edit config externally)
-      - ./config:/app/config:ro
-
-      # Mount logs for persistence
-      - ./logs:/app/logs
-
-      # Mount data for any local file outputs
-      - ./data:/app/data
+      - /srv/dev-disk-by-uuid-45e47416-96ad-41be-9fc0-582e15241cbd/storage/jobscraper/production/credentials:/app/credentials:ro
+      - /srv/dev-disk-by-uuid-45e47416-96ad-41be-9fc0-582e15241cbd/storage/jobscraper/production/config:/app/config:ro
+      - /srv/dev-disk-by-uuid-45e47416-96ad-41be-9fc0-582e15241cbd/storage/jobscraper/production/logs:/app/logs
+      - /srv/dev-disk-by-uuid-45e47416-96ad-41be-9fc0-582e15241cbd/storage/jobscraper/production/data:/app/data
 
     labels:
       # Watchtower auto-update labels
@@ -50,15 +32,14 @@ services:
     networks:
       - job-finder-network
 
-    # Resource limits (adjust as needed)
     deploy:
       resources:
         limits:
-          cpus: '1.0'
-          memory: 1G
+          cpus: '2.0'
+          memory: 2G
         reservations:
-          cpus: '0.25'
-          memory: 256M
+          cpus: '0.5'
+          memory: 512M
 
     healthcheck:
       test: ["CMD", "python", "-c", "import sys; sys.exit(0)"]
