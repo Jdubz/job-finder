@@ -10,13 +10,16 @@ This script:
 
 Usage:
     # Dry run to see what would be migrated
-    python scripts/migrate_listings_to_sources.py --source-db portfolio --target-db portfolio-staging --dry-run
+    python scripts/migrate_listings_to_sources.py \
+        --source-db portfolio --target-db portfolio-staging --dry-run
 
     # Actually run migration from prod to staging
-    python scripts/migrate_listings_to_sources.py --source-db portfolio --target-db portfolio-staging
+    python scripts/migrate_listings_to_sources.py \
+        --source-db portfolio --target-db portfolio-staging
 
     # Migrate within same database (e.g., for production cutover)
-    python scripts/migrate_listings_to_sources.py --source-db portfolio --target-db portfolio
+    python scripts/migrate_listings_to_sources.py \
+        --source-db portfolio --target-db portfolio
 
 Arguments:
     --source-db: Source database to read job-listings from (default: portfolio)
@@ -328,13 +331,16 @@ def main():
         epilog="""
 Examples:
   # Dry run: migrate prod data to staging (no changes)
-  python scripts/migrate_listings_to_sources.py --source-db portfolio --target-db portfolio-staging --dry-run
+  python scripts/migrate_listings_to_sources.py \
+      --source-db portfolio --target-db portfolio-staging --dry-run
 
   # Actually migrate prod data to staging for testing
-  python scripts/migrate_listings_to_sources.py --source-db portfolio --target-db portfolio-staging
+  python scripts/migrate_listings_to_sources.py \
+      --source-db portfolio --target-db portfolio-staging
 
   # Migrate within production (for actual cutover)
-  python scripts/migrate_listings_to_sources.py --source-db portfolio --target-db portfolio
+  python scripts/migrate_listings_to_sources.py \
+      --source-db portfolio --target-db portfolio
         """,
     )
     parser.add_argument(
@@ -358,7 +364,9 @@ Examples:
     # Safety check: warn if migrating to production
     if args.target_db == "portfolio" and not args.dry_run:
         logger.warning("⚠️  WARNING: Target is PRODUCTION database!")
-        logger.warning("⚠️  This will write to the production 'companies' and 'job-sources' collections.")
+        logger.warning(
+            "⚠️  This will write to the production 'companies' and 'job-sources' collections."
+        )
         response = input("⚠️  Are you sure you want to proceed? (yes/no): ")
         if response.lower() != "yes":
             logger.info("Migration cancelled.")

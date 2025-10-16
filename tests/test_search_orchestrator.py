@@ -235,15 +235,29 @@ class TestGetActiveListings:
 
         # Mock company data
         mock_companies = {
-            "comp-b": {"id": "comp-b", "priorityScore": 100, "tier": "A", "hasPortlandOffice": False, "techStack": []},
-            "comp-c": {"id": "comp-c", "priorityScore": 150, "tier": "S", "hasPortlandOffice": True, "techStack": ["Python"]},
+            "comp-b": {
+                "id": "comp-b",
+                "priorityScore": 100,
+                "tier": "A",
+                "hasPortlandOffice": False,
+                "techStack": [],
+            },
+            "comp-c": {
+                "id": "comp-c",
+                "priorityScore": 150,
+                "tier": "S",
+                "hasPortlandOffice": True,
+                "techStack": ["Python"],
+            },
         }
 
         orchestrator = JobSearchOrchestrator(mock_config)
         orchestrator.sources_manager = Mock()
         orchestrator.companies_manager = Mock()
         orchestrator.sources_manager.get_active_sources.return_value = mock_sources
-        orchestrator.companies_manager.get_company_by_id.side_effect = lambda cid: mock_companies.get(cid)
+        orchestrator.companies_manager.get_company_by_id.side_effect = (
+            lambda cid: mock_companies.get(cid)
+        )
 
         sorted_sources = orchestrator._get_active_sources()
 
