@@ -3,16 +3,27 @@
 Migration script to convert job-listings collection to job-sources collection.
 
 This script:
-1. Reads all existing job-listings documents
-2. For each listing with company data, creates/updates company record
-3. Creates new job-source document with companyId reference
+1. Reads job-listings from source database (e.g., production)
+2. For each listing with company data, creates/updates company record in target database
+3. Creates new job-source document with companyId reference in target database
 4. Preserves all tracking data (scrape stats, etc.)
 
 Usage:
-    python scripts/migrate_listings_to_sources.py [--database DATABASE_NAME] [--dry-run]
+    # Dry run to see what would be migrated
+    python scripts/migrate_listings_to_sources.py \
+        --source-db portfolio --target-db portfolio-staging --dry-run
+
+    # Actually run migration from prod to staging
+    python scripts/migrate_listings_to_sources.py \
+        --source-db portfolio --target-db portfolio-staging
+
+    # Migrate within same database (e.g., for production cutover)
+    python scripts/migrate_listings_to_sources.py \
+        --source-db portfolio --target-db portfolio
 
 Arguments:
-    --database: Firestore database name (default: portfolio-staging)
+    --source-db: Source database to read job-listings from (default: portfolio)
+    --target-db: Target database to write companies and job-sources to (default: portfolio-staging)
     --dry-run: Show what would be migrated without making changes
 """
 
@@ -30,7 +41,6 @@ sys.path.insert(0, str(project_root))
 from job_finder.storage.companies_manager import CompaniesManager  # noqa: E402
 from job_finder.storage.firestore_client import FirestoreClient  # noqa: E402
 from job_finder.storage.job_sources_manager import JobSourcesManager  # noqa: E402
-from job_finder.storage.listings_manager import JobListingsManager  # noqa: E402
 
 logging.basicConfig(
     level=logging.INFO,
@@ -42,21 +52,22 @@ logger = logging.getLogger(__name__)
 class ListingsToSourcesMigrator:
     """Migrates job-listings to job-sources with company extraction."""
 
-    def __init__(self, database_name: str, dry_run: bool = False):
+    def __init__(self, source_database: str, target_database: str, dry_run: bool = False):
         """
         Initialize migrator.
 
         Args:
-            database_name: Firestore database name
+            source_database: Source Firestore database to read job-listings from
+            target_database: Target Firestore database to write companies and job-sources to
             dry_run: If True, don't make any changes
         """
-        self.database_name = database_name
+        self.source_database = source_database
+        self.target_database = target_database
         self.dry_run = dry_run
 
-        # Initialize managers
-        self.companies_manager = CompaniesManager(database_name=database_name)
-        self.sources_manager = JobSourcesManager(database_name=database_name)
-        self.listings_manager = JobListingsManager(database_name=database_name)
+        # Initialize managers for TARGET database (where we write)
+        self.companies_manager = CompaniesManager(database_name=target_database)
+        self.sources_manager = JobSourcesManager(database_name=target_database)
 
         # Track statistics
         self.stats = {
@@ -79,16 +90,17 @@ class ListingsToSourcesMigrator:
         """
         logger.info("=" * 70)
         logger.info("STARTING MIGRATION: job-listings → job-sources")
-        logger.info("Database: %s", self.database_name)
+        logger.info(f"Source database: {self.source_database}")
+        logger.info(f"Target database: {self.target_database}")
         logger.info(f"Dry run: {self.dry_run}")
         logger.info("=" * 70)
 
-        # Get all listings
+        # Get all listings from SOURCE database
         listings = self._get_all_listings()
         self.stats["listings_read"] = len(listings)
         logger.info(f"\nFound {len(listings)} job listings to migrate")
 
-        # Process each listing
+        # Process each listing (writes to TARGET database)
         for i, listing in enumerate(listings, 1):
             logger.info(f"\n[{i}/{len(listings)}] Processing: {listing.get('name', 'Unknown')}")
             try:
@@ -104,12 +116,13 @@ class ListingsToSourcesMigrator:
 
     def _get_all_listings(self) -> List[Dict]:
         """
-        Get all job-listings documents from Firestore.
+        Get all job-listings documents from SOURCE Firestore database.
 
         Returns:
             List of listing dictionaries
         """
-        db = FirestoreClient.get_client(self.database_name)
+        logger.info(f"\nReading job-listings from {self.source_database}...")
+        db = FirestoreClient.get_client(self.source_database)
         docs = db.collection("job-listings").stream()
 
         listings = []
@@ -313,12 +326,32 @@ class ListingsToSourcesMigrator:
 def main():
     """Main entry point."""
     parser = argparse.ArgumentParser(
-        description="Migrate job-listings to job-sources with company extraction"
+        description="Migrate job-listings to job-sources with company extraction",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  # Dry run: migrate prod data to staging (no changes)
+  python scripts/migrate_listings_to_sources.py \
+      --source-db portfolio --target-db portfolio-staging --dry-run
+
+  # Actually migrate prod data to staging for testing
+  python scripts/migrate_listings_to_sources.py \
+      --source-db portfolio --target-db portfolio-staging
+
+  # Migrate within production (for actual cutover)
+  python scripts/migrate_listings_to_sources.py \
+      --source-db portfolio --target-db portfolio
+        """,
     )
     parser.add_argument(
-        "--database",
+        "--source-db",
+        default="portfolio",
+        help="Source database to read job-listings from (default: portfolio)",
+    )
+    parser.add_argument(
+        "--target-db",
         default="portfolio-staging",
-        help="Firestore database name (default: portfolio-staging)",
+        help="Target database to write companies and job-sources to (default: portfolio-staging)",
     )
     parser.add_argument(
         "--dry-run",
@@ -328,9 +361,21 @@ def main():
 
     args = parser.parse_args()
 
+    # Safety check: warn if migrating to production
+    if args.target_db == "portfolio" and not args.dry_run:
+        logger.warning("⚠️  WARNING: Target is PRODUCTION database!")
+        logger.warning(
+            "⚠️  This will write to the production 'companies' and 'job-sources' collections."
+        )
+        response = input("⚠️  Are you sure you want to proceed? (yes/no): ")
+        if response.lower() != "yes":
+            logger.info("Migration cancelled.")
+            sys.exit(0)
+
     # Run migration
     migrator = ListingsToSourcesMigrator(
-        database_name=args.database,
+        source_database=args.source_db,
+        target_database=args.target_db,
         dry_run=args.dry_run,
     )
 

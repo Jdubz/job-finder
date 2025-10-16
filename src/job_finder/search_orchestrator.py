@@ -12,7 +12,7 @@ from job_finder.profile import FirestoreProfileLoader
 from job_finder.profile.schema import Profile
 from job_finder.scrapers.greenhouse_scraper import GreenhouseScraper
 from job_finder.scrapers.rss_scraper import RSSJobScraper
-from job_finder.storage import FirestoreJobStorage, JobListingsManager
+from job_finder.storage import FirestoreJobStorage, JobSourcesManager
 from job_finder.storage.companies_manager import CompaniesManager
 from job_finder.utils.job_type_filter import FilterDecision, filter_job
 
@@ -33,7 +33,7 @@ class JobSearchOrchestrator:
         self.profile: Optional[Profile] = None
         self.ai_matcher: Optional[AIJobMatcher] = None
         self.job_storage: Optional[FirestoreJobStorage] = None
-        self.listings_manager: Optional[JobListingsManager] = None
+        self.sources_manager: Optional[JobSourcesManager] = None
         self.companies_manager: Optional[CompaniesManager] = None
         self.company_info_fetcher: Optional[CompanyInfoFetcher] = None
 
@@ -65,9 +65,9 @@ class JobSearchOrchestrator:
         self._initialize_storage()
         logger.info("✓ Storage initialized")
 
-        # Step 4: Get active job listings
-        logger.info("\n📋 STEP 4: Loading job source listings...")
-        listings = self._get_active_listings()
+        # Step 4: Get active job sources
+        logger.info("\n📋 STEP 4: Loading job sources...")
+        listings = self._get_active_sources()
         logger.info(f"✓ Found {len(listings)} active job sources")
 
         # Step 5: Scrape and process each source
@@ -159,6 +159,9 @@ class JobSearchOrchestrator:
 
     def _initialize_ai(self) -> AIJobMatcher:
         """Initialize AI job matcher."""
+        if not self.profile:
+            raise RuntimeError("Profile must be loaded before initializing AI matcher")
+
         ai_config = self.config.get("ai", {})
 
         provider = create_provider(
@@ -177,7 +180,7 @@ class JobSearchOrchestrator:
         return matcher
 
     def _initialize_storage(self):
-        """Initialize Firestore storage for job matches, listings, and companies."""
+        """Initialize Firestore storage for job matches, sources, and companies."""
         storage_config = self.config.get("storage", {})
 
         # Allow environment variable override for database name
@@ -186,7 +189,7 @@ class JobSearchOrchestrator:
         )
 
         self.job_storage = FirestoreJobStorage(database_name=database_name)
-        self.listings_manager = JobListingsManager(database_name=database_name)
+        self.sources_manager = JobSourcesManager(database_name=database_name)
         self.companies_manager = CompaniesManager(database_name=database_name)
 
         # Initialize company info fetcher with AI provider (shares same provider as AI matcher)
@@ -194,21 +197,60 @@ class JobSearchOrchestrator:
             ai_provider=self.ai_matcher.provider if self.ai_matcher else None
         )
 
-    def _get_active_listings(self) -> List[Dict[str, Any]]:
-        """Get active job source listings from Firestore, sorted by priority score.
+    def _get_active_sources(self) -> List[Dict[str, Any]]:
+        """Get active job sources from Firestore with linked company data.
 
-        Returns listings in priority order:
-        - Tier S (100+): Portland office + strong tech match
-        - Tier A (70-99): Perfect tech matches
-        - Tier B (50-69): Good matches
-        - Tier C (30-49): Moderate matches
-        - Tier D (0-29): Basic matches/job boards
+        Returns sources with company data joined in, sorted by priority:
+        - Sources with companyId will have company data attached
+        - Sources without companies (RSS feeds, job boards) are included as-is
+        - Sorted by company priority score for sources with companies
+
+        Returns:
+            List of source dictionaries with company data joined
         """
-        listings = self.listings_manager.get_active_listings()
+        if not self.sources_manager:
+            raise RuntimeError("SourcesManager not initialized")
+        if not self.companies_manager:
+            raise RuntimeError("CompaniesManager not initialized")
+
+        sources = self.sources_manager.get_active_sources()
+
+        # Enrich sources with company data where applicable
+        enriched_sources = []
+        for source in sources:
+            company_id = source.get("companyId")
+
+            if company_id:
+                # Fetch company data and merge priority fields
+                company = self.companies_manager.get_company_by_id(company_id)
+                if company:
+                    # Add company priority data to source
+                    source["hasPortlandOffice"] = company.get("hasPortlandOffice", False)
+                    source["techStack"] = company.get("techStack", [])
+                    source["tier"] = company.get("tier", "D")
+                    source["priorityScore"] = company.get("priorityScore", 0)
+                    source["company_website"] = company.get("website", "")
+                else:
+                    # Company not found, set defaults
+                    logger.warning(
+                        f"Company {company_id} not found for source {source.get('name')}"
+                    )
+                    source["hasPortlandOffice"] = False
+                    source["techStack"] = []
+                    source["tier"] = "D"
+                    source["priorityScore"] = 0
+            else:
+                # No company link (RSS feed, job board) - assign default priority
+                source["hasPortlandOffice"] = False
+                source["techStack"] = []
+                source["tier"] = "D"
+                source["priorityScore"] = 0
+
+            enriched_sources.append(source)
 
         # Sort by priority score (highest first), then by name for consistency
-        sorted_listings = sorted(
-            listings,
+        sorted_sources = sorted(
+            enriched_sources,
             key=lambda x: (
                 -(x.get("priorityScore", 0)),  # Higher score first (negative for descending)
                 x.get("name", ""),  # Then alphabetically by name
@@ -216,9 +258,9 @@ class JobSearchOrchestrator:
         )
 
         # Log tier distribution
-        tier_counts = {}
-        for listing in sorted_listings:
-            tier = listing.get("tier", "Unknown")
+        tier_counts: Dict[str, int] = {}
+        for source in sorted_sources:
+            tier = source.get("tier", "Unknown")
             tier_counts[tier] = tier_counts.get(tier, 0) + 1
 
         logger.info("  Priority distribution:")
@@ -234,7 +276,20 @@ class JobSearchOrchestrator:
                 }.get(tier, tier)
                 logger.info(f"    Tier {tier} ({tier_name}): {tier_counts[tier]} sources")
 
-        return sorted_listings
+        return sorted_sources
+
+    def _ensure_managers_initialized(self) -> None:
+        """Ensure all required managers are initialized."""
+        if not self.sources_manager:
+            raise RuntimeError("SourcesManager not initialized")
+        if not self.companies_manager:
+            raise RuntimeError("CompaniesManager not initialized")
+        if not self.ai_matcher:
+            raise RuntimeError("AIJobMatcher not initialized")
+        if not self.job_storage:
+            raise RuntimeError("JobStorage not initialized")
+        if not self.company_info_fetcher:
+            raise RuntimeError("CompanyInfoFetcher not initialized")
 
     def _process_listing(self, listing: Dict[str, Any], remaining_slots: int) -> Dict[str, Any]:
         """
@@ -247,6 +302,7 @@ class JobSearchOrchestrator:
         Returns:
             Statistics for this source
         """
+        self._ensure_managers_initialized()
         listing_name = listing.get("name", "Unknown")
 
         # Log listing header
@@ -269,7 +325,7 @@ class JobSearchOrchestrator:
             logger.info(f"✓ Found {len(jobs)} jobs")
 
             if not jobs:
-                self.listings_manager.update_scrape_status(
+                self.sources_manager.update_scrape_status(
                     doc_id=listing["id"], status="success", jobs_found=0
                 )
                 return stats
@@ -283,7 +339,7 @@ class JobSearchOrchestrator:
             logger.info(f"✓ {len(remote_jobs)} remote/Portland jobs after location filtering")
 
             if not remote_jobs:
-                self.listings_manager.update_scrape_status(
+                self.sources_manager.update_scrape_status(
                     doc_id=listing["id"], status="success", jobs_found=len(jobs)
                 )
                 return stats
@@ -293,7 +349,7 @@ class JobSearchOrchestrator:
             logger.info(f"✓ {len(fresh_jobs)} jobs after age filtering (<= 7 days)")
 
             if not fresh_jobs:
-                self.listings_manager.update_scrape_status(
+                self.sources_manager.update_scrape_status(
                     doc_id=listing["id"], status="success", jobs_found=len(jobs)
                 )
                 return stats
@@ -304,7 +360,7 @@ class JobSearchOrchestrator:
             logger.info(f"✓ {len(role_filtered_jobs)} jobs after role/seniority filtering")
 
             if not role_filtered_jobs:
-                self.listings_manager.update_scrape_status(
+                self.sources_manager.update_scrape_status(
                     doc_id=listing["id"], status="success", jobs_found=len(jobs)
                 )
                 return stats
@@ -326,8 +382,8 @@ class JobSearchOrchestrator:
             stats["jobs_matched"] = matched_stats["jobs_matched"]
             stats["jobs_saved"] = matched_stats["jobs_saved"]
 
-            # Update listing stats
-            self.listings_manager.update_scrape_status(
+            # Update source stats
+            self.sources_manager.update_scrape_status(
                 doc_id=listing["id"],
                 status="success",
                 jobs_found=len(jobs),
@@ -338,7 +394,7 @@ class JobSearchOrchestrator:
 
         except Exception as e:
             logger.error(f"Error processing {listing_name}: {str(e)}")
-            self.listings_manager.update_scrape_status(
+            self.sources_manager.update_scrape_status(
                 doc_id=listing["id"], status="error", error=str(e)
             )
             raise
@@ -372,10 +428,10 @@ class JobSearchOrchestrator:
 
     def _scrape_jobs_from_listing(self, listing: Dict[str, Any]) -> List[Dict[str, Any]]:
         """
-        Scrape jobs from a listing based on its source type.
+        Scrape jobs from a source based on its source type.
 
         Args:
-            listing: Job listing configuration
+            listing: Job source configuration (with company data joined)
 
         Returns:
             List of scraped job dictionaries
@@ -385,17 +441,20 @@ class JobSearchOrchestrator:
         """
         source_type = listing.get("sourceType", "unknown")
         listing_name = listing.get("name", "Unknown")
+        source_config = listing.get("config", {})
 
         if source_type == "rss":
             rss_scraper = RSSJobScraper(
-                config=self.config.get("scraping", {}), listing_config=listing.get("config", {})
+                config=self.config.get("scraping", {}), listing_config=source_config
             )
             return rss_scraper.scrape()
 
         elif source_type == "greenhouse":
+            # Get board_token from config
+            board_token = source_config.get("board_token")
             greenhouse_config = {
-                "board_token": listing.get("board_token"),
-                "name": listing.get("name", "Unknown"),
+                "board_token": board_token,
+                "name": listing.get("companyName", listing.get("name", "Unknown")),
                 "company_website": listing.get("company_website", ""),
             }
             greenhouse_scraper = GreenhouseScraper(greenhouse_config)
@@ -420,44 +479,45 @@ class JobSearchOrchestrator:
         Fetch company information and attach it to all jobs.
 
         Args:
-            listing: Job listing configuration
+            listing: Job source configuration (with company data joined if applicable)
             jobs: List of job dictionaries to update (modified in place)
         """
-        company_name = listing.get("name", "Unknown")
+        company_id = listing.get("companyId")
+        company_name = listing.get("companyName", listing.get("name", "Unknown"))
         company_website = listing.get("company_website", "")
 
-        if not company_website:
-            logger.debug("No company website available, skipping company info fetch")
-            for job in jobs:
-                job["company_info"] = ""
-            return
+        # If source has a company link, try to fetch from database first
+        company_info = None
+        if company_id:
+            logger.info(f"🏢 Loading company info for {company_name} (ID: {company_id})...")
+            company_info = self.companies_manager.get_company_by_id(company_id)
 
-        logger.info(f"🏢 Fetching company info for {company_name}...")
+        # If no company link or not found, try to fetch by name/website
+        if not company_info and company_website:
+            logger.info(f"🏢 Fetching company info for {company_name}...")
+            try:
+                company_info = self.companies_manager.get_or_create_company(
+                    company_name=company_name,
+                    company_website=company_website,
+                    fetch_info_func=self.company_info_fetcher.fetch_company_info,
+                )
+            except Exception as e:
+                logger.warning(f"⚠️  Failed to fetch company info: {e}")
 
-        try:
-            company_info = self.companies_manager.get_or_create_company(
-                company_name=company_name,
-                company_website=company_website,
-                fetch_info_func=self.company_info_fetcher.fetch_company_info,
-            )
-
-            # Build company info string
+        # Build company info string
+        if company_info:
             company_info_str = self._build_company_info_string(company_info)
-
-            # Update all jobs with company info
-            for job in jobs:
-                job["company_info"] = company_info_str
-
             if company_info_str:
-                logger.info(f"✓ Company info cached ({len(company_info_str)} chars)")
+                logger.info(f"✓ Company info loaded ({len(company_info_str)} chars)")
             else:
                 logger.info("⚠️  No company info found")
+        else:
+            company_info_str = ""
+            logger.debug("No company info available")
 
-        except Exception as e:
-            logger.warning(f"⚠️  Failed to fetch company info: {e}")
-            # Continue without company info
-            for job in jobs:
-                job["company_info"] = ""
+        # Update all jobs with company info
+        for job in jobs:
+            job["company_info"] = company_info_str
 
     def _build_company_info_string(self, company_info: Dict[str, Any]) -> str:
         """
@@ -548,6 +608,11 @@ class JobSearchOrchestrator:
                 result = self.ai_matcher.analyze_job(job, has_portland_office=has_portland_office)
 
                 if result:
+                    # Add companyId to job before saving (if source has a company link)
+                    company_id = listing.get("companyId")
+                    if company_id:
+                        job["companyId"] = company_id
+
                     # Save to Firestore
                     doc_id = self.job_storage.save_job_match(job, result)
                     stats["jobs_matched"] += 1
@@ -660,7 +725,7 @@ class JobSearchOrchestrator:
         min_seniority = filters_config.get("min_seniority_level", None)
 
         filtered_jobs = []
-        filter_stats = {}
+        filter_stats: Dict[str, int] = {}
 
         for job in jobs:
             title = job.get("title", "")

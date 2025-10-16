@@ -21,7 +21,7 @@ def test_imports():
         from job_finder.ai import matcher, providers
         from job_finder.profile import loader, schema
         from job_finder.scrapers import base
-        from job_finder.storage import firestore_storage, listings_manager
+        from job_finder.storage import firestore_storage, job_sources_manager
 
         assert True, "All modules imported successfully"
     except ImportError as e:
