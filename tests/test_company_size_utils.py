@@ -325,3 +325,23 @@ class TestCalculateCompanySizeAdjustment:
         adjustment, description = calculate_company_size_adjustment("invalid", prefer_large=True)
         assert adjustment == 0
         assert "Unknown" in description
+
+
+class TestEdgeCaseTieBreakers:
+    """Test edge cases that might trigger tie-breaker logic."""
+
+    def test_single_medium_pattern_only(self):
+        """Test single medium pattern returns medium."""
+        result = detect_company_size("MedCo", company_info="Mid-sized organization")
+        assert result == "medium"
+
+    def test_conflicting_single_patterns_returns_none(self):
+        """Test conflicting single patterns (1 large, 1 small) returns None."""
+        result = detect_company_size(
+            "ConflictCo",
+            company_info="Fortune 500 startup",  # 1 large, 1 small - conflict
+        )
+        # With 1 large and 1 small, neither condition on lines 181-186 is met
+        # Tie-breaker can't decide since large == small == 1
+        # Should return None
+        assert result is None
