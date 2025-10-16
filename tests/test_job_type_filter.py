@@ -127,6 +127,23 @@ class TestJobTypeFiltering:
         decision, reason = check_job_type_filter("Program Manager")
         assert decision == FilterDecision.REJECT
 
+    def test_reject_product_owner(self):
+        """Test that Product Owner (no 'manager' in title) is rejected."""
+        decision, reason = check_job_type_filter("Product Owner")
+        assert decision == FilterDecision.REJECT
+        assert "product" in reason.lower() or "management" in reason.lower()
+
+    def test_reject_scrum_master(self):
+        """Test that Scrum Master is rejected for product management."""
+        decision, reason = check_job_type_filter("Scrum Master")
+        assert decision == FilterDecision.REJECT
+        # Should be rejected for product management keywords
+        assert (
+            "product" in reason.lower()
+            or "program" in reason.lower()
+            or "management" in reason.lower()
+        )
+
     def test_reject_recruiting_roles(self):
         """Test that recruiting roles are rejected."""
         decision, reason = check_job_type_filter("Technical Recruiter")
@@ -286,6 +303,24 @@ class TestSeniorityFiltering:
         assert decision == FilterDecision.ACCEPT
 
         decision, _ = check_seniority_filter("Distinguished Engineer", min_seniority="principal")
+        assert decision == FilterDecision.ACCEPT
+
+    def test_require_distinguished_level(self):
+        """Test that requiring distinguished level filters out principal roles."""
+        # Should reject principal (doesn't meet distinguished requirement)
+        decision, reason = check_seniority_filter(
+            "Principal Engineer", min_seniority="distinguished"
+        )
+        assert decision == FilterDecision.REJECT
+        assert "minimum seniority" in reason.lower()
+
+        # Should accept distinguished/fellow
+        decision, _ = check_seniority_filter(
+            "Distinguished Engineer", min_seniority="distinguished"
+        )
+        assert decision == FilterDecision.ACCEPT
+
+        decision, _ = check_seniority_filter("Fellow", min_seniority="distinguished")
         assert decision == FilterDecision.ACCEPT
 
 

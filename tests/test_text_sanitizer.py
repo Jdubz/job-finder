@@ -107,6 +107,8 @@ def test_sanitize_empty_text():
     assert sanitize_text("") == ""
     assert sanitize_title("") == ""
     assert sanitize_company_name("") == ""
+    assert sanitize_html_description("") == ""
+    assert sanitize_html_description(None) == ""
 
 
 def test_sanitize_max_length():
