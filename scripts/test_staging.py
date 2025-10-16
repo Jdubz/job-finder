@@ -22,9 +22,9 @@ config: Dict[str, Any] = {
         },
     },
     "ai": {
-        "enabled": False,  # Disabled for architecture testing
+        "enabled": True,
         "provider": "claude",
-        "model": "claude-3-sonnet-20240229",
+        "model": "claude-3-5-haiku-20241022",  # Fast & cost-effective
         "min_match_score": 80,
         "generate_intake_data": True,
         "portland_office_bonus": 15,
