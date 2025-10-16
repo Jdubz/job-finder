@@ -7,6 +7,7 @@ echo "========================================="
 echo "Current time: $(date)"
 echo "Timezone: $TZ"
 echo "Environment: $ENVIRONMENT"
+echo "Queue Mode: ${ENABLE_QUEUE_MODE:-false}"
 echo ""
 
 # Save environment variables for cron
@@ -41,11 +42,55 @@ else
     exit 1
 fi
 
+# Start queue worker if enabled
+if [ "${ENABLE_QUEUE_MODE}" = "true" ]; then
+    echo ""
+    echo "========================================="
+    echo "Starting Queue Worker Daemon"
+    echo "========================================="
+    echo "Queue worker will process jobs from Firestore queue"
+    echo ""
+
+    # Ensure logs directory exists
+    mkdir -p /app/logs
+
+    # Start queue worker in background
+    /usr/local/bin/python /app/queue_worker.py >> /app/logs/queue_worker.log 2>&1 &
+    QUEUE_WORKER_PID=$!
+
+    # Wait a moment and check if it started
+    sleep 2
+    if ps -p $QUEUE_WORKER_PID > /dev/null; then
+        echo "✓ Queue worker started successfully (PID: $QUEUE_WORKER_PID)"
+    else
+        echo "✗ ERROR: Queue worker failed to start!"
+        exit 1
+    fi
+
+    echo ""
+    echo "Container is running in DUAL-PROCESS mode:"
+    echo "  1. Cron (every 6h) - Scrapes sources and adds to queue"
+    echo "  2. Queue Worker (continuous) - Processes queue items"
+    echo "========================================="
+else
+    echo ""
+    echo "Container is running in LEGACY mode (direct processing)"
+    echo "Queue mode disabled. Use ENABLE_QUEUE_MODE=true to enable."
+    echo "========================================="
+fi
+
 echo ""
-echo "Container is ready and waiting for scheduled runs."
-echo "Monitor this log for job execution output."
+echo "Monitor logs:"
+echo "  - Cron output: tail -f /var/log/cron.log"
+echo "  - Queue worker: tail -f /app/logs/queue_worker.log"
 echo "========================================="
 echo ""
 
-# Tail the cron log (this keeps container running and shows output)
-exec tail -f /var/log/cron.log
+# Tail both logs (this keeps container running and shows output)
+if [ "${ENABLE_QUEUE_MODE}" = "true" ]; then
+    # Tail both cron and queue worker logs
+    exec tail -f /var/log/cron.log /app/logs/queue_worker.log
+else
+    # Tail just cron log
+    exec tail -f /var/log/cron.log
+fi

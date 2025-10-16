@@ -34,6 +34,7 @@ COPY config/ ./config/
 COPY run_job_search.py .
 COPY setup_job_listings.py .
 COPY scheduler.py .
+COPY queue_worker.py .
 
 # Copy cron configuration, entrypoint, and helper scripts
 COPY docker/crontab /etc/cron.d/job-finder-cron
