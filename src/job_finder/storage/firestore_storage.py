@@ -82,6 +82,7 @@ class FirestoreJobStorage:
             "title": title,
             "role": role,  # Extracted role without seniority level
             "company": job.get("company", ""),
+            "companyId": job.get("companyId"),  # Link to companies collection
             "companyWebsite": job.get("company_website", ""),
             "companyInfo": job.get("company_info", ""),
             "location": job.get("location", ""),

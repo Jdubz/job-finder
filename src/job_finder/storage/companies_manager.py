@@ -61,6 +61,36 @@ class CompaniesManager:
             )
             return None
 
+    def get_company_by_id(self, company_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Get company information by document ID.
+
+        Args:
+            company_id: Firestore document ID
+
+        Returns:
+            Company data dictionary or None if not found
+        """
+        try:
+            doc = self.db.collection(self.collection_name).document(company_id).get()
+            if doc.exists:
+                company_data = doc.to_dict()
+                company_data["id"] = doc.id
+                return company_data
+            return None
+
+        except (RuntimeError, ValueError, AttributeError) as e:
+            # Firestore query errors or data access issues
+            logger.error(f"Error getting company by ID {company_id} (database): {e}")
+            return None
+        except Exception as e:
+            # Unexpected errors - log with traceback and return None
+            logger.error(
+                f"Unexpected error getting company by ID {company_id} ({type(e).__name__}): {e}",
+                exc_info=True,
+            )
+            return None
+
     def save_company(self, company_data: Dict[str, Any]) -> str:
         """
         Save or update company information.
