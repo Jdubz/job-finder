@@ -79,7 +79,7 @@ class TestJobSearchOrchestratorInit:
         assert orchestrator.profile is None
         assert orchestrator.ai_matcher is None
         assert orchestrator.job_storage is None
-        assert orchestrator.listings_manager is None
+        assert orchestrator.sources_manager is None
         assert orchestrator.companies_manager is None
         assert orchestrator.company_info_fetcher is None
 
@@ -163,12 +163,12 @@ class TestInitializeStorage:
 
     @patch("job_finder.search_orchestrator.CompanyInfoFetcher")
     @patch("job_finder.search_orchestrator.CompaniesManager")
-    @patch("job_finder.search_orchestrator.JobListingsManager")
+    @patch("job_finder.search_orchestrator.JobSourcesManager")
     @patch("job_finder.search_orchestrator.FirestoreJobStorage")
     def test_initialize_storage(
         self,
         mock_storage_class,
-        mock_listings_class,
+        mock_sources_class,
         mock_companies_class,
         mock_fetcher_class,
         mock_config,
@@ -176,8 +176,8 @@ class TestInitializeStorage:
         """Test storage initialization."""
         mock_storage = Mock()
         mock_storage_class.return_value = mock_storage
-        mock_listings = Mock()
-        mock_listings_class.return_value = mock_listings
+        mock_sources = Mock()
+        mock_sources_class.return_value = mock_sources
         mock_companies = Mock()
         mock_companies_class.return_value = mock_companies
         mock_fetcher = Mock()
@@ -189,23 +189,23 @@ class TestInitializeStorage:
         orchestrator._initialize_storage()
 
         assert orchestrator.job_storage == mock_storage
-        assert orchestrator.listings_manager == mock_listings
+        assert orchestrator.sources_manager == mock_sources
         assert orchestrator.companies_manager == mock_companies
         assert orchestrator.company_info_fetcher == mock_fetcher
 
         mock_storage_class.assert_called_once_with(database_name="test-storage")
-        mock_listings_class.assert_called_once_with(database_name="test-storage")
+        mock_sources_class.assert_called_once_with(database_name="test-storage")
         mock_companies_class.assert_called_once_with(database_name="test-storage")
 
     @patch.dict("os.environ", {"STORAGE_DATABASE_NAME": "env-storage-db"})
     @patch("job_finder.search_orchestrator.CompanyInfoFetcher")
     @patch("job_finder.search_orchestrator.CompaniesManager")
-    @patch("job_finder.search_orchestrator.JobListingsManager")
+    @patch("job_finder.search_orchestrator.JobSourcesManager")
     @patch("job_finder.search_orchestrator.FirestoreJobStorage")
     def test_initialize_storage_respects_env_var(
         self,
         mock_storage_class,
-        mock_listings_class,
+        mock_sources_class,
         mock_companies_class,
         mock_fetcher_class,
         mock_config,
@@ -217,50 +217,58 @@ class TestInitializeStorage:
 
         # All should use env var
         mock_storage_class.assert_called_once_with(database_name="env-storage-db")
-        mock_listings_class.assert_called_once_with(database_name="env-storage-db")
+        mock_sources_class.assert_called_once_with(database_name="env-storage-db")
         mock_companies_class.assert_called_once_with(database_name="env-storage-db")
 
 
 class TestGetActiveListings:
-    """Test listing retrieval and sorting."""
+    """Test source retrieval and sorting."""
 
-    def test_get_active_listings_sorted_by_priority(self, mock_config):
-        """Test listings are sorted by priority score."""
-        mock_listings = [
-            {"id": "1", "name": "Company A", "priorityScore": 50, "tier": "B"},
-            {"id": "2", "name": "Company B", "priorityScore": 100, "tier": "A"},
-            {"id": "3", "name": "Company C", "priorityScore": 150, "tier": "S"},
-            {"id": "4", "name": "Company D", "priorityScore": 50, "tier": "B"},
+    def test_get_active_sources_sorted_by_priority(self, mock_config):
+        """Test sources are sorted by priority score."""
+        # Mock sources with company links
+        mock_sources = [
+            {"id": "1", "name": "RSS Feed", "companyId": None},  # No company
+            {"id": "2", "name": "Company B Source", "companyId": "comp-b"},
+            {"id": "3", "name": "Company C Source", "companyId": "comp-c"},
         ]
 
-        orchestrator = JobSearchOrchestrator(mock_config)
-        orchestrator.listings_manager = Mock()
-        orchestrator.listings_manager.get_active_listings.return_value = mock_listings
+        # Mock company data
+        mock_companies = {
+            "comp-b": {"id": "comp-b", "priorityScore": 100, "tier": "A", "hasPortlandOffice": False, "techStack": []},
+            "comp-c": {"id": "comp-c", "priorityScore": 150, "tier": "S", "hasPortlandOffice": True, "techStack": ["Python"]},
+        }
 
-        sorted_listings = orchestrator._get_active_listings()
+        orchestrator = JobSearchOrchestrator(mock_config)
+        orchestrator.sources_manager = Mock()
+        orchestrator.companies_manager = Mock()
+        orchestrator.sources_manager.get_active_sources.return_value = mock_sources
+        orchestrator.companies_manager.get_company_by_id.side_effect = lambda cid: mock_companies.get(cid)
+
+        sorted_sources = orchestrator._get_active_sources()
 
         # Should be sorted by score (descending), then name
-        assert sorted_listings[0]["priorityScore"] == 150  # Highest first
-        assert sorted_listings[1]["priorityScore"] == 100
-        assert sorted_listings[2]["name"] == "Company A"  # Alphabetical for same score
-        assert sorted_listings[3]["name"] == "Company D"
+        assert sorted_sources[0]["name"] == "Company C Source"  # Score 150
+        assert sorted_sources[1]["name"] == "Company B Source"  # Score 100
+        assert sorted_sources[2]["name"] == "RSS Feed"  # Score 0 (no company)
 
-    def test_get_active_listings_handles_missing_score(self, mock_config):
-        """Test listings with missing priority scores."""
-        mock_listings = [
-            {"id": "1", "name": "Company A"},  # Missing priorityScore
-            {"id": "2", "name": "Company B", "priorityScore": 100},
+    def test_get_active_sources_handles_missing_company(self, mock_config):
+        """Test sources with missing company data."""
+        mock_sources = [
+            {"id": "1", "name": "Orphaned Source", "companyId": "missing-id"},
         ]
 
         orchestrator = JobSearchOrchestrator(mock_config)
-        orchestrator.listings_manager = Mock()
-        orchestrator.listings_manager.get_active_listings.return_value = mock_listings
+        orchestrator.sources_manager = Mock()
+        orchestrator.companies_manager = Mock()
+        orchestrator.sources_manager.get_active_sources.return_value = mock_sources
+        orchestrator.companies_manager.get_company_by_id.return_value = None  # Company not found
 
-        sorted_listings = orchestrator._get_active_listings()
+        sorted_sources = orchestrator._get_active_sources()
 
-        # Company B should come first (has score 100 vs 0)
-        assert sorted_listings[0]["name"] == "Company B"
-        assert sorted_listings[1]["name"] == "Company A"
+        # Should set default priority for missing company
+        assert sorted_sources[0]["priorityScore"] == 0
+        assert sorted_sources[0]["tier"] == "D"
 
 
 class TestScrapeJobsFromListing:
@@ -295,9 +303,12 @@ class TestScrapeJobsFromListing:
 
         listing = {
             "sourceType": "greenhouse",
-            "board_token": "test-company",
-            "name": "Test Company",
+            "name": "Test Company Source",
+            "companyName": "Test Company",
             "company_website": "https://test.com",
+            "config": {
+                "board_token": "test-company",
+            },
         }
 
         orchestrator = JobSearchOrchestrator(mock_config)
