@@ -15,6 +15,9 @@ services:
       # Environment Configuration
       - ENVIRONMENT=staging
 
+      # Queue Mode - Enable dual-process mode (cron + queue worker)
+      - ENABLE_QUEUE_MODE=true
+
       # Database Overrides - USE STAGING DATABASES
       - PROFILE_DATABASE_NAME=portfolio-staging
       - STORAGE_DATABASE_NAME=portfolio-staging

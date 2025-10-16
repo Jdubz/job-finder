@@ -88,13 +88,23 @@ class FirestoreProfileLoader:
         experiences = []
 
         try:
-            # Query experience-entries collection
-            docs = self._query_experience_docs(user_id)
+            # Try new schema first (content-items)
+            docs = list(self._query_content_items("company", user_id))
 
-            # Process each document
-            for doc in docs:
-                experience = self._process_experience_doc(doc)
-                experiences.append(experience)
+            if docs:
+                # New schema
+                logger.info("Loading from new content-items schema")
+                for doc in docs:
+                    experience = self._process_content_item_doc(doc)
+                    if experience:
+                        experiences.append(experience)
+            else:
+                # Fallback to old schema (experience-entries)
+                logger.info("Falling back to old experience-entries schema")
+                docs = self._query_experience_docs(user_id)
+                for doc in docs:
+                    experience = self._process_experience_doc(doc)
+                    experiences.append(experience)
 
         except (RuntimeError, ValueError, AttributeError, KeyError) as e:
             # Firestore query errors, validation errors, or missing data fields
@@ -110,9 +120,26 @@ class FirestoreProfileLoader:
 
         return experiences
 
+    def _query_content_items(self, item_type: str, user_id: Optional[str] = None):
+        """
+        Query content-items collection (new schema).
+
+        Args:
+            item_type: Type of content item (company, project, skill-group, etc.)
+            user_id: Optional user ID to filter by
+
+        Returns:
+            List of content item documents
+        """
+        query = self.db.collection("content-items").where("type", "==", item_type)
+        if user_id:
+            query = query.where("userId", "==", user_id)
+
+        return query.stream()
+
     def _query_experience_docs(self, user_id: Optional[str] = None):
         """
-        Query experience documents from Firestore.
+        Query experience documents from Firestore (old schema).
 
         Args:
             user_id: Optional user ID to filter by
@@ -128,6 +155,44 @@ class FirestoreProfileLoader:
         query = query.order_by("startDate", direction=gcloud_firestore.Query.DESCENDING)
 
         return query.stream()
+
+    def _process_content_item_doc(self, doc) -> Optional[Experience]:
+        """
+        Process a content-items document (new schema) into an Experience object.
+
+        Args:
+            doc: Firestore document snapshot with type='company'
+
+        Returns:
+            Experience object or None if invalid
+        """
+        data = doc.to_dict()
+
+        # New schema has: company, role, technologies, accomplishments, etc.
+        company = data.get("company", "")
+        title = data.get("role", "")
+        technologies = data.get("technologies", [])
+        accomplishments = data.get("accomplishments", [])
+
+        if not company or not title:
+            logger.warning(f"Skipping content-item {doc.id}: missing company or role")
+            return None
+
+        # Build description from accomplishments
+        description = "\n".join(accomplishments) if accomplishments else ""
+
+        return Experience(
+            company=company,
+            title=title,
+            start_date=data.get("startDate", ""),
+            end_date=data.get("endDate"),
+            location=data.get("location", ""),
+            description=description,
+            responsibilities=[],  # Could parse from accomplishments
+            achievements=accomplishments,
+            technologies=technologies,
+            is_current=(data.get("endDate") is None or data.get("endDate") == ""),
+        )
 
     def _process_experience_doc(self, doc) -> Experience:
         """
@@ -235,14 +300,40 @@ class FirestoreProfileLoader:
     def _extract_skills(
         self, experiences: List[Experience], blurbs: List[Dict[str, Any]]
     ) -> List[Skill]:
-        """Extract and deduplicate skills from experiences.
+        """Extract and deduplicate skills from experiences and skill-group.
 
-        Note: Blurbs are portfolio content sections, not skill data, so we only
-        extract from experience technologies.
+        Tries new schema (skill-group in content-items) first, then falls back
+        to extracting from experience technologies.
         """
         skills_dict: Dict[str, Skill] = {}
 
-        # Extract from experience technologies
+        # Try loading from skill-group (new schema)
+        try:
+            skill_groups = list(self._query_content_items("skill-group"))
+            if skill_groups:
+                logger.info("Loading skills from skill-group")
+                for group_doc in skill_groups:
+                    group_data = group_doc.to_dict()
+                    subcategories = group_data.get("subcategories", [])
+
+                    for subcategory in subcategories:
+                        category_name = subcategory.get("name", "")
+                        skills = subcategory.get("skills", [])
+
+                        for skill_name in skills:
+                            if skill_name and skill_name not in skills_dict:
+                                skills_dict[skill_name] = Skill(
+                                    name=skill_name,
+                                    level=None,
+                                    years_experience=None,
+                                    category=category_name or "technology",
+                                )
+        except Exception as e:
+            logger.warning(
+                f"Error loading skill-group, falling back to experience technologies: {e}"
+            )
+
+        # Also extract from experience technologies (for additional skills)
         for exp in experiences:
             for tech in exp.technologies:
                 if tech and tech not in skills_dict:
