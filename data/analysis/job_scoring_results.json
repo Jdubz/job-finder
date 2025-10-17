@@ -1,0 +1,1681 @@
+{
+  "analysis": {
+    "total_jobs": 79,
+    "passed": 0,
+    "failed": 79,
+    "pass_rate": "0.0%",
+    "strike_distribution": {
+      "0": 79
+    },
+    "hard_reject_reasons": {
+      "Work arrangement unclear or not allowed": 74,
+      "Hybrid jobs outside Portland not allowed": 5
+    },
+    "strike_reasons": {},
+    "borderline_count": 0,
+    "excellent_count": 0,
+    "borderline_examples": [],
+    "excellent_examples": []
+  },
+  "scored_jobs": [
+    {
+      "job_id": "0JOancLVdy4UVThnoHdP",
+      "title": "",
+      "company": "",
+      "url": "https://www.mongodb.com/careers/job/?gh_jid=7299142",
+      "passed": false,
+      "total_strikes": 0,
+      "strike_threshold": 5,
+      "hard_rejections": [
+        {
+          "filter_category": "hard_reject",
+          "filter_name": "remote_policy",
+          "reason": "Work arrangement unclear or not allowed",
+          "detail": "Remote: False, Hybrid: False, Portland: False, Onsite: False",
+          "severity": "hard_reject",
+          "points": 0
+        }
+      ],
+      "strikes": [],
+      "rejection_summary": "Work arrangement unclear or not allowed"
+    },
+    {
+      "job_id": "2ZMifTkyNIhReJIb2ZIl",
+      "title": "",
+      "company": "",
+      "url": "https://www.mongodb.com/careers/job/?gh_jid=7246352",
+      "passed": false,
+      "total_strikes": 0,
+      "strike_threshold": 5,
+      "hard_rejections": [
+        {
+          "filter_category": "hard_reject",
+          "filter_name": "remote_policy",
+          "reason": "Work arrangement unclear or not allowed",
+          "detail": "Remote: False, Hybrid: False, Portland: False, Onsite: False",
+          "severity": "hard_reject",
+          "points": 0
+        }
+      ],
+      "strikes": [],
+      "rejection_summary": "Work arrangement unclear or not allowed"
+    },
+    {
+      "job_id": "3hleUspn9dS8gVdQkWn4",
+      "title": "",
+      "company": "",
+      "url": "https://www.mongodb.com/careers/job/?gh_jid=6758218",
+      "passed": false,
+      "total_strikes": 0,
+      "strike_threshold": 5,
+      "hard_rejections": [
+        {
+          "filter_category": "hard_reject",
+          "filter_name": "remote_policy",
+          "reason": "Work arrangement unclear or not allowed",
+          "detail": "Remote: False, Hybrid: False, Portland: False, Onsite: False",
+          "severity": "hard_reject",
+          "points": 0
+        }
+      ],
+      "strikes": [],
+      "rejection_summary": "Work arrangement unclear or not allowed"
+    },
+    {
+      "job_id": "4FnWgyj97G2J27DCnRzD",
+      "title": "",
+      "company": "",
+      "url": "https://www.coinbase.com/careers/positions/7300810?gh_jid=7300810",
+      "passed": false,
+      "total_strikes": 0,
+      "strike_threshold": 5,
+      "hard_rejections": [
+        {
+          "filter_category": "hard_reject",
+          "filter_name": "remote_policy",
+          "reason": "Work arrangement unclear or not allowed",
+          "detail": "Remote: False, Hybrid: False, Portland: False, Onsite: False",
+          "severity": "hard_reject",
+          "points": 0
+        }
+      ],
+      "strikes": [],
+      "rejection_summary": "Work arrangement unclear or not allowed"
+    },
+    {
+      "job_id": "4w0mSYiT6OIcSzErXXBC",
+      "title": "",
+      "company": "",
+      "url": "https://weworkremotely.com/remote-jobs/trojan-holdings-limited-senior-webflow-developer-full-stack-web-developer-contract",
+      "passed": false,
+      "total_strikes": 0,
+      "strike_threshold": 5,
+      "hard_rejections": [
+        {
+          "filter_category": "hard_reject",
+          "filter_name": "remote_policy",
+          "reason": "Work arrangement unclear or not allowed",
+          "detail": "Remote: False, Hybrid: False, Portland: False, Onsite: False",
+          "severity": "hard_reject",
+          "points": 0
+        }
+      ],
+      "strikes": [],
+      "rejection_summary": "Work arrangement unclear or not allowed"
+    },
+    {
+      "job_id": "5KT4vqXImkxyL0Dpa9Kd",
+      "title": "",
+      "company": "",
+      "url": "https://weworkremotely.com/remote-jobs/storetasker-senior-shopify-developer-remote-flexible-3",
+      "passed": false,
+      "total_strikes": 0,
+      "strike_threshold": 5,
+      "hard_rejections": [
+        {
+          "filter_category": "hard_reject",
+          "filter_name": "remote_policy",
+          "reason": "Work arrangement unclear or not allowed",
+          "detail": "Remote: False, Hybrid: False, Portland: False, Onsite: False",
+          "severity": "hard_reject",
+          "points": 0
+        }
+      ],
+      "strikes": [],
+      "rejection_summary": "Work arrangement unclear or not allowed"
+    },
+    {
+      "job_id": "5uLeH2JabGFXkCDuF0sR",
+      "title": "",
+      "company": "",
+      "url": "https://boards.greenhouse.io/cloudflare/jobs/7074593?gh_jid=7074593",
+      "passed": false,
+      "total_strikes": 0,
+      "strike_threshold": 5,
+      "hard_rejections": [
+        {
+          "filter_category": "hard_reject",
+          "filter_name": "remote_policy",
+          "reason": "Work arrangement unclear or not allowed",
+          "detail": "Remote: False, Hybrid: False, Portland: False, Onsite: False",
+          "severity": "hard_reject",
+          "points": 0
+        }
+      ],
+      "strikes": [],
+      "rejection_summary": "Work arrangement unclear or not allowed"
+    },
+    {
+      "job_id": "6FE0Uic6mRFFYZ3VlWNF",
+      "title": "",
+      "company": "",
+      "url": "https://www.mongodb.com/careers/job/?gh_jid=7211619",
+      "passed": false,
+      "total_strikes": 0,
+      "strike_threshold": 5,
+      "hard_rejections": [
+        {
+          "filter_category": "hard_reject",
+          "filter_name": "remote_policy",
+          "reason": "Work arrangement unclear or not allowed",
+          "detail": "Remote: False, Hybrid: False, Portland: False, Onsite: False",
+          "severity": "hard_reject",
+          "points": 0
+        }
+      ],
+      "strikes": [],
+      "rejection_summary": "Work arrangement unclear or not allowed"
+    },
+    {
+      "job_id": "6Gc3NFBHaIhdA7aQqSf8",
+      "title": "",
+      "company": "",
+      "url": "https://www.mongodb.com/careers/job/?gh_jid=5573926",
+      "passed": false,
+      "total_strikes": 0,
+      "strike_threshold": 5,
+      "hard_rejections": [
+        {
+          "filter_category": "hard_reject",
+          "filter_name": "remote_policy",
+          "reason": "Work arrangement unclear or not allowed",
+          "detail": "Remote: False, Hybrid: False, Portland: False, Onsite: False",
+          "severity": "hard_reject",
+          "points": 0
+        }
+      ],
+      "strikes": [],
+      "rejection_summary": "Work arrangement unclear or not allowed"
+    },
+    {
+      "job_id": "6dmCO7c9lN4UHjCB96DS",
+      "title": "",
+      "company": "",
+      "url": "https://weworkremotely.com/remote-jobs/molina-healthcare-lead-engineer-applications-edifecs-qconnect-remote",
+      "passed": false,
+      "total_strikes": 0,
+      "strike_threshold": 5,
+      "hard_rejections": [
+        {
+          "filter_category": "hard_reject",
+          "filter_name": "remote_policy",
+          "reason": "Work arrangement unclear or not allowed",
+          "detail": "Remote: False, Hybrid: False, Portland: False, Onsite: False",
+          "severity": "hard_reject",
+          "points": 0
+        }
+      ],
+      "strikes": [],
+      "rejection_summary": "Work arrangement unclear or not allowed"
+    },
+    {
+      "job_id": "72vtOw2HBhI1eKo9VUbt",
+      "title": "",
+      "company": "",
+      "url": "https://www.mongodb.com/careers/job/?gh_jid=7239049",
+      "passed": false,
+      "total_strikes": 0,
+      "strike_threshold": 5,
+      "hard_rejections": [
+        {
+          "filter_category": "hard_reject",
+          "filter_name": "remote_policy",
+          "reason": "Work arrangement unclear or not allowed",
+          "detail": "Remote: False, Hybrid: False, Portland: False, Onsite: False",
+          "severity": "hard_reject",
+          "points": 0
+        }
+      ],
+      "strikes": [],
+      "rejection_summary": "Work arrangement unclear or not allowed"
+    },
+    {
+      "job_id": "79z8Y5jH8cof5fW3Xn95",
+      "title": "",
+      "company": "",
+      "url": "https://weworkremotely.com/remote-jobs/novafy-100-remote-microsoft-power-platform-developer-model-driven-power-apps-dynamics-365",
+      "passed": false,
+      "total_strikes": 0,
+      "strike_threshold": 5,
+      "hard_rejections": [
+        {
+          "filter_category": "hard_reject",
+          "filter_name": "remote_policy",
+          "reason": "Work arrangement unclear or not allowed",
+          "detail": "Remote: False, Hybrid: False, Portland: False, Onsite: False",
+          "severity": "hard_reject",
+          "points": 0
+        }
+      ],
+      "strikes": [],
+      "rejection_summary": "Work arrangement unclear or not allowed"
+    },
+    {
+      "job_id": "7GmVjFnzXOftGMbvf1bS",
+      "title": "",
+      "company": "",
+      "url": "https://www.mongodb.com/careers/job/?gh_jid=6919001",
+      "passed": false,
+      "total_strikes": 0,
+      "strike_threshold": 5,
+      "hard_rejections": [
+        {
+          "filter_category": "hard_reject",
+          "filter_name": "remote_policy",
+          "reason": "Work arrangement unclear or not allowed",
+          "detail": "Remote: False, Hybrid: False, Portland: False, Onsite: False",
+          "severity": "hard_reject",
+          "points": 0
+        }
+      ],
+      "strikes": [],
+      "rejection_summary": "Work arrangement unclear or not allowed"
+    },
+    {
+      "job_id": "9GPoOCXb2GKjkL7UtUgc",
+      "title": "",
+      "company": "",
+      "url": "https://www.mongodb.com/careers/job/?gh_jid=7027409",
+      "passed": false,
+      "total_strikes": 0,
+      "strike_threshold": 5,
+      "hard_rejections": [
+        {
+          "filter_category": "hard_reject",
+          "filter_name": "remote_policy",
+          "reason": "Work arrangement unclear or not allowed",
+          "detail": "Remote: False, Hybrid: False, Portland: False, Onsite: False",
+          "severity": "hard_reject",
+          "points": 0
+        }
+      ],
+      "strikes": [],
+      "rejection_summary": "Work arrangement unclear or not allowed"
+    },
+    {
+      "job_id": "9b9VytuNpjx8okdsQ9Xy",
+      "title": "",
+      "company": "",
+      "url": "https://weworkremotely.com/remote-jobs/novafy-100-remote-microsoft-power-platform-developer-model-driven-power-apps-dynamics-365-1",
+      "passed": false,
+      "total_strikes": 0,
+      "strike_threshold": 5,
+      "hard_rejections": [
+        {
+          "filter_category": "hard_reject",
+          "filter_name": "remote_policy",
+          "reason": "Work arrangement unclear or not allowed",
+          "detail": "Remote: False, Hybrid: False, Portland: False, Onsite: False",
+          "severity": "hard_reject",
+          "points": 0
+        }
+      ],
+      "strikes": [],
+      "rejection_summary": "Work arrangement unclear or not allowed"
+    },
+    {
+      "job_id": "9goY1w5YI4Aq3EO7CP75",
+      "title": "",
+      "company": "",
+      "url": "https://weworkremotely.com/remote-jobs/close-senior-software-engineer-backend-python-usa-only-100-remote-1",
+      "passed": false,
+      "total_strikes": 0,
+      "strike_threshold": 5,
+      "hard_rejections": [
+        {
+          "filter_category": "hard_reject",
+          "filter_name": "remote_policy",
+          "reason": "Work arrangement unclear or not allowed",
+          "detail": "Remote: False, Hybrid: False, Portland: False, Onsite: False",
+          "severity": "hard_reject",
+          "points": 0
+        }
+      ],
+      "strikes": [],
+      "rejection_summary": "Work arrangement unclear or not allowed"
+    },
+    {
+      "job_id": "DgWhdS74dEKGzw7l3Cgf",
+      "title": "",
+      "company": "",
+      "url": "https://boards.greenhouse.io/cloudflare/jobs/4886734?gh_jid=4886734",
+      "passed": false,
+      "total_strikes": 0,
+      "strike_threshold": 5,
+      "hard_rejections": [
+        {
+          "filter_category": "hard_reject",
+          "filter_name": "remote_policy",
+          "reason": "Hybrid jobs outside Portland not allowed",
+          "detail": "Remote: False, Hybrid: True, Portland: False, Onsite: False",
+          "severity": "hard_reject",
+          "points": 0
+        }
+      ],
+      "strikes": [],
+      "rejection_summary": "Hybrid jobs outside Portland not allowed"
+    },
+    {
+      "job_id": "FRaV448OcYeKdkp4l2o6",
+      "title": "",
+      "company": "",
+      "url": "https://www.coinbase.com/careers/positions/7323546?gh_jid=7323546",
+      "passed": false,
+      "total_strikes": 0,
+      "strike_threshold": 5,
+      "hard_rejections": [
+        {
+          "filter_category": "hard_reject",
+          "filter_name": "remote_policy",
+          "reason": "Work arrangement unclear or not allowed",
+          "detail": "Remote: False, Hybrid: False, Portland: False, Onsite: False",
+          "severity": "hard_reject",
+          "points": 0
+        }
+      ],
+      "strikes": [],
+      "rejection_summary": "Work arrangement unclear or not allowed"
+    },
+    {
+      "job_id": "FZnrDCbWE1iuh0yg0NEd",
+      "title": "",
+      "company": "",
+      "url": "https://www.mongodb.com/careers/job/?gh_jid=6966483",
+      "passed": false,
+      "total_strikes": 0,
+      "strike_threshold": 5,
+      "hard_rejections": [
+        {
+          "filter_category": "hard_reject",
+          "filter_name": "remote_policy",
+          "reason": "Work arrangement unclear or not allowed",
+          "detail": "Remote: False, Hybrid: False, Portland: False, Onsite: False",
+          "severity": "hard_reject",
+          "points": 0
+        }
+      ],
+      "strikes": [],
+      "rejection_summary": "Work arrangement unclear or not allowed"
+    },
+    {
+      "job_id": "GhQktEUQUz9jrEdCeSz9",
+      "title": "",
+      "company": "",
+      "url": "https://www.mongodb.com/careers/job/?gh_jid=6925984",
+      "passed": false,
+      "total_strikes": 0,
+      "strike_threshold": 5,
+      "hard_rejections": [
+        {
+          "filter_category": "hard_reject",
+          "filter_name": "remote_policy",
+          "reason": "Work arrangement unclear or not allowed",
+          "detail": "Remote: False, Hybrid: False, Portland: False, Onsite: False",
+          "severity": "hard_reject",
+          "points": 0
+        }
+      ],
+      "strikes": [],
+      "rejection_summary": "Work arrangement unclear or not allowed"
+    },
+    {
+      "job_id": "GsQiP6W3DXZmfB8S5Tz4",
+      "title": "",
+      "company": "",
+      "url": "https://www.mongodb.com/careers/job/?gh_jid=7217822",
+      "passed": false,
+      "total_strikes": 0,
+      "strike_threshold": 5,
+      "hard_rejections": [
+        {
+          "filter_category": "hard_reject",
+          "filter_name": "remote_policy",
+          "reason": "Work arrangement unclear or not allowed",
+          "detail": "Remote: False, Hybrid: False, Portland: False, Onsite: False",
+          "severity": "hard_reject",
+          "points": 0
+        }
+      ],
+      "strikes": [],
+      "rejection_summary": "Work arrangement unclear or not allowed"
+    },
+    {
+      "job_id": "GyJQ6kYMa4sPoPrQcmnv",
+      "title": "",
+      "company": "",
+      "url": "https://www.mongodb.com/careers/job/?gh_jid=7154017",
+      "passed": false,
+      "total_strikes": 0,
+      "strike_threshold": 5,
+      "hard_rejections": [
+        {
+          "filter_category": "hard_reject",
+          "filter_name": "remote_policy",
+          "reason": "Work arrangement unclear or not allowed",
+          "detail": "Remote: False, Hybrid: False, Portland: False, Onsite: False",
+          "severity": "hard_reject",
+          "points": 0
+        }
+      ],
+      "strikes": [],
+      "rejection_summary": "Work arrangement unclear or not allowed"
+    },
+    {
+      "job_id": "IV2v3vl4amO8njRT8nC6",
+      "title": "",
+      "company": "",
+      "url": "https://www.mongodb.com/careers/job/?gh_jid=7290476",
+      "passed": false,
+      "total_strikes": 0,
+      "strike_threshold": 5,
+      "hard_rejections": [
+        {
+          "filter_category": "hard_reject",
+          "filter_name": "remote_policy",
+          "reason": "Work arrangement unclear or not allowed",
+          "detail": "Remote: False, Hybrid: False, Portland: False, Onsite: False",
+          "severity": "hard_reject",
+          "points": 0
+        }
+      ],
+      "strikes": [],
+      "rejection_summary": "Work arrangement unclear or not allowed"
+    },
+    {
+      "job_id": "IzUUALvzUGWXwm861EBE",
+      "title": "",
+      "company": "",
+      "url": "https://www.coinbase.com/careers/positions/7078762?gh_jid=7078762",
+      "passed": false,
+      "total_strikes": 0,
+      "strike_threshold": 5,
+      "hard_rejections": [
+        {
+          "filter_category": "hard_reject",
+          "filter_name": "remote_policy",
+          "reason": "Work arrangement unclear or not allowed",
+          "detail": "Remote: False, Hybrid: False, Portland: False, Onsite: False",
+          "severity": "hard_reject",
+          "points": 0
+        }
+      ],
+      "strikes": [],
+      "rejection_summary": "Work arrangement unclear or not allowed"
+    },
+    {
+      "job_id": "J0yeo53KTpl1MSeuXsRK",
+      "title": "",
+      "company": "",
+      "url": "https://job-boards.greenhouse.io/gitlab/jobs/8173178002",
+      "passed": false,
+      "total_strikes": 0,
+      "strike_threshold": 5,
+      "hard_rejections": [
+        {
+          "filter_category": "hard_reject",
+          "filter_name": "remote_policy",
+          "reason": "Work arrangement unclear or not allowed",
+          "detail": "Remote: False, Hybrid: False, Portland: False, Onsite: False",
+          "severity": "hard_reject",
+          "points": 0
+        }
+      ],
+      "strikes": [],
+      "rejection_summary": "Work arrangement unclear or not allowed"
+    },
+    {
+      "job_id": "JjZ4KEKRCUiOZ5ZLd09T",
+      "title": "",
+      "company": "",
+      "url": "https://job-boards.greenhouse.io/gitlab/jobs/8107101002",
+      "passed": false,
+      "total_strikes": 0,
+      "strike_threshold": 5,
+      "hard_rejections": [
+        {
+          "filter_category": "hard_reject",
+          "filter_name": "remote_policy",
+          "reason": "Work arrangement unclear or not allowed",
+          "detail": "Remote: False, Hybrid: False, Portland: False, Onsite: False",
+          "severity": "hard_reject",
+          "points": 0
+        }
+      ],
+      "strikes": [],
+      "rejection_summary": "Work arrangement unclear or not allowed"
+    },
+    {
+      "job_id": "KejIDtr7YyvQcaAEv3Fp",
+      "title": "",
+      "company": "",
+      "url": "https://www.mongodb.com/careers/job/?gh_jid=6759829",
+      "passed": false,
+      "total_strikes": 0,
+      "strike_threshold": 5,
+      "hard_rejections": [
+        {
+          "filter_category": "hard_reject",
+          "filter_name": "remote_policy",
+          "reason": "Work arrangement unclear or not allowed",
+          "detail": "Remote: False, Hybrid: False, Portland: False, Onsite: False",
+          "severity": "hard_reject",
+          "points": 0
+        }
+      ],
+      "strikes": [],
+      "rejection_summary": "Work arrangement unclear or not allowed"
+    },
+    {
+      "job_id": "KenegsLjWU8P8xaNixKK",
+      "title": "",
+      "company": "",
+      "url": "https://job-boards.greenhouse.io/gitlab/jobs/8208360002",
+      "passed": false,
+      "total_strikes": 0,
+      "strike_threshold": 5,
+      "hard_rejections": [
+        {
+          "filter_category": "hard_reject",
+          "filter_name": "remote_policy",
+          "reason": "Work arrangement unclear or not allowed",
+          "detail": "Remote: False, Hybrid: False, Portland: False, Onsite: False",
+          "severity": "hard_reject",
+          "points": 0
+        }
+      ],
+      "strikes": [],
+      "rejection_summary": "Work arrangement unclear or not allowed"
+    },
+    {
+      "job_id": "KwCdmfnolVyrQJSqlCL6",
+      "title": "",
+      "company": "",
+      "url": "https://www.coinbase.com/careers/positions/6821476?gh_jid=6821476",
+      "passed": false,
+      "total_strikes": 0,
+      "strike_threshold": 5,
+      "hard_rejections": [
+        {
+          "filter_category": "hard_reject",
+          "filter_name": "remote_policy",
+          "reason": "Work arrangement unclear or not allowed",
+          "detail": "Remote: False, Hybrid: False, Portland: False, Onsite: False",
+          "severity": "hard_reject",
+          "points": 0
+        }
+      ],
+      "strikes": [],
+      "rejection_summary": "Work arrangement unclear or not allowed"
+    },
+    {
+      "job_id": "LH6dFEhl6Xue8tEltGUR",
+      "title": "",
+      "company": "",
+      "url": "https://job-boards.greenhouse.io/gitlab/jobs/8207075002",
+      "passed": false,
+      "total_strikes": 0,
+      "strike_threshold": 5,
+      "hard_rejections": [
+        {
+          "filter_category": "hard_reject",
+          "filter_name": "remote_policy",
+          "reason": "Work arrangement unclear or not allowed",
+          "detail": "Remote: False, Hybrid: False, Portland: False, Onsite: False",
+          "severity": "hard_reject",
+          "points": 0
+        }
+      ],
+      "strikes": [],
+      "rejection_summary": "Work arrangement unclear or not allowed"
+    },
+    {
+      "job_id": "MTEu5v8WbcCrtOaDScua",
+      "title": "",
+      "company": "",
+      "url": "https://www.mongodb.com/careers/job/?gh_jid=6793649",
+      "passed": false,
+      "total_strikes": 0,
+      "strike_threshold": 5,
+      "hard_rejections": [
+        {
+          "filter_category": "hard_reject",
+          "filter_name": "remote_policy",
+          "reason": "Work arrangement unclear or not allowed",
+          "detail": "Remote: False, Hybrid: False, Portland: False, Onsite: False",
+          "severity": "hard_reject",
+          "points": 0
+        }
+      ],
+      "strikes": [],
+      "rejection_summary": "Work arrangement unclear or not allowed"
+    },
+    {
+      "job_id": "MxRJDaUgdbGOeAKRPP4j",
+      "title": "",
+      "company": "",
+      "url": "https://www.coinbase.com/careers/positions/7316982?gh_jid=7316982",
+      "passed": false,
+      "total_strikes": 0,
+      "strike_threshold": 5,
+      "hard_rejections": [
+        {
+          "filter_category": "hard_reject",
+          "filter_name": "remote_policy",
+          "reason": "Work arrangement unclear or not allowed",
+          "detail": "Remote: False, Hybrid: False, Portland: False, Onsite: False",
+          "severity": "hard_reject",
+          "points": 0
+        }
+      ],
+      "strikes": [],
+      "rejection_summary": "Work arrangement unclear or not allowed"
+    },
+    {
+      "job_id": "NuATRYzIsj4lIPVHjW99",
+      "title": "",
+      "company": "",
+      "url": "https://www.mongodb.com/careers/job/?gh_jid=6758195",
+      "passed": false,
+      "total_strikes": 0,
+      "strike_threshold": 5,
+      "hard_rejections": [
+        {
+          "filter_category": "hard_reject",
+          "filter_name": "remote_policy",
+          "reason": "Work arrangement unclear or not allowed",
+          "detail": "Remote: False, Hybrid: False, Portland: False, Onsite: False",
+          "severity": "hard_reject",
+          "points": 0
+        }
+      ],
+      "strikes": [],
+      "rejection_summary": "Work arrangement unclear or not allowed"
+    },
+    {
+      "job_id": "OLFSrpZCRKx30I0wDrVt",
+      "title": "",
+      "company": "",
+      "url": "https://www.mongodb.com/careers/job/?gh_jid=6757934",
+      "passed": false,
+      "total_strikes": 0,
+      "strike_threshold": 5,
+      "hard_rejections": [
+        {
+          "filter_category": "hard_reject",
+          "filter_name": "remote_policy",
+          "reason": "Work arrangement unclear or not allowed",
+          "detail": "Remote: False, Hybrid: False, Portland: False, Onsite: False",
+          "severity": "hard_reject",
+          "points": 0
+        }
+      ],
+      "strikes": [],
+      "rejection_summary": "Work arrangement unclear or not allowed"
+    },
+    {
+      "job_id": "OzSNwHtr3W4YNBE7VDpn",
+      "title": "",
+      "company": "",
+      "url": "https://boards.greenhouse.io/cloudflare/jobs/6366748?gh_jid=6366748",
+      "passed": false,
+      "total_strikes": 0,
+      "strike_threshold": 5,
+      "hard_rejections": [
+        {
+          "filter_category": "hard_reject",
+          "filter_name": "remote_policy",
+          "reason": "Hybrid jobs outside Portland not allowed",
+          "detail": "Remote: False, Hybrid: True, Portland: False, Onsite: False",
+          "severity": "hard_reject",
+          "points": 0
+        }
+      ],
+      "strikes": [],
+      "rejection_summary": "Hybrid jobs outside Portland not allowed"
+    },
+    {
+      "job_id": "P6RdkZKHSvnArdv1a0PP",
+      "title": "",
+      "company": "",
+      "url": "https://www.mongodb.com/careers/job/?gh_jid=7298536",
+      "passed": false,
+      "total_strikes": 0,
+      "strike_threshold": 5,
+      "hard_rejections": [
+        {
+          "filter_category": "hard_reject",
+          "filter_name": "remote_policy",
+          "reason": "Work arrangement unclear or not allowed",
+          "detail": "Remote: False, Hybrid: False, Portland: False, Onsite: False",
+          "severity": "hard_reject",
+          "points": 0
+        }
+      ],
+      "strikes": [],
+      "rejection_summary": "Work arrangement unclear or not allowed"
+    },
+    {
+      "job_id": "Q4xOE9kY5Xzk6mHHIoI6",
+      "title": "",
+      "company": "",
+      "url": "https://www.coinbase.com/careers/positions/7178394?gh_jid=7178394",
+      "passed": false,
+      "total_strikes": 0,
+      "strike_threshold": 5,
+      "hard_rejections": [
+        {
+          "filter_category": "hard_reject",
+          "filter_name": "remote_policy",
+          "reason": "Work arrangement unclear or not allowed",
+          "detail": "Remote: False, Hybrid: False, Portland: False, Onsite: False",
+          "severity": "hard_reject",
+          "points": 0
+        }
+      ],
+      "strikes": [],
+      "rejection_summary": "Work arrangement unclear or not allowed"
+    },
+    {
+      "job_id": "RZMYCQiPYPOxszAqTwen",
+      "title": "",
+      "company": "",
+      "url": "https://boards.greenhouse.io/cloudflare/jobs/7277050?gh_jid=7277050",
+      "passed": false,
+      "total_strikes": 0,
+      "strike_threshold": 5,
+      "hard_rejections": [
+        {
+          "filter_category": "hard_reject",
+          "filter_name": "remote_policy",
+          "reason": "Hybrid jobs outside Portland not allowed",
+          "detail": "Remote: False, Hybrid: True, Portland: False, Onsite: True",
+          "severity": "hard_reject",
+          "points": 0
+        }
+      ],
+      "strikes": [],
+      "rejection_summary": "Hybrid jobs outside Portland not allowed"
+    },
+    {
+      "job_id": "TdcZjen7SQnFa57iXqtw",
+      "title": "",
+      "company": "",
+      "url": "https://www.coinbase.com/careers/positions/7304704?gh_jid=7304704",
+      "passed": false,
+      "total_strikes": 0,
+      "strike_threshold": 5,
+      "hard_rejections": [
+        {
+          "filter_category": "hard_reject",
+          "filter_name": "remote_policy",
+          "reason": "Work arrangement unclear or not allowed",
+          "detail": "Remote: False, Hybrid: False, Portland: False, Onsite: False",
+          "severity": "hard_reject",
+          "points": 0
+        }
+      ],
+      "strikes": [],
+      "rejection_summary": "Work arrangement unclear or not allowed"
+    },
+    {
+      "job_id": "TzF7zkGGI6uydjcsRBDj",
+      "title": "",
+      "company": "",
+      "url": "https://weworkremotely.com/remote-jobs/m-c-dean-data-center-infrastructure-manager-dcim-remote-with-security-clearance-3",
+      "passed": false,
+      "total_strikes": 0,
+      "strike_threshold": 5,
+      "hard_rejections": [
+        {
+          "filter_category": "hard_reject",
+          "filter_name": "remote_policy",
+          "reason": "Work arrangement unclear or not allowed",
+          "detail": "Remote: False, Hybrid: False, Portland: False, Onsite: False",
+          "severity": "hard_reject",
+          "points": 0
+        }
+      ],
+      "strikes": [],
+      "rejection_summary": "Work arrangement unclear or not allowed"
+    },
+    {
+      "job_id": "U0adM6ECD6NJa14R96tD",
+      "title": "",
+      "company": "",
+      "url": "https://www.mongodb.com/careers/job/?gh_jid=6918894",
+      "passed": false,
+      "total_strikes": 0,
+      "strike_threshold": 5,
+      "hard_rejections": [
+        {
+          "filter_category": "hard_reject",
+          "filter_name": "remote_policy",
+          "reason": "Work arrangement unclear or not allowed",
+          "detail": "Remote: False, Hybrid: False, Portland: False, Onsite: False",
+          "severity": "hard_reject",
+          "points": 0
+        }
+      ],
+      "strikes": [],
+      "rejection_summary": "Work arrangement unclear or not allowed"
+    },
+    {
+      "job_id": "UTkrITAsBwAVSppWBn1b",
+      "title": "",
+      "company": "",
+      "url": "https://www.mongodb.com/careers/job/?gh_jid=7074773",
+      "passed": false,
+      "total_strikes": 0,
+      "strike_threshold": 5,
+      "hard_rejections": [
+        {
+          "filter_category": "hard_reject",
+          "filter_name": "remote_policy",
+          "reason": "Work arrangement unclear or not allowed",
+          "detail": "Remote: False, Hybrid: False, Portland: False, Onsite: False",
+          "severity": "hard_reject",
+          "points": 0
+        }
+      ],
+      "strikes": [],
+      "rejection_summary": "Work arrangement unclear or not allowed"
+    },
+    {
+      "job_id": "VQR21Ob3ob9nSWEhRR4R",
+      "title": "",
+      "company": "",
+      "url": "https://www.mongodb.com/careers/job/?gh_jid=6757984",
+      "passed": false,
+      "total_strikes": 0,
+      "strike_threshold": 5,
+      "hard_rejections": [
+        {
+          "filter_category": "hard_reject",
+          "filter_name": "remote_policy",
+          "reason": "Work arrangement unclear or not allowed",
+          "detail": "Remote: False, Hybrid: False, Portland: False, Onsite: False",
+          "severity": "hard_reject",
+          "points": 0
+        }
+      ],
+      "strikes": [],
+      "rejection_summary": "Work arrangement unclear or not allowed"
+    },
+    {
+      "job_id": "WgtAECm9SAQ152iuc1Zm",
+      "title": "",
+      "company": "",
+      "url": "https://weworkremotely.com/remote-jobs/edari-servicenow-engineer-remote",
+      "passed": false,
+      "total_strikes": 0,
+      "strike_threshold": 5,
+      "hard_rejections": [
+        {
+          "filter_category": "hard_reject",
+          "filter_name": "remote_policy",
+          "reason": "Work arrangement unclear or not allowed",
+          "detail": "Remote: False, Hybrid: False, Portland: False, Onsite: False",
+          "severity": "hard_reject",
+          "points": 0
+        }
+      ],
+      "strikes": [],
+      "rejection_summary": "Work arrangement unclear or not allowed"
+    },
+    {
+      "job_id": "XsKZQ6MsJx9dVNbASgNT",
+      "title": "",
+      "company": "",
+      "url": "https://www.mongodb.com/careers/job/?gh_jid=7245084",
+      "passed": false,
+      "total_strikes": 0,
+      "strike_threshold": 5,
+      "hard_rejections": [
+        {
+          "filter_category": "hard_reject",
+          "filter_name": "remote_policy",
+          "reason": "Work arrangement unclear or not allowed",
+          "detail": "Remote: False, Hybrid: False, Portland: False, Onsite: False",
+          "severity": "hard_reject",
+          "points": 0
+        }
+      ],
+      "strikes": [],
+      "rejection_summary": "Work arrangement unclear or not allowed"
+    },
+    {
+      "job_id": "XzS241pOPEkfumprXNps",
+      "title": "",
+      "company": "",
+      "url": "https://weworkremotely.com/remote-jobs/proton-electronic-music-senior-full-stack-software-engineer",
+      "passed": false,
+      "total_strikes": 0,
+      "strike_threshold": 5,
+      "hard_rejections": [
+        {
+          "filter_category": "hard_reject",
+          "filter_name": "remote_policy",
+          "reason": "Work arrangement unclear or not allowed",
+          "detail": "Remote: False, Hybrid: False, Portland: False, Onsite: False",
+          "severity": "hard_reject",
+          "points": 0
+        }
+      ],
+      "strikes": [],
+      "rejection_summary": "Work arrangement unclear or not allowed"
+    },
+    {
+      "job_id": "Y6ilDw6Uf1hZlkmz1VjU",
+      "title": "",
+      "company": "",
+      "url": "https://www.coinbase.com/careers/positions/7322262?gh_jid=7322262",
+      "passed": false,
+      "total_strikes": 0,
+      "strike_threshold": 5,
+      "hard_rejections": [
+        {
+          "filter_category": "hard_reject",
+          "filter_name": "remote_policy",
+          "reason": "Work arrangement unclear or not allowed",
+          "detail": "Remote: False, Hybrid: False, Portland: False, Onsite: False",
+          "severity": "hard_reject",
+          "points": 0
+        }
+      ],
+      "strikes": [],
+      "rejection_summary": "Work arrangement unclear or not allowed"
+    },
+    {
+      "job_id": "ZZlU41J93vFsnnFUx6yF",
+      "title": "",
+      "company": "",
+      "url": "https://www.mongodb.com/careers/job/?gh_jid=6758185",
+      "passed": false,
+      "total_strikes": 0,
+      "strike_threshold": 5,
+      "hard_rejections": [
+        {
+          "filter_category": "hard_reject",
+          "filter_name": "remote_policy",
+          "reason": "Work arrangement unclear or not allowed",
+          "detail": "Remote: False, Hybrid: False, Portland: False, Onsite: False",
+          "severity": "hard_reject",
+          "points": 0
+        }
+      ],
+      "strikes": [],
+      "rejection_summary": "Work arrangement unclear or not allowed"
+    },
+    {
+      "job_id": "bxATP6BMoui0lSAXogRH",
+      "title": "",
+      "company": "",
+      "url": "https://www.coinbase.com/careers/positions/7323540?gh_jid=7323540",
+      "passed": false,
+      "total_strikes": 0,
+      "strike_threshold": 5,
+      "hard_rejections": [
+        {
+          "filter_category": "hard_reject",
+          "filter_name": "remote_policy",
+          "reason": "Work arrangement unclear or not allowed",
+          "detail": "Remote: False, Hybrid: False, Portland: False, Onsite: False",
+          "severity": "hard_reject",
+          "points": 0
+        }
+      ],
+      "strikes": [],
+      "rejection_summary": "Work arrangement unclear or not allowed"
+    },
+    {
+      "job_id": "cSZZDSlowvOTKXGdna9o",
+      "title": "",
+      "company": "",
+      "url": "https://boards.greenhouse.io/cloudflare/jobs/7299743?gh_jid=7299743",
+      "passed": false,
+      "total_strikes": 0,
+      "strike_threshold": 5,
+      "hard_rejections": [
+        {
+          "filter_category": "hard_reject",
+          "filter_name": "remote_policy",
+          "reason": "Hybrid jobs outside Portland not allowed",
+          "detail": "Remote: False, Hybrid: True, Portland: False, Onsite: False",
+          "severity": "hard_reject",
+          "points": 0
+        }
+      ],
+      "strikes": [],
+      "rejection_summary": "Hybrid jobs outside Portland not allowed"
+    },
+    {
+      "job_id": "d6NTiqeXGfFBn4r77rEj",
+      "title": "",
+      "company": "",
+      "url": "https://weworkremotely.com/remote-jobs/shopra-senior-full-stack-developer-ruby-on-rails-react",
+      "passed": false,
+      "total_strikes": 0,
+      "strike_threshold": 5,
+      "hard_rejections": [
+        {
+          "filter_category": "hard_reject",
+          "filter_name": "remote_policy",
+          "reason": "Work arrangement unclear or not allowed",
+          "detail": "Remote: False, Hybrid: False, Portland: False, Onsite: False",
+          "severity": "hard_reject",
+          "points": 0
+        }
+      ],
+      "strikes": [],
+      "rejection_summary": "Work arrangement unclear or not allowed"
+    },
+    {
+      "job_id": "dA1cdO7ZNDmUAGuMflBH",
+      "title": "",
+      "company": "",
+      "url": "https://weworkremotely.com/remote-jobs/ace-stainless-supply-acecompressionfittings-com-remote-e-commerce-manager-shopify-erp-digital-campaigns",
+      "passed": false,
+      "total_strikes": 0,
+      "strike_threshold": 5,
+      "hard_rejections": [
+        {
+          "filter_category": "hard_reject",
+          "filter_name": "remote_policy",
+          "reason": "Work arrangement unclear or not allowed",
+          "detail": "Remote: False, Hybrid: False, Portland: False, Onsite: False",
+          "severity": "hard_reject",
+          "points": 0
+        }
+      ],
+      "strikes": [],
+      "rejection_summary": "Work arrangement unclear or not allowed"
+    },
+    {
+      "job_id": "dS99lyaQn8NVRFiuzvTO",
+      "title": "",
+      "company": "",
+      "url": "https://job-boards.greenhouse.io/gitlab/jobs/8161980002",
+      "passed": false,
+      "total_strikes": 0,
+      "strike_threshold": 5,
+      "hard_rejections": [
+        {
+          "filter_category": "hard_reject",
+          "filter_name": "remote_policy",
+          "reason": "Work arrangement unclear or not allowed",
+          "detail": "Remote: False, Hybrid: False, Portland: False, Onsite: False",
+          "severity": "hard_reject",
+          "points": 0
+        }
+      ],
+      "strikes": [],
+      "rejection_summary": "Work arrangement unclear or not allowed"
+    },
+    {
+      "job_id": "eCXyWrjQf2UhH5QVfxwg",
+      "title": "",
+      "company": "",
+      "url": "https://www.mongodb.com/careers/job/?gh_jid=7126222",
+      "passed": false,
+      "total_strikes": 0,
+      "strike_threshold": 5,
+      "hard_rejections": [
+        {
+          "filter_category": "hard_reject",
+          "filter_name": "remote_policy",
+          "reason": "Work arrangement unclear or not allowed",
+          "detail": "Remote: False, Hybrid: False, Portland: False, Onsite: False",
+          "severity": "hard_reject",
+          "points": 0
+        }
+      ],
+      "strikes": [],
+      "rejection_summary": "Work arrangement unclear or not allowed"
+    },
+    {
+      "job_id": "fNxGvBJi8A4SfWl9QJrd",
+      "title": "",
+      "company": "",
+      "url": "https://www.coinbase.com/careers/positions/7302348?gh_jid=7302348",
+      "passed": false,
+      "total_strikes": 0,
+      "strike_threshold": 5,
+      "hard_rejections": [
+        {
+          "filter_category": "hard_reject",
+          "filter_name": "remote_policy",
+          "reason": "Work arrangement unclear or not allowed",
+          "detail": "Remote: False, Hybrid: False, Portland: False, Onsite: False",
+          "severity": "hard_reject",
+          "points": 0
+        }
+      ],
+      "strikes": [],
+      "rejection_summary": "Work arrangement unclear or not allowed"
+    },
+    {
+      "job_id": "gAK0ISGn4LTsjnaYDvrr",
+      "title": "",
+      "company": "",
+      "url": "https://www.mongodb.com/careers/job/?gh_jid=7076191",
+      "passed": false,
+      "total_strikes": 0,
+      "strike_threshold": 5,
+      "hard_rejections": [
+        {
+          "filter_category": "hard_reject",
+          "filter_name": "remote_policy",
+          "reason": "Work arrangement unclear or not allowed",
+          "detail": "Remote: False, Hybrid: False, Portland: False, Onsite: False",
+          "severity": "hard_reject",
+          "points": 0
+        }
+      ],
+      "strikes": [],
+      "rejection_summary": "Work arrangement unclear or not allowed"
+    },
+    {
+      "job_id": "hKxvlPoZu2T0qwi6gTXL",
+      "title": "",
+      "company": "",
+      "url": "https://www.coinbase.com/careers/positions/7325864?gh_jid=7325864",
+      "passed": false,
+      "total_strikes": 0,
+      "strike_threshold": 5,
+      "hard_rejections": [
+        {
+          "filter_category": "hard_reject",
+          "filter_name": "remote_policy",
+          "reason": "Work arrangement unclear or not allowed",
+          "detail": "Remote: False, Hybrid: False, Portland: False, Onsite: False",
+          "severity": "hard_reject",
+          "points": 0
+        }
+      ],
+      "strikes": [],
+      "rejection_summary": "Work arrangement unclear or not allowed"
+    },
+    {
+      "job_id": "hPW4LyW4shDdXRr3YfWn",
+      "title": "",
+      "company": "",
+      "url": "https://www.coinbase.com/careers/positions/7283245?gh_jid=7283245",
+      "passed": false,
+      "total_strikes": 0,
+      "strike_threshold": 5,
+      "hard_rejections": [
+        {
+          "filter_category": "hard_reject",
+          "filter_name": "remote_policy",
+          "reason": "Work arrangement unclear or not allowed",
+          "detail": "Remote: False, Hybrid: False, Portland: False, Onsite: False",
+          "severity": "hard_reject",
+          "points": 0
+        }
+      ],
+      "strikes": [],
+      "rejection_summary": "Work arrangement unclear or not allowed"
+    },
+    {
+      "job_id": "hbPmctUH2PQCx7prQCIT",
+      "title": "",
+      "company": "",
+      "url": "https://www.mongodb.com/careers/job/?gh_jid=7217699",
+      "passed": false,
+      "total_strikes": 0,
+      "strike_threshold": 5,
+      "hard_rejections": [
+        {
+          "filter_category": "hard_reject",
+          "filter_name": "remote_policy",
+          "reason": "Work arrangement unclear or not allowed",
+          "detail": "Remote: False, Hybrid: False, Portland: False, Onsite: False",
+          "severity": "hard_reject",
+          "points": 0
+        }
+      ],
+      "strikes": [],
+      "rejection_summary": "Work arrangement unclear or not allowed"
+    },
+    {
+      "job_id": "hvYfbxBmvOWGUrWdhkMT",
+      "title": "",
+      "company": "",
+      "url": "https://remotive.com/remote-jobs/software-dev/senior-full-stack-developer-2063223",
+      "passed": false,
+      "total_strikes": 0,
+      "strike_threshold": 5,
+      "hard_rejections": [
+        {
+          "filter_category": "hard_reject",
+          "filter_name": "remote_policy",
+          "reason": "Work arrangement unclear or not allowed",
+          "detail": "Remote: False, Hybrid: False, Portland: False, Onsite: False",
+          "severity": "hard_reject",
+          "points": 0
+        }
+      ],
+      "strikes": [],
+      "rejection_summary": "Work arrangement unclear or not allowed"
+    },
+    {
+      "job_id": "jZ3txwXnSiW5yQDWcIwd",
+      "title": "",
+      "company": "",
+      "url": "https://www.coinbase.com/careers/positions/7113176?gh_jid=7113176",
+      "passed": false,
+      "total_strikes": 0,
+      "strike_threshold": 5,
+      "hard_rejections": [
+        {
+          "filter_category": "hard_reject",
+          "filter_name": "remote_policy",
+          "reason": "Work arrangement unclear or not allowed",
+          "detail": "Remote: False, Hybrid: False, Portland: False, Onsite: False",
+          "severity": "hard_reject",
+          "points": 0
+        }
+      ],
+      "strikes": [],
+      "rejection_summary": "Work arrangement unclear or not allowed"
+    },
+    {
+      "job_id": "jqJLNKbmVBSZUYH87Eae",
+      "title": "",
+      "company": "",
+      "url": "https://www.mongodb.com/careers/job/?gh_jid=7276216",
+      "passed": false,
+      "total_strikes": 0,
+      "strike_threshold": 5,
+      "hard_rejections": [
+        {
+          "filter_category": "hard_reject",
+          "filter_name": "remote_policy",
+          "reason": "Work arrangement unclear or not allowed",
+          "detail": "Remote: False, Hybrid: False, Portland: False, Onsite: False",
+          "severity": "hard_reject",
+          "points": 0
+        }
+      ],
+      "strikes": [],
+      "rejection_summary": "Work arrangement unclear or not allowed"
+    },
+    {
+      "job_id": "ls0sBoL4AFuI6Oc9NWYz",
+      "title": "",
+      "company": "",
+      "url": "https://www.coinbase.com/careers/positions/7312428?gh_jid=7312428",
+      "passed": false,
+      "total_strikes": 0,
+      "strike_threshold": 5,
+      "hard_rejections": [
+        {
+          "filter_category": "hard_reject",
+          "filter_name": "remote_policy",
+          "reason": "Work arrangement unclear or not allowed",
+          "detail": "Remote: False, Hybrid: False, Portland: False, Onsite: False",
+          "severity": "hard_reject",
+          "points": 0
+        }
+      ],
+      "strikes": [],
+      "rejection_summary": "Work arrangement unclear or not allowed"
+    },
+    {
+      "job_id": "oLcjcQ374MM7nMzArXe1",
+      "title": "",
+      "company": "",
+      "url": "https://www.coinbase.com/careers/positions/7295443?gh_jid=7295443",
+      "passed": false,
+      "total_strikes": 0,
+      "strike_threshold": 5,
+      "hard_rejections": [
+        {
+          "filter_category": "hard_reject",
+          "filter_name": "remote_policy",
+          "reason": "Work arrangement unclear or not allowed",
+          "detail": "Remote: False, Hybrid: False, Portland: False, Onsite: False",
+          "severity": "hard_reject",
+          "points": 0
+        }
+      ],
+      "strikes": [],
+      "rejection_summary": "Work arrangement unclear or not allowed"
+    },
+    {
+      "job_id": "pImtLXJKjPtI6Qp13iGJ",
+      "title": "",
+      "company": "",
+      "url": "https://weworkremotely.com/remote-jobs/futuremindz-llc-data-engineer-part-time-remote",
+      "passed": false,
+      "total_strikes": 0,
+      "strike_threshold": 5,
+      "hard_rejections": [
+        {
+          "filter_category": "hard_reject",
+          "filter_name": "remote_policy",
+          "reason": "Work arrangement unclear or not allowed",
+          "detail": "Remote: False, Hybrid: False, Portland: False, Onsite: False",
+          "severity": "hard_reject",
+          "points": 0
+        }
+      ],
+      "strikes": [],
+      "rejection_summary": "Work arrangement unclear or not allowed"
+    },
+    {
+      "job_id": "q7cMP4cZWkwuF9L0QHve",
+      "title": "",
+      "company": "",
+      "url": "https://www.mongodb.com/careers/job/?gh_jid=7239454",
+      "passed": false,
+      "total_strikes": 0,
+      "strike_threshold": 5,
+      "hard_rejections": [
+        {
+          "filter_category": "hard_reject",
+          "filter_name": "remote_policy",
+          "reason": "Work arrangement unclear or not allowed",
+          "detail": "Remote: False, Hybrid: False, Portland: False, Onsite: False",
+          "severity": "hard_reject",
+          "points": 0
+        }
+      ],
+      "strikes": [],
+      "rejection_summary": "Work arrangement unclear or not allowed"
+    },
+    {
+      "job_id": "q9RcAWDgH6QQD9injhXp",
+      "title": "",
+      "company": "",
+      "url": "https://weworkremotely.com/remote-jobs/perfect-stealth-technology-startup-lead-software-engineer",
+      "passed": false,
+      "total_strikes": 0,
+      "strike_threshold": 5,
+      "hard_rejections": [
+        {
+          "filter_category": "hard_reject",
+          "filter_name": "remote_policy",
+          "reason": "Work arrangement unclear or not allowed",
+          "detail": "Remote: False, Hybrid: False, Portland: False, Onsite: False",
+          "severity": "hard_reject",
+          "points": 0
+        }
+      ],
+      "strikes": [],
+      "rejection_summary": "Work arrangement unclear or not allowed"
+    },
+    {
+      "job_id": "rYmvUb7xqeB5vTOxAbiq",
+      "title": "",
+      "company": "",
+      "url": "https://weworkremotely.com/remote-jobs/apexver-quantitative-research-team-lead",
+      "passed": false,
+      "total_strikes": 0,
+      "strike_threshold": 5,
+      "hard_rejections": [
+        {
+          "filter_category": "hard_reject",
+          "filter_name": "remote_policy",
+          "reason": "Work arrangement unclear or not allowed",
+          "detail": "Remote: False, Hybrid: False, Portland: False, Onsite: False",
+          "severity": "hard_reject",
+          "points": 0
+        }
+      ],
+      "strikes": [],
+      "rejection_summary": "Work arrangement unclear or not allowed"
+    },
+    {
+      "job_id": "rdcEZSRsX6lodAU5bctV",
+      "title": "",
+      "company": "",
+      "url": "https://www.coinbase.com/careers/positions/7317917?gh_jid=7317917",
+      "passed": false,
+      "total_strikes": 0,
+      "strike_threshold": 5,
+      "hard_rejections": [
+        {
+          "filter_category": "hard_reject",
+          "filter_name": "remote_policy",
+          "reason": "Work arrangement unclear or not allowed",
+          "detail": "Remote: False, Hybrid: False, Portland: False, Onsite: False",
+          "severity": "hard_reject",
+          "points": 0
+        }
+      ],
+      "strikes": [],
+      "rejection_summary": "Work arrangement unclear or not allowed"
+    },
+    {
+      "job_id": "tlutAX9vKvVv1LlvrVRS",
+      "title": "",
+      "company": "",
+      "url": "https://www.mongodb.com/careers/job/?gh_jid=7076211",
+      "passed": false,
+      "total_strikes": 0,
+      "strike_threshold": 5,
+      "hard_rejections": [
+        {
+          "filter_category": "hard_reject",
+          "filter_name": "remote_policy",
+          "reason": "Work arrangement unclear or not allowed",
+          "detail": "Remote: False, Hybrid: False, Portland: False, Onsite: False",
+          "severity": "hard_reject",
+          "points": 0
+        }
+      ],
+      "strikes": [],
+      "rejection_summary": "Work arrangement unclear or not allowed"
+    },
+    {
+      "job_id": "u8nQMZLWatOdnEtdpXbC",
+      "title": "",
+      "company": "",
+      "url": "https://weworkremotely.com/remote-jobs/futuremindz-llc-sr-data-scientist-part-time-remote",
+      "passed": false,
+      "total_strikes": 0,
+      "strike_threshold": 5,
+      "hard_rejections": [
+        {
+          "filter_category": "hard_reject",
+          "filter_name": "remote_policy",
+          "reason": "Work arrangement unclear or not allowed",
+          "detail": "Remote: False, Hybrid: False, Portland: False, Onsite: False",
+          "severity": "hard_reject",
+          "points": 0
+        }
+      ],
+      "strikes": [],
+      "rejection_summary": "Work arrangement unclear or not allowed"
+    },
+    {
+      "job_id": "uUda0kilSbB21l08NpBw",
+      "title": "",
+      "company": "",
+      "url": "https://www.mongodb.com/careers/job/?gh_jid=6753800",
+      "passed": false,
+      "total_strikes": 0,
+      "strike_threshold": 5,
+      "hard_rejections": [
+        {
+          "filter_category": "hard_reject",
+          "filter_name": "remote_policy",
+          "reason": "Work arrangement unclear or not allowed",
+          "detail": "Remote: False, Hybrid: False, Portland: False, Onsite: False",
+          "severity": "hard_reject",
+          "points": 0
+        }
+      ],
+      "strikes": [],
+      "rejection_summary": "Work arrangement unclear or not allowed"
+    },
+    {
+      "job_id": "v3VognE49NfaLEjyz0fA",
+      "title": "",
+      "company": "",
+      "url": "https://www.coinbase.com/careers/positions/6884049?gh_jid=6884049",
+      "passed": false,
+      "total_strikes": 0,
+      "strike_threshold": 5,
+      "hard_rejections": [
+        {
+          "filter_category": "hard_reject",
+          "filter_name": "remote_policy",
+          "reason": "Work arrangement unclear or not allowed",
+          "detail": "Remote: False, Hybrid: False, Portland: False, Onsite: False",
+          "severity": "hard_reject",
+          "points": 0
+        }
+      ],
+      "strikes": [],
+      "rejection_summary": "Work arrangement unclear or not allowed"
+    },
+    {
+      "job_id": "vZ57KYLzkDsgEBJdDFSS",
+      "title": "",
+      "company": "",
+      "url": "https://www.coinbase.com/careers/positions/7076823?gh_jid=7076823",
+      "passed": false,
+      "total_strikes": 0,
+      "strike_threshold": 5,
+      "hard_rejections": [
+        {
+          "filter_category": "hard_reject",
+          "filter_name": "remote_policy",
+          "reason": "Work arrangement unclear or not allowed",
+          "detail": "Remote: False, Hybrid: False, Portland: False, Onsite: False",
+          "severity": "hard_reject",
+          "points": 0
+        }
+      ],
+      "strikes": [],
+      "rejection_summary": "Work arrangement unclear or not allowed"
+    },
+    {
+      "job_id": "viBCeheznGgP0NYaqPgw",
+      "title": "",
+      "company": "",
+      "url": "https://weworkremotely.com/remote-jobs/sticker-mule-software-engineer-1",
+      "passed": false,
+      "total_strikes": 0,
+      "strike_threshold": 5,
+      "hard_rejections": [
+        {
+          "filter_category": "hard_reject",
+          "filter_name": "remote_policy",
+          "reason": "Work arrangement unclear or not allowed",
+          "detail": "Remote: False, Hybrid: False, Portland: False, Onsite: False",
+          "severity": "hard_reject",
+          "points": 0
+        }
+      ],
+      "strikes": [],
+      "rejection_summary": "Work arrangement unclear or not allowed"
+    },
+    {
+      "job_id": "wALGoGXr5tEmsix0c5VC",
+      "title": "",
+      "company": "",
+      "url": "https://boards.greenhouse.io/cloudflare/jobs/7267602?gh_jid=7267602",
+      "passed": false,
+      "total_strikes": 0,
+      "strike_threshold": 5,
+      "hard_rejections": [
+        {
+          "filter_category": "hard_reject",
+          "filter_name": "remote_policy",
+          "reason": "Hybrid jobs outside Portland not allowed",
+          "detail": "Remote: False, Hybrid: True, Portland: False, Onsite: False",
+          "severity": "hard_reject",
+          "points": 0
+        }
+      ],
+      "strikes": [],
+      "rejection_summary": "Hybrid jobs outside Portland not allowed"
+    },
+    {
+      "job_id": "wUskEDuWRpwSbVhvwdzO",
+      "title": "",
+      "company": "",
+      "url": "https://www.coinbase.com/careers/positions/7317932?gh_jid=7317932",
+      "passed": false,
+      "total_strikes": 0,
+      "strike_threshold": 5,
+      "hard_rejections": [
+        {
+          "filter_category": "hard_reject",
+          "filter_name": "remote_policy",
+          "reason": "Work arrangement unclear or not allowed",
+          "detail": "Remote: False, Hybrid: False, Portland: False, Onsite: False",
+          "severity": "hard_reject",
+          "points": 0
+        }
+      ],
+      "strikes": [],
+      "rejection_summary": "Work arrangement unclear or not allowed"
+    },
+    {
+      "job_id": "x81luheLz2wIVkcm3PDc",
+      "title": "",
+      "company": "",
+      "url": "https://weworkremotely.com/remote-jobs/walter-technical-lead",
+      "passed": false,
+      "total_strikes": 0,
+      "strike_threshold": 5,
+      "hard_rejections": [
+        {
+          "filter_category": "hard_reject",
+          "filter_name": "remote_policy",
+          "reason": "Work arrangement unclear or not allowed",
+          "detail": "Remote: False, Hybrid: False, Portland: False, Onsite: False",
+          "severity": "hard_reject",
+          "points": 0
+        }
+      ],
+      "strikes": [],
+      "rejection_summary": "Work arrangement unclear or not allowed"
+    },
+    {
+      "job_id": "xEPnKqHmPtUKvSSJXtW6",
+      "title": "",
+      "company": "",
+      "url": "https://job-boards.greenhouse.io/gitlab/jobs/8162062002",
+      "passed": false,
+      "total_strikes": 0,
+      "strike_threshold": 5,
+      "hard_rejections": [
+        {
+          "filter_category": "hard_reject",
+          "filter_name": "remote_policy",
+          "reason": "Work arrangement unclear or not allowed",
+          "detail": "Remote: False, Hybrid: False, Portland: False, Onsite: False",
+          "severity": "hard_reject",
+          "points": 0
+        }
+      ],
+      "strikes": [],
+      "rejection_summary": "Work arrangement unclear or not allowed"
+    }
+  ]
+}
