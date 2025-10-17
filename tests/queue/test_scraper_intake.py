@@ -112,15 +112,15 @@ def test_submit_jobs_handles_errors(scraper_intake, mock_queue_manager):
 
 
 def test_submit_company_success(scraper_intake, mock_queue_manager):
-    """Test successful company submission."""
+    """Test successful company submission with granular pipeline."""
     mock_queue_manager.url_exists_in_queue.return_value = False
-    mock_queue_manager.add_item.return_value = "doc-id"
+    mock_queue_manager.add_item.return_value = "doc-id-123"
 
     result = scraper_intake.submit_company(
         company_name="Test Corp", company_website="https://testcorp.com", source="scraper"
     )
 
-    assert result is True
+    assert result == "doc-id-123"
     mock_queue_manager.add_item.assert_called_once()
 
     # Check queue item
@@ -128,6 +128,7 @@ def test_submit_company_success(scraper_intake, mock_queue_manager):
     assert call_args.type == "company"
     assert call_args.company_name == "Test Corp"
     assert call_args.url == "https://testcorp.com"
+    assert call_args.company_sub_task == "fetch"  # Should start with FETCH step
 
 
 def test_submit_company_duplicate(scraper_intake, mock_queue_manager):
@@ -138,7 +139,7 @@ def test_submit_company_duplicate(scraper_intake, mock_queue_manager):
         company_name="Test Corp", company_website="https://testcorp.com", source="scraper"
     )
 
-    assert result is False
+    assert result is None
     mock_queue_manager.add_item.assert_not_called()
 
 
@@ -151,7 +152,18 @@ def test_submit_company_error(scraper_intake, mock_queue_manager):
         company_name="Test Corp", company_website="https://testcorp.com", source="scraper"
     )
 
-    assert result is False
+    assert result is None
+
+
+def test_submit_company_empty_url(scraper_intake, mock_queue_manager):
+    """Test company submission with empty URL."""
+    result = scraper_intake.submit_company(
+        company_name="Test Corp", company_website="", source="scraper"
+    )
+
+    assert result is None
+    mock_queue_manager.url_exists_in_queue.assert_not_called()
+    mock_queue_manager.add_item.assert_not_called()
 
 
 def test_submit_jobs_empty_list(scraper_intake, mock_queue_manager):

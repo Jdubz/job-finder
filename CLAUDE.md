@@ -264,23 +264,20 @@ from job_finder.queue.scraper_intake import ScraperIntake
 
 intake = ScraperIntake(queue_manager)
 
-# New granular pipeline (recommended)
-doc_id = intake.submit_company_granular(
+# Submit company to granular pipeline
+doc_id = intake.submit_company(
     company_name="Example Corp",
     company_website="https://example.com",
     source="user_submission"
 )
-
-# Legacy monolithic processing (still supported)
-success = intake.submit_company(
-    company_name="Example Corp",
-    company_website="https://example.com"
-)
+# Returns: Document ID of the created queue item, or None if failed/duplicate
 ```
 
 **Backwards Compatibility:**
 
-Legacy items (no `sub_task` field) still process monolithically through the original `_process_job()` method. Both approaches coexist seamlessly.
+Legacy job items (no `sub_task` field) still process monolithically through the original `_process_job()` method. Job granular pipeline is opt-in.
+
+**Company items now REQUIRE `company_sub_task`** - all company processing uses the granular pipeline exclusively.
 
 ### Legacy Pipeline (Still Supported)
 

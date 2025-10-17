@@ -244,26 +244,49 @@ class TestCompanyPipeline:
         assert score >= 100  # Should be in A tier range
         assert tier in ["S", "A"]
 
-    def test_legacy_company_processing_still_works(self, processor, mock_dependencies):
-        """Test that legacy monolithic company processing still works."""
+    def test_company_without_sub_task_raises_error(self, processor, mock_dependencies):
+        """Test that company items without company_sub_task raise an error."""
         queue_item = JobQueueItem(
             id="test-id",
             type=QueueItemType.COMPANY,
             url="https://example.com",
             company_name="Example Corp",
-            # No company_sub_task = legacy processing
+            # No company_sub_task = should error
         )
 
-        # Mock company already exists
-        mock_dependencies["companies_manager"].get_company.return_value = {
-            "name": "Example Corp",
-            "analysis_status": "complete",
+        # Mock stop list check
+        mock_dependencies["config_loader"].get_stop_list.return_value = {
+            "excludedCompanies": [],
+            "excludedKeywords": [],
+            "excludedDomains": [],
         }
 
-        # Execute
-        processor._process_company(queue_item)
+        # Mock queue settings for error handling
+        mock_dependencies["config_loader"].get_queue_settings.return_value = {
+            "maxRetries": 3,
+            "retryDelaySeconds": 60,
+        }
 
-        # Verify skipped (already analyzed)
+        # Execute - should fail the item with ValueError
+        processor.process_item(queue_item)
+
+        # Verify error was caught and handled
         assert mock_dependencies["queue_manager"].update_status.called
-        status_call = mock_dependencies["queue_manager"].update_status.call_args
-        assert status_call[0][1] == QueueStatus.SKIPPED
+
+        calls = mock_dependencies["queue_manager"].update_status.call_args_list
+
+        # Should have: PROCESSING, then PENDING (for retry)
+        assert len(calls) >= 2
+
+        # First call should be PROCESSING
+        assert calls[0][0][1] == QueueStatus.PROCESSING
+
+        # Last call should be PENDING (will retry)
+        last_call = calls[-1]
+        assert last_call[0][1] == QueueStatus.PENDING  # Status is PENDING (for retry)
+        # Error details should be in keyword arg 'error_details'
+        if "error_details" in last_call[1]:
+            assert "must have company_sub_task" in last_call[1]["error_details"]
+        else:
+            # Or it might be a positional arg
+            assert len(last_call[0]) > 2  # Should have error message

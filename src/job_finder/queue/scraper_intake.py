@@ -89,49 +89,6 @@ class ScraperIntake:
         return added_count
 
     def submit_company(
-        self, company_name: str, company_website: str, source: QueueSource = "scraper"
-    ) -> bool:
-        """
-        Submit a company for analysis to the queue.
-
-        Args:
-            company_name: Company name
-            company_website: Company website URL
-            source: Source identifier
-
-        Returns:
-            True if added successfully, False otherwise
-        """
-        try:
-            # Validate URL exists and is non-empty
-            url = company_website.strip()
-            if not url:
-                logger.debug(f"Skipping company {company_name} with missing or empty URL")
-                return False
-
-            # Check if URL already in queue
-            if self.queue_manager.url_exists_in_queue(url):
-                logger.debug(f"Company already in queue: {url}")
-                return False
-
-            # Create queue item
-            queue_item = JobQueueItem(
-                type=QueueItemType.COMPANY,
-                url=url,
-                company_name=company_name,
-                source=source,
-            )
-
-            # Add to queue
-            self.queue_manager.add_item(queue_item)
-            logger.info(f"Submitted company to queue: {company_name}")
-            return True
-
-        except Exception as e:
-            logger.error(f"Error adding company to queue: {e}")
-            return False
-
-    def submit_company_granular(
         self,
         company_name: str,
         company_website: str,

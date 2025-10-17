@@ -117,12 +117,13 @@ class QueueItemProcessor:
 
             # Process based on type and sub_task
             if item.type == QueueItemType.COMPANY:
-                # Check if this is a granular pipeline item
-                if item.company_sub_task:
-                    self._process_granular_company(item)
-                else:
-                    # Legacy monolithic processing
-                    self._process_company(item)
+                # All company items must use granular pipeline
+                if not item.company_sub_task:
+                    raise ValueError(
+                        "Company items must have company_sub_task set. "
+                        "Use submit_company() which creates granular pipeline items."
+                    )
+                self._process_granular_company(item)
             elif item.type == QueueItemType.JOB:
                 # Check if this is a granular pipeline item
                 if item.sub_task:
@@ -178,72 +179,6 @@ class QueueItemProcessor:
                 return True
 
         return False
-
-    def _process_company(self, item: JobQueueItem) -> None:
-        """
-        Process a company queue item.
-
-        Steps:
-        1. Check if company already exists
-        2. Scrape company website
-        3. Run AI analysis
-        4. Save to companies collection
-        5. Look for job board URLs
-
-        Args:
-            item: Company queue item
-        """
-        company_name = item.company_name or "Unknown Company"
-
-        # Check if company already analyzed
-        existing_company = self.companies_manager.get_company(company_name)
-        if existing_company and existing_company.get("analysis_status") == "complete":
-            logger.info(f"Company {company_name} already analyzed, skipping")
-            if item.id:
-                self.queue_manager.update_status(
-                    item.id, QueueStatus.SKIPPED, "Company already analyzed"
-                )
-            return
-
-        # Scrape and analyze company
-        try:
-            company_info = self.company_info_fetcher.fetch_company_info(company_name, item.url)
-
-            if not company_info:
-                if item.id:
-                    error_msg = "Could not fetch company information from website"
-                    error_details = (
-                        f"Failed to scrape company info from: {item.url}\n"
-                        f"Company: {company_name}\n\n"
-                        f"Possible causes:\n"
-                        f"- Website is down or blocking requests\n"
-                        f"- Company website structure has changed\n"
-                        f"- Network connectivity issues\n"
-                        f"- Rate limiting from target website"
-                    )
-                    self.queue_manager.update_status(
-                        item.id, QueueStatus.FAILED, error_msg, error_details=error_details
-                    )
-                return
-
-            # Add analysis status
-            company_info["analysis_status"] = "complete"
-
-            # Save to companies collection
-            company_id = self.companies_manager.save_company(company_info)
-
-            logger.info(f"Successfully processed company: {company_name} (ID: {company_id})")
-            if item.id:
-                self.queue_manager.update_status(
-                    item.id,
-                    QueueStatus.SUCCESS,
-                    f"Company analyzed and saved (ID: {company_id})",
-                    scraped_data=company_info,
-                )
-
-        except Exception as e:
-            logger.error(f"Error processing company {company_name}: {e}")
-            raise
 
     def _process_job(self, item: JobQueueItem) -> None:
         """
