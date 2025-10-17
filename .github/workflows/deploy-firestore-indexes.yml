@@ -36,6 +36,10 @@ jobs:
         uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
+        # NOTE: You must add GCP_SA_KEY to GitHub repository secrets
+        # Settings > Secrets and variables > Actions > New repository secret
+        # Name: GCP_SA_KEY
+        # Value: Contents of your service account JSON key file
 
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
