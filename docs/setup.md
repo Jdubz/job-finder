@@ -427,7 +427,7 @@ docker-compose -f docker-compose.local-prod.yml up
 docker exec -it job-finder-local-prod /bin/bash
 
 # Inside container, test manually:
-python scheduler.py
+python scripts/workers/scripts/workers/scheduler.py
 ```
 
 ### Option 2: Test Local Build
@@ -442,7 +442,7 @@ docker-compose -f docker-compose.local-build.yml up --build
 docker exec -it job-finder-local-build /bin/bash
 
 # Test
-python scheduler.py
+python scripts/workers/scripts/workers/scheduler.py
 ```
 
 ### Rebuild After Code Changes

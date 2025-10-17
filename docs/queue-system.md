@@ -84,7 +84,7 @@ When `ENABLE_QUEUE_MODE=true`, the container runs **two processes**:
 ```
 Docker Container:
 ├── Process 1: Cron (every 6h)
-│   └── Runs scheduler.py → scrapes sources → submits to queue
+│   └── Runs scripts/workers/scheduler.py → scrapes sources → submits to queue
 │
 └── Process 2: Queue Worker (continuous)
     └── Polls queue → processes items → updates status
@@ -341,7 +341,7 @@ python -m job_finder.search_orchestrator_queue
 
 ```bash
 # Process queue items
-python queue_worker.py
+python scripts/workers/queue_worker.py
 ```
 
 The worker will:
@@ -409,7 +409,7 @@ If `content-items` is empty, automatically falls back to:
 
 ```bash
 # Test complete pipeline
-python test_e2e_queue.py
+python scripts/testing/test_e2e_queue.py
 ```
 
 This will:
@@ -552,7 +552,7 @@ manager = QueueManager()
 **Fix:**
 ```bash
 # Clean up duplicates
-python cleanup_job_matches.py
+python scripts/database/cleanup_job_matches.py
 ```
 
 ### Jobs Stuck in "Pending"
@@ -603,13 +603,13 @@ To adjust:
 
 ### Performance Tuning
 
-**Batch Size** - Edit `queue_worker.py`:
+**Batch Size** - Edit `scripts/workers/queue_worker.py`:
 ```python
 # Process more items per batch (uses more API calls)
 pending_items = queue_manager.get_pending_items(limit=20)  # Default: 10
 ```
 
-**Poll Interval** - Edit `queue_worker.py`:
+**Poll Interval** - Edit `scripts/workers/queue_worker.py`:
 ```python
 # Poll more/less frequently
 time.sleep(30)  # Default: 60 seconds
@@ -707,7 +707,7 @@ manager = QueueManager(database_name="portfolio-staging")
 
 ### Test Files
 
-- `test_e2e_queue.py` - End-to-end test
+- `scripts/testing/test_e2e_queue.py` - End-to-end test
 - `tests/queue/test_manager.py` - Queue manager tests
 - `tests/queue/test_processor.py` - Processor tests
 - `tests/queue/test_integration.py` - Integration tests

@@ -1,0 +1,358 @@
+# Job Finder - Makefile
+# AI-powered job matching and scraping tool
+#
+# Usage: make [target]
+# Run 'make help' to see all available targets
+
+# Variables
+PYTHON := python3
+PIP := $(PYTHON) -m pip
+PYTEST := $(PYTHON) -m pytest
+BLACK := $(PYTHON) -m black
+FLAKE8 := $(PYTHON) -m flake8
+MYPY := $(PYTHON) -m mypy
+DOCKER := docker
+DOCKER_COMPOSE := docker compose
+DOCKER_IMAGE := job-finder
+DOCKER_REGISTRY := ghcr.io/jdubz
+ENV_FILE := .env
+VENV_DIR := venv
+SRC_DIR := src
+TEST_DIR := tests
+SCRIPTS_DIR := scripts
+
+# Color codes for output
+RESET := \033[0m
+BOLD := \033[1m
+GREEN := \033[32m
+YELLOW := \033[33m
+BLUE := \033[34m
+CYAN := \033[36m
+
+# Default target
+.DEFAULT_GOAL := help
+
+# Mark targets that don't create files
+.PHONY: help setup install dev-install clean test test-coverage test-e2e lint format type-check \
+        run search docker-build docker-push docker-run docker-up docker-down docker-logs \
+        db-explore db-cleanup db-merge-companies db-setup-listings worker scheduler \
+        deploy-staging deploy-production clean-cache clean-all
+
+## === Help & Information ===
+
+help: ## Show this help message
+	@echo "$(BOLD)Job Finder - Development Commands$(RESET)"
+	@echo ""
+	@echo "$(CYAN)SETUP & INSTALLATION$(RESET)"
+	@echo "  $(GREEN)make setup$(RESET)              Create virtual environment and install all dependencies"
+	@echo "  $(GREEN)make install$(RESET)            Install production dependencies only"
+	@echo "  $(GREEN)make dev-install$(RESET)        Install development dependencies"
+	@echo ""
+	@echo "$(CYAN)RUNNING THE APPLICATION$(RESET)"
+	@echo "  $(GREEN)make run$(RESET)                Run full job search pipeline (scrape + AI matching)"
+	@echo "  $(GREEN)make search$(RESET)             Run basic search without AI matching"
+	@echo "  $(GREEN)make worker$(RESET)             Start queue worker for processing jobs"
+	@echo "  $(GREEN)make scheduler$(RESET)          Start job scheduler for automated searches"
+	@echo ""
+	@echo "$(CYAN)TESTING$(RESET)"
+	@echo "  $(GREEN)make test$(RESET)               Run all tests"
+	@echo "  $(GREEN)make test-coverage$(RESET)      Run tests with coverage report"
+	@echo "  $(GREEN)make test-e2e$(RESET)           Run end-to-end queue tests"
+	@echo "  $(GREEN)make test-specific$(RESET) TEST=<name>  Run specific test file"
+	@echo ""
+	@echo "$(CYAN)CODE QUALITY$(RESET)"
+	@echo "  $(GREEN)make lint$(RESET)               Run code linter (flake8)"
+	@echo "  $(GREEN)make format$(RESET)             Format code with black"
+	@echo "  $(GREEN)make format-check$(RESET)       Check formatting without changes"
+	@echo "  $(GREEN)make type-check$(RESET)         Run type checking with mypy"
+	@echo "  $(GREEN)make quality$(RESET)            Run all quality checks (lint + format-check + type-check)"
+	@echo ""
+	@echo "$(CYAN)DOCKER OPERATIONS$(RESET)"
+	@echo "  $(GREEN)make docker-build$(RESET)       Build Docker image"
+	@echo "  $(GREEN)make docker-push$(RESET)        Push image to registry"
+	@echo "  $(GREEN)make docker-run$(RESET)         Run container locally"
+	@echo "  $(GREEN)make docker-up$(RESET)          Start docker-compose services"
+	@echo "  $(GREEN)make docker-down$(RESET)        Stop docker-compose services"
+	@echo "  $(GREEN)make docker-logs$(RESET)        View docker-compose logs"
+	@echo ""
+	@echo "$(CYAN)DATABASE UTILITIES$(RESET)"
+	@echo "  $(GREEN)make db-explore$(RESET)         Explore Firestore collections"
+	@echo "  $(GREEN)make db-cleanup$(RESET)         Clean up Firestore data"
+	@echo "  $(GREEN)make db-merge-companies$(RESET) Merge duplicate company records"
+	@echo "  $(GREEN)make db-setup-listings$(RESET)  Setup job listings in database"
+	@echo ""
+	@echo "$(CYAN)DEPLOYMENT$(RESET)"
+	@echo "  $(GREEN)make deploy-staging$(RESET)     Deploy to staging environment"
+	@echo "  $(GREEN)make deploy-production$(RESET)  Deploy to production environment"
+	@echo ""
+	@echo "$(CYAN)CLEANUP$(RESET)"
+	@echo "  $(GREEN)make clean$(RESET)              Remove Python cache files"
+	@echo "  $(GREEN)make clean-cache$(RESET)        Remove all cache directories"
+	@echo "  $(GREEN)make clean-all$(RESET)          Remove cache, venv, and build artifacts"
+	@echo ""
+	@echo "$(YELLOW)Configuration:$(RESET)"
+	@echo "  - Config file: config/config.yaml"
+	@echo "  - Environment: $(ENV_FILE)"
+	@echo "  - Profile: data/profile.json (or Firestore)"
+
+## === Setup & Installation ===
+
+setup: ## Create virtual environment and install all dependencies
+	@echo "$(CYAN)Setting up development environment...$(RESET)"
+	@if [ ! -d "$(VENV_DIR)" ]; then \
+		echo "Creating virtual environment..."; \
+		$(PYTHON) -m venv $(VENV_DIR); \
+	fi
+	@echo "Installing dependencies..."
+	@. $(VENV_DIR)/bin/activate && $(PIP) install --upgrade pip
+	@. $(VENV_DIR)/bin/activate && $(PIP) install -e ".[dev]"
+	@echo "$(GREEN)✓ Setup complete! Activate with: source $(VENV_DIR)/bin/activate$(RESET)"
+
+install: ## Install production dependencies only
+	@echo "$(CYAN)Installing production dependencies...$(RESET)"
+	@. $(VENV_DIR)/bin/activate && $(PIP) install -e .
+	@echo "$(GREEN)✓ Production dependencies installed$(RESET)"
+
+dev-install: ## Install development dependencies
+	@echo "$(CYAN)Installing development dependencies...$(RESET)"
+	@. $(VENV_DIR)/bin/activate && $(PIP) install -e ".[dev]"
+	@echo "$(GREEN)✓ Development dependencies installed$(RESET)"
+
+## === Running the Application ===
+
+run: ## Run full job search pipeline (scrape + AI matching)
+	@echo "$(CYAN)Running job search pipeline...$(RESET)"
+	@. $(VENV_DIR)/bin/activate && $(PYTHON) run_job_search.py
+
+search: ## Run basic search without AI matching
+	@echo "$(CYAN)Running basic job search...$(RESET)"
+	@. $(VENV_DIR)/bin/activate && $(PYTHON) run_search.py
+
+worker: ## Start queue worker for processing jobs
+	@echo "$(CYAN)Starting queue worker...$(RESET)"
+	@. $(VENV_DIR)/bin/activate && $(PYTHON) $(SCRIPTS_DIR)/workers/queue_worker.py
+
+scheduler: ## Start job scheduler for automated searches
+	@echo "$(CYAN)Starting job scheduler...$(RESET)"
+	@. $(VENV_DIR)/bin/activate && $(PYTHON) $(SCRIPTS_DIR)/workers/scheduler.py
+
+## === Testing ===
+
+test: ## Run all tests
+	@echo "$(CYAN)Running tests...$(RESET)"
+	@. $(VENV_DIR)/bin/activate && $(PYTEST) $(TEST_DIR) -v
+
+test-coverage: ## Run tests with coverage report
+	@echo "$(CYAN)Running tests with coverage...$(RESET)"
+	@. $(VENV_DIR)/bin/activate && $(PYTEST) $(TEST_DIR) --cov=$(SRC_DIR)/job_finder --cov-report=html --cov-report=term
+
+test-e2e: ## Run end-to-end queue tests
+	@echo "$(CYAN)Running end-to-end tests...$(RESET)"
+	@. $(VENV_DIR)/bin/activate && $(PYTHON) $(SCRIPTS_DIR)/testing/test_e2e_queue.py
+
+test-specific: ## Run specific test file (use TEST=filename)
+	@if [ -z "$(TEST)" ]; then \
+		echo "$(YELLOW)Usage: make test-specific TEST=test_filters.py$(RESET)"; \
+		exit 1; \
+	fi
+	@echo "$(CYAN)Running test: $(TEST)$(RESET)"
+	@. $(VENV_DIR)/bin/activate && $(PYTEST) $(TEST_DIR)/$(TEST) -v
+
+## === Code Quality ===
+
+lint: ## Run code linter (flake8)
+	@echo "$(CYAN)Running linter...$(RESET)"
+	@. $(VENV_DIR)/bin/activate && $(FLAKE8) $(SRC_DIR) $(TEST_DIR)
+	@echo "$(GREEN)✓ Linting passed$(RESET)"
+
+format: ## Format code with black
+	@echo "$(CYAN)Formatting code...$(RESET)"
+	@. $(VENV_DIR)/bin/activate && $(BLACK) $(SRC_DIR) $(TEST_DIR) $(SCRIPTS_DIR) *.py
+	@echo "$(GREEN)✓ Code formatted$(RESET)"
+
+format-check: ## Check formatting without changes
+	@echo "$(CYAN)Checking code formatting...$(RESET)"
+	@. $(VENV_DIR)/bin/activate && $(BLACK) --check $(SRC_DIR) $(TEST_DIR) $(SCRIPTS_DIR) *.py
+	@echo "$(GREEN)✓ Formatting check passed$(RESET)"
+
+type-check: ## Run type checking with mypy
+	@echo "$(CYAN)Running type checker...$(RESET)"
+	@. $(VENV_DIR)/bin/activate && $(MYPY) $(SRC_DIR)
+	@echo "$(GREEN)✓ Type checking passed$(RESET)"
+
+quality: format-check lint type-check ## Run all quality checks
+	@echo "$(GREEN)✓ All quality checks passed$(RESET)"
+
+## === Docker Operations ===
+
+docker-build: ## Build Docker image
+	@echo "$(CYAN)Building Docker image...$(RESET)"
+	$(DOCKER) build -t $(DOCKER_IMAGE):latest .
+	@echo "$(GREEN)✓ Docker image built$(RESET)"
+
+docker-push: ## Push image to registry
+	@echo "$(CYAN)Pushing Docker image to registry...$(RESET)"
+	$(DOCKER) tag $(DOCKER_IMAGE):latest $(DOCKER_REGISTRY)/$(DOCKER_IMAGE):latest
+	$(DOCKER) push $(DOCKER_REGISTRY)/$(DOCKER_IMAGE):latest
+	@echo "$(GREEN)✓ Image pushed to registry$(RESET)"
+
+docker-run: ## Run container locally
+	@echo "$(CYAN)Running Docker container...$(RESET)"
+	$(DOCKER) run --rm --env-file $(ENV_FILE) $(DOCKER_IMAGE):latest
+
+docker-up: ## Start docker-compose services
+	@echo "$(CYAN)Starting Docker Compose services...$(RESET)"
+	$(DOCKER_COMPOSE) up -d
+	@echo "$(GREEN)✓ Services started$(RESET)"
+
+docker-down: ## Stop docker-compose services
+	@echo "$(CYAN)Stopping Docker Compose services...$(RESET)"
+	$(DOCKER_COMPOSE) down
+	@echo "$(GREEN)✓ Services stopped$(RESET)"
+
+docker-logs: ## View docker-compose logs
+	$(DOCKER_COMPOSE) logs -f
+
+docker-local-build: ## Build and run locally with docker-compose
+	@echo "$(CYAN)Building and running locally...$(RESET)"
+	$(DOCKER_COMPOSE) -f docker-compose.local-build.yml up --build
+
+docker-local-prod: ## Run production image locally
+	@echo "$(CYAN)Running production image locally...$(RESET)"
+	$(DOCKER_COMPOSE) -f docker-compose.local-prod.yml up
+
+## === Database Utilities ===
+
+db-explore: ## Explore Firestore collections
+	@echo "$(CYAN)Exploring Firestore database...$(RESET)"
+	@. $(VENV_DIR)/bin/activate && $(PYTHON) $(SCRIPTS_DIR)/database/explore_firestore.py
+
+db-cleanup: ## Clean up Firestore data
+	@echo "$(CYAN)Cleaning up Firestore...$(RESET)"
+	@. $(VENV_DIR)/bin/activate && $(PYTHON) $(SCRIPTS_DIR)/database/cleanup_firestore.py
+
+db-merge-companies: ## Merge duplicate company records
+	@echo "$(CYAN)Merging duplicate companies...$(RESET)"
+	@. $(VENV_DIR)/bin/activate && $(PYTHON) $(SCRIPTS_DIR)/database/merge_company_duplicates.py
+
+db-setup-listings: ## Setup job listings in database
+	@echo "$(CYAN)Setting up job listings...$(RESET)"
+	@. $(VENV_DIR)/bin/activate && $(PYTHON) $(SCRIPTS_DIR)/database/setup_job_listings.py
+
+db-cleanup-matches: ## Clean up job matches
+	@echo "$(CYAN)Cleaning up job matches...$(RESET)"
+	@. $(VENV_DIR)/bin/activate && $(PYTHON) $(SCRIPTS_DIR)/database/cleanup_job_matches.py
+
+## === Deployment ===
+
+deploy-staging: docker-build ## Deploy to staging environment
+	@echo "$(CYAN)Deploying to staging...$(RESET)"
+	@echo "$(YELLOW)Note: Ensure you're logged into the container registry$(RESET)"
+	$(DOCKER) tag $(DOCKER_IMAGE):latest $(DOCKER_REGISTRY)/$(DOCKER_IMAGE):staging
+	$(DOCKER) push $(DOCKER_REGISTRY)/$(DOCKER_IMAGE):staging
+	@echo "$(GREEN)✓ Deployed to staging$(RESET)"
+	@echo "$(YELLOW)Remember to update the staging server to pull the new image$(RESET)"
+
+deploy-production: ## Deploy to production environment
+	@echo "$(CYAN)Deploying to production...$(RESET)"
+	@echo "$(YELLOW)⚠️  Production deployment - are you sure? (Ctrl+C to cancel)$(RESET)"
+	@sleep 3
+	@echo "$(YELLOW)Note: Ensure you're logged into the container registry$(RESET)"
+	$(DOCKER) tag $(DOCKER_IMAGE):latest $(DOCKER_REGISTRY)/$(DOCKER_IMAGE):production
+	$(DOCKER) push $(DOCKER_REGISTRY)/$(DOCKER_IMAGE):production
+	@echo "$(GREEN)✓ Deployed to production$(RESET)"
+	@echo "$(YELLOW)Remember to update the production server to pull the new image$(RESET)"
+
+## === Profile Management ===
+
+create-profile: ## Create a new profile template
+	@echo "$(CYAN)Creating profile template...$(RESET)"
+	@. $(VENV_DIR)/bin/activate && $(PYTHON) -m job_finder.main --create-profile data/profile.json
+	@echo "$(GREEN)✓ Profile template created at data/profile.json$(RESET)"
+	@echo "$(YELLOW)Edit the profile and update config/config.yaml to use it$(RESET)"
+
+## === Utility Scripts ===
+
+score-companies: ## Score and tier companies for rotation
+	@echo "$(CYAN)Scoring companies...$(RESET)"
+	@. $(VENV_DIR)/bin/activate && $(PYTHON) $(SCRIPTS_DIR)/score_companies.py
+
+add-companies: ## Add phase 1 companies to database
+	@echo "$(CYAN)Adding companies to database...$(RESET)"
+	@. $(VENV_DIR)/bin/activate && $(PYTHON) $(SCRIPTS_DIR)/add_phase1_companies.py
+
+test-pipeline: ## Test the processing pipeline
+	@echo "$(CYAN)Testing pipeline...$(RESET)"
+	@. $(VENV_DIR)/bin/activate && $(PYTHON) $(SCRIPTS_DIR)/test_pipeline.py
+
+migrate-listings: ## Migrate listings to new sources structure
+	@echo "$(CYAN)Migrating listings...$(RESET)"
+	@. $(VENV_DIR)/bin/activate && $(PYTHON) $(SCRIPTS_DIR)/migrate_listings_to_sources.py
+
+## === Cleanup ===
+
+clean: ## Remove Python cache files
+	@echo "$(CYAN)Cleaning Python cache...$(RESET)"
+	find . -type f -name '*.pyc' -delete
+	find . -type d -name '__pycache__' -delete
+	find . -type d -name '.pytest_cache' -exec rm -rf {} + 2>/dev/null || true
+	@echo "$(GREEN)✓ Python cache cleaned$(RESET)"
+
+clean-cache: clean ## Remove all cache directories
+	@echo "$(CYAN)Cleaning all cache...$(RESET)"
+	rm -rf .mypy_cache
+	rm -rf htmlcov
+	rm -rf .coverage
+	@echo "$(GREEN)✓ Cache directories cleaned$(RESET)"
+
+clean-all: clean-cache ## Remove cache, venv, and build artifacts
+	@echo "$(CYAN)Cleaning everything...$(RESET)"
+	rm -rf $(VENV_DIR)
+	rm -rf build dist *.egg-info
+	rm -rf logs/*
+	@echo "$(GREEN)✓ All artifacts cleaned$(RESET)"
+	@echo "$(YELLOW)Run 'make setup' to reinstall$(RESET)"
+
+## === Development Shortcuts ===
+
+dev: setup lint test ## Setup, lint, and test (good for CI)
+	@echo "$(GREEN)✓ Development checks passed$(RESET)"
+
+quick-test: ## Run quick tests without coverage
+	@. $(VENV_DIR)/bin/activate && $(PYTEST) $(TEST_DIR) -x --tb=short
+
+watch-test: ## Run tests in watch mode (requires pytest-watch)
+	@. $(VENV_DIR)/bin/activate && $(PYTHON) -m pytest_watch $(TEST_DIR) -v
+
+## === Environment Management ===
+
+check-env: ## Check if required environment variables are set
+	@echo "$(CYAN)Checking environment variables...$(RESET)"
+	@if [ ! -f "$(ENV_FILE)" ]; then \
+		echo "$(YELLOW)⚠️  No .env file found. Copy .env.example to .env and configure it.$(RESET)"; \
+		exit 1; \
+	fi
+	@echo "$(GREEN)✓ Environment file found$(RESET)"
+	@grep -E '^[A-Z_]+=' $(ENV_FILE) | cut -d= -f1 | while read var; do \
+		echo "  $$var: configured"; \
+	done
+
+show-config: ## Display current configuration
+	@echo "$(CYAN)Current Configuration:$(RESET)"
+	@if [ -f "config/config.yaml" ]; then \
+		head -30 config/config.yaml; \
+		echo "\n$(YELLOW)... (truncated, see full file at config/config.yaml)$(RESET)"; \
+	else \
+		echo "$(YELLOW)No config file found at config/config.yaml$(RESET)"; \
+	fi
+
+## === Git Hooks (if using pre-commit) ===
+
+install-hooks: ## Install git pre-commit hooks
+	@echo "$(CYAN)Installing git hooks...$(RESET)"
+	@. $(VENV_DIR)/bin/activate && pre-commit install
+	@echo "$(GREEN)✓ Git hooks installed$(RESET)"
+
+run-hooks: ## Run pre-commit hooks on all files
+	@echo "$(CYAN)Running pre-commit hooks...$(RESET)"
+	@. $(VENV_DIR)/bin/activate && pre-commit run --all-files

@@ -4,7 +4,7 @@ import logging
 from typing import Any, Dict, List, Optional
 
 from job_finder.queue.manager import QueueManager
-from job_finder.queue.models import JobQueueItem, QueueItemType
+from job_finder.queue.models import JobQueueItem, QueueItemType, QueueSource
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +29,7 @@ class ScraperIntake:
     def submit_jobs(
         self,
         jobs: List[Dict[str, Any]],
-        source: str = "scraper",
+        source: QueueSource = "scraper",
         company_id: Optional[str] = None,
     ) -> int:
         """
@@ -62,13 +62,13 @@ class ScraperIntake:
                     continue
 
                 # Create queue item
+                # Note: Full job data will be re-scraped during processing
                 queue_item = JobQueueItem(
                     type=QueueItemType.JOB,
                     url=url,
                     company_name=job.get("company", ""),
                     company_id=company_id,
                     source=source,
-                    scraped_data=job,  # Store full job data for later processing
                 )
 
                 # Add to queue
@@ -86,7 +86,7 @@ class ScraperIntake:
         return added_count
 
     def submit_company(
-        self, company_name: str, company_website: str, source: str = "scraper"
+        self, company_name: str, company_website: str, source: QueueSource = "scraper"
     ) -> bool:
         """
         Submit a company for analysis to the queue.

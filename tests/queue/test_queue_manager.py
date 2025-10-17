@@ -31,7 +31,7 @@ def test_add_item(queue_manager):
         type=QueueItemType.JOB,
         url="https://example.com/job/123",
         company_name="Test Company",
-        source="test_scraper",
+        source="scraper",
     )
 
     # Mock Firestore add operation

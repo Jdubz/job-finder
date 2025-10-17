@@ -133,7 +133,12 @@ listing_id = manager.add_listing(
         "company_name": "Netflix",
         "careers_url": "https://explore.jobs.netflix.net/careers",
         "company_website": "https://www.netflix.com",
-        "company_info": "Netflix is the world's leading streaming entertainment service. Netflix culture emphasizes freedom and responsibility, with core values including judgment, communication, impact, curiosity, innovation, courage, passion, honesty, and selflessness.",
+        "company_info": (
+            "Netflix is the world's leading streaming entertainment service. "
+            "Netflix culture emphasizes freedom and responsibility, with core "
+            "values including judgment, communication, impact, curiosity, "
+            "innovation, courage, passion, honesty, and selflessness."
+        ),
         "method": "api",
         "api_endpoint": "https://explore.jobs.netflix.net/api/careers",
         "api_params": {"location": "Remote", "team": "Engineering"},
@@ -151,7 +156,10 @@ listing_id = manager.add_listing(
         "company_name": "Shopify",
         "careers_url": "https://www.shopify.com/careers",
         "company_website": "https://www.shopify.com",
-        "company_info": "Shopify is a leading global commerce company, providing trusted tools to start, grow, market, and manage a retail business of any size.",
+        "company_info": (
+            "Shopify is a leading global commerce company, providing trusted "
+            "tools to start, grow, market, and manage a retail business of any size."
+        ),
         "method": "scraper",
         "selectors": {
             "job_list": ".job-listing",
@@ -175,7 +183,11 @@ listing_id = manager.add_listing(
         "company_name": "Stripe",
         "careers_url": "https://stripe.com/jobs",
         "company_website": "https://stripe.com",
-        "company_info": "Stripe is a technology company that builds economic infrastructure for the internet. Businesses of every size use Stripe's software to accept payments and manage their businesses online.",
+        "company_info": (
+            "Stripe is a technology company that builds economic infrastructure "
+            "for the internet. Businesses of every size use Stripe's software to "
+            "accept payments and manage their businesses online."
+        ),
         "method": "api",
         "api_endpoint": "https://stripe.com/jobs/search",
         "api_params": {"remote": "true"},

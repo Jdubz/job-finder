@@ -10,12 +10,12 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-import yaml
+import yaml  # type: ignore[import-untyped]
 
 # Add src to Python path
 sys.path.insert(0, str(Path(__file__).parent))
 
-from job_finder.search_orchestrator import JobSearchOrchestrator
+from job_finder.search_orchestrator import JobSearchOrchestrator  # noqa: E402
 
 # Configure logging
 log_file = os.getenv("LOG_FILE", "/app/logs/scheduler.log")

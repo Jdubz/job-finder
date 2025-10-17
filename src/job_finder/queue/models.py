@@ -1,21 +1,41 @@
-"""Pydantic models for queue items."""
+"""
+Pydantic models for queue items.
+
+These models are derived from TypeScript definitions in @jdubz/shared-types.
+See: /home/jdubz/Development/shared-types/src/queue.types.ts
+
+IMPORTANT: TypeScript types are the source of truth. When modifying queue schema:
+1. Update TypeScript first in shared-types repository
+2. Update these Python models to match
+3. Test compatibility with portfolio project
+"""
 
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
 
 class QueueItemType(str, Enum):
-    """Type of queue item."""
+    """
+    Type of queue item.
+
+    TypeScript equivalent: QueueItemType in queue.types.ts
+    Values must match exactly: "job" | "company"
+    """
 
     JOB = "job"
     COMPANY = "company"
 
 
 class QueueStatus(str, Enum):
-    """Status of queue item processing."""
+    """
+    Status of queue item processing.
+
+    TypeScript equivalent: QueueStatus in queue.types.ts
+    Lifecycle: pending → processing → success/failed/skipped
+    """
 
     PENDING = "pending"
     PROCESSING = "processing"
@@ -24,12 +44,21 @@ class QueueStatus(str, Enum):
     SUCCESS = "success"
 
 
+# QueueSource type - matches TypeScript literal type
+# TypeScript: "user_submission" | "automated_scan" | "scraper" | "webhook" | "email"
+QueueSource = Literal["user_submission", "automated_scan", "scraper", "webhook", "email"]
+
+
 class JobQueueItem(BaseModel):
     """
     Queue item representing a job or company to be processed.
 
+    TypeScript equivalent: QueueItem interface in queue.types.ts
     This model represents items in the job-queue Firestore collection.
     Items are processed in FIFO order (oldest created_at first).
+
+    IMPORTANT: This model must match the TypeScript QueueItem interface exactly.
+    See: /home/jdubz/Development/shared-types/src/queue.types.ts
     """
 
     # Identity
@@ -43,12 +72,15 @@ class JobQueueItem(BaseModel):
     result_message: Optional[str] = Field(
         default=None, description="Why skipped/failed, or success details"
     )
+    error_details: Optional[str] = Field(
+        default=None, description="Technical error details for debugging"
+    )
 
     # Input data
     url: str = Field(description="URL to scrape (job posting or company page)")
-    company_name: Optional[str] = Field(default=None, description="Company name if known")
+    company_name: str = Field(description="Company name")
     company_id: Optional[str] = Field(default=None, description="Firestore company document ID")
-    source: str = Field(
+    source: QueueSource = Field(
         default="scraper",
         description="Source of submission: scraper, user_submission, webhook, email",
     )
@@ -57,9 +89,6 @@ class JobQueueItem(BaseModel):
     )
 
     # Processing data
-    scraped_data: Optional[Dict[str, Any]] = Field(
-        default=None, description="Data scraped from URL (flexible structure)"
-    )
     retry_count: int = Field(default=0, description="Number of retry attempts")
     max_retries: int = Field(default=3, description="Maximum retry attempts before failure")
 

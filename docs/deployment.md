@@ -554,13 +554,13 @@ Default: Every 6 hours at minute 0 (12am, 6am, 12pm, 6pm)
 Example schedules:
 ```cron
 # Every 4 hours
-0 */4 * * * root cd /app && /usr/local/bin/python scheduler.py >> /var/log/cron.log 2>&1
+0 */4 * * * root cd /app && /usr/local/bin/python scripts/workers/scripts/workers/scheduler.py >> /var/log/cron.log 2>&1
 
 # Specific times (6am, 2pm, 10pm)
-0 6,14,22 * * * root cd /app && /usr/local/bin/python scheduler.py >> /var/log/cron.log 2>&1
+0 6,14,22 * * * root cd /app && /usr/local/bin/python scripts/workers/scripts/workers/scheduler.py >> /var/log/cron.log 2>&1
 
 # Daily at 8am
-0 8 * * * root cd /app && /usr/local/bin/python scheduler.py >> /var/log/cron.log 2>&1
+0 8 * * * root cd /app && /usr/local/bin/python scripts/workers/scripts/workers/scheduler.py >> /var/log/cron.log 2>&1
 ```
 
 ### Multiple Users/Profiles
