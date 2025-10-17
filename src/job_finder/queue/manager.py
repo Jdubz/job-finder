@@ -139,7 +139,12 @@ class QueueManager:
             update_data["processed_at"] = gcloud_firestore.SERVER_TIMESTAMP
 
         # Set completed_at when finishing (success/failed/skipped/filtered)
-        if status in [QueueStatus.SUCCESS, QueueStatus.FAILED, QueueStatus.SKIPPED, QueueStatus.FILTERED]:
+        if status in [
+            QueueStatus.SUCCESS,
+            QueueStatus.FAILED,
+            QueueStatus.SKIPPED,
+            QueueStatus.FILTERED,
+        ]:
             update_data["completed_at"] = gcloud_firestore.SERVER_TIMESTAMP
 
         try:

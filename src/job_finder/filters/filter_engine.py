@@ -39,12 +39,8 @@ class JobFilterEngine:
         # Exclusions
         self.excluded_companies = [c.lower() for c in config.get("excludedCompanies", [])]
         self.excluded_domains = [d.lower() for d in config.get("excludedDomains", [])]
-        self.excluded_keywords_url = [
-            k.lower() for k in config.get("excludedKeywordsUrl", [])
-        ]
-        self.excluded_keywords_title = [
-            k.lower() for k in config.get("excludedKeywordsTitle", [])
-        ]
+        self.excluded_keywords_url = [k.lower() for k in config.get("excludedKeywordsUrl", [])]
+        self.excluded_keywords_title = [k.lower() for k in config.get("excludedKeywordsTitle", [])]
         self.excluded_keywords_description = [
             k.lower() for k in config.get("excludedKeywordsDescription", [])
         ]
@@ -59,9 +55,7 @@ class JobFilterEngine:
         # Experience
         self.min_years_experience = config.get("minYearsExperience")
         self.max_years_experience = config.get("maxYearsExperience")
-        self.allowed_seniority = [
-            s.lower() for s in config.get("allowedSeniority", [])
-        ]
+        self.allowed_seniority = [s.lower() for s in config.get("allowedSeniority", [])]
 
         # Salary
         self.min_salary = config.get("minSalary")
@@ -122,9 +116,7 @@ class JobFilterEngine:
         if result.passed:
             logger.debug(f"Job passed all filters: {title} at {company}")
         else:
-            logger.info(
-                f"Job filtered: {title} at {company} - {result.get_rejection_summary()}"
-            )
+            logger.info(f"Job filtered: {title} at {company} - {result.get_rejection_summary()}")
 
         return result
 
@@ -180,9 +172,7 @@ class JobFilterEngine:
                 )
                 return
 
-    def _check_excluded_keywords_description(
-        self, description: str, result: FilterResult
-    ) -> None:
+    def _check_excluded_keywords_description(self, description: str, result: FilterResult) -> None:
         """Check if description contains excluded keywords."""
         description_lower = description.lower()
         for keyword in self.excluded_keywords_description:
@@ -195,9 +185,7 @@ class JobFilterEngine:
                 )
                 return
 
-    def _check_remote_policy(
-        self, description: str, location: str, result: FilterResult
-    ) -> None:
+    def _check_remote_policy(self, description: str, location: str, result: FilterResult) -> None:
         """
         Check if job matches remote work policy.
 
@@ -263,9 +251,7 @@ class JobFilterEngine:
                     detail="Job does not offer remote or hybrid options",
                 )
 
-    def _check_tech_stack(
-        self, title: str, description: str, result: FilterResult
-    ) -> None:
+    def _check_tech_stack(self, title: str, description: str, result: FilterResult) -> None:
         """
         Check required and excluded technologies.
 
@@ -305,9 +291,7 @@ class JobFilterEngine:
                     detail=f"None of required tech found: {', '.join(self.required_tech)}",
                 )
 
-    def _check_experience_level(
-        self, title: str, description: str, result: FilterResult
-    ) -> None:
+    def _check_experience_level(self, title: str, description: str, result: FilterResult) -> None:
         """
         Check years of experience requirements.
 
@@ -453,9 +437,7 @@ class JobFilterEngine:
                 detail=f"Max salary ${max_salary:,} is below minimum ${self.min_salary:,}",
             )
 
-    def _check_employment_type(
-        self, title: str, description: str, result: FilterResult
-    ) -> None:
+    def _check_employment_type(self, title: str, description: str, result: FilterResult) -> None:
         """
         Check if employment type matches requirements.
 
