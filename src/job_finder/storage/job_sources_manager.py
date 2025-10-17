@@ -409,3 +409,245 @@ class JobSourcesManager:
         except Exception as e:
             logger.error(f"Error unlinking source from company: {str(e)}")
             raise
+
+    # ========================================================================
+    # Granular Pipeline Support Methods
+    # ========================================================================
+
+    def get_source_for_url(self, url: str) -> Optional[Dict[str, Any]]:
+        """
+        Find source configuration by URL domain/pattern.
+
+        Checks URL against source configurations to find matching scraping method.
+
+        Args:
+            url: Job posting URL
+
+        Returns:
+            Source document with config, or None if no match
+
+        Example:
+            url = "https://boards.greenhouse.io/netflix/jobs/123"
+            source = manager.get_source_for_url(url)
+            # Returns source with greenhouse config for Netflix
+        """
+        if not self.db:
+            raise RuntimeError("Firestore not initialized")
+
+        try:
+            from urllib.parse import urlparse
+
+            parsed_url = urlparse(url)
+            domain = parsed_url.netloc.lower()
+
+            # Query all active sources
+            sources = self.get_active_sources()
+
+            # Check for domain matches
+            for source in sources:
+                config = source.get("config", {})
+                source_type = source.get("sourceType", "")
+
+                # Greenhouse: Check board_token in URL
+                if source_type == "greenhouse":
+                    board_token = config.get("board_token", "")
+                    if board_token and board_token.lower() in url.lower():
+                        logger.debug(f"Matched Greenhouse source: {source.get('name')}")
+                        return source
+
+                # RSS: Check URL match
+                elif source_type == "rss":
+                    rss_url = config.get("url", "")
+                    if rss_url and domain in rss_url.lower():
+                        logger.debug(f"Matched RSS source: {source.get('name')}")
+                        return source
+
+                # Workday: Check base_url
+                elif source_type == "workday":
+                    base_url = config.get("base_url", "")
+                    if base_url and domain in base_url.lower():
+                        logger.debug(f"Matched Workday source: {source.get('name')}")
+                        return source
+
+                # API: Check base_url
+                elif source_type == "api":
+                    base_url = config.get("base_url", "")
+                    if base_url and domain in base_url.lower():
+                        logger.debug(f"Matched API source: {source.get('name')}")
+                        return source
+
+                # Scraper: Check URL pattern
+                elif source_type == "scraper":
+                    scraper_url = config.get("url", "")
+                    if scraper_url and domain in scraper_url.lower():
+                        logger.debug(f"Matched Scraper source: {source.get('name')}")
+                        return source
+
+            logger.debug(f"No source found for URL: {url}")
+            return None
+
+        except Exception as e:
+            logger.error(f"Error finding source for URL {url}: {e}")
+            return None
+
+    def save_discovered_source(
+        self,
+        url: str,
+        name: str,
+        source_type: str,
+        selectors: Dict[str, Any],
+        confidence: str,
+        company_id: Optional[str] = None,
+        company_name: Optional[str] = None,
+    ) -> str:
+        """
+        Save AI-discovered source configuration.
+
+        Args:
+            url: Base URL for the source
+            name: Human-readable name
+            source_type: scraper, api, etc.
+            selectors: Discovered CSS selectors
+            confidence: high/medium/low confidence in selectors
+            company_id: Optional company ID
+            company_name: Optional company name
+
+        Returns:
+            Document ID of created source
+        """
+        config = {
+            "url": url,
+            "method": "requests",  # Default to requests, can upgrade to selenium later
+            "selectors": selectors,
+            "discovered_by_ai": True,
+            "discovery_confidence": confidence,
+        }
+
+        tags = ["ai-discovered", f"confidence-{confidence}"]
+
+        return self.add_source(
+            name=name,
+            source_type=source_type,
+            config=config,
+            enabled=True,  # Start enabled if high confidence, can be disabled if fails
+            company_id=company_id,
+            company_name=company_name,
+            tags=tags,
+        )
+
+    def update_source_selectors(
+        self,
+        source_id: str,
+        selectors: Dict[str, Any],
+        alternative_selectors: Optional[List[Dict[str, Any]]] = None,
+    ) -> None:
+        """
+        Update selectors for a source after discovery or validation.
+
+        Args:
+            source_id: Source document ID
+            selectors: New primary selectors
+            alternative_selectors: Optional list of fallback selectors to try
+        """
+        if not self.db:
+            raise RuntimeError("Firestore not initialized")
+
+        try:
+            update_data = {
+                "config.selectors": selectors,
+                "updatedAt": gcloud_firestore.SERVER_TIMESTAMP,
+            }
+
+            if alternative_selectors:
+                update_data["config.alternative_selectors"] = alternative_selectors
+
+            self.db.collection(self.collection_name).document(source_id).update(update_data)
+            logger.info(f"Updated selectors for source {source_id}")
+
+        except Exception as e:
+            logger.error(f"Error updating selectors for source {source_id}: {e}")
+            raise
+
+    def record_scraping_failure(
+        self,
+        source_id: str,
+        error_message: str,
+        selector_failures: Optional[List[str]] = None,
+    ) -> None:
+        """
+        Record scraping failure for health tracking.
+
+        Args:
+            source_id: Source document ID
+            error_message: Error that occurred
+            selector_failures: List of selectors that failed
+        """
+        if not self.db:
+            raise RuntimeError("Firestore not initialized")
+
+        try:
+            # Get current source to check failure count
+            source = self.get_source_by_id(source_id)
+            if not source:
+                logger.warning(f"Cannot record failure: source {source_id} not found")
+                return
+
+            # Track consecutive failures
+            consecutive_failures = source.get("consecutiveFailures", 0) + 1
+
+            update_data = {
+                "lastScrapedAt": gcloud_firestore.SERVER_TIMESTAMP,
+                "lastScrapedStatus": "error",
+                "lastScrapedError": error_message,
+                "consecutiveFailures": consecutive_failures,
+                "updatedAt": gcloud_firestore.SERVER_TIMESTAMP,
+            }
+
+            if selector_failures:
+                update_data["failingSelectors"] = selector_failures
+
+            # Auto-disable after 5 consecutive failures
+            if consecutive_failures >= 5:
+                update_data["enabled"] = False
+                logger.warning(
+                    f"Auto-disabled source {source_id} after {consecutive_failures} consecutive failures"
+                )
+
+            self.db.collection(self.collection_name).document(source_id).update(update_data)
+            logger.info(
+                f"Recorded failure for source {source_id} (consecutive: {consecutive_failures})"
+            )
+
+        except Exception as e:
+            logger.error(f"Error recording failure for source {source_id}: {e}")
+            raise
+
+    def record_scraping_success(self, source_id: str, jobs_found: int = 0) -> None:
+        """
+        Record successful scraping to reset failure tracking.
+
+        Args:
+            source_id: Source document ID
+            jobs_found: Number of jobs found in this scrape
+        """
+        if not self.db:
+            raise RuntimeError("Firestore not initialized")
+
+        try:
+            update_data = {
+                "lastScrapedAt": gcloud_firestore.SERVER_TIMESTAMP,
+                "lastScrapedStatus": "success",
+                "lastScrapedError": None,
+                "consecutiveFailures": 0,  # Reset on success
+                "updatedAt": gcloud_firestore.SERVER_TIMESTAMP,
+            }
+
+            if jobs_found > 0:
+                update_data["totalJobsFound"] = gcloud_firestore.Increment(jobs_found)
+
+            self.db.collection(self.collection_name).document(source_id).update(update_data)
+            logger.debug(f"Recorded success for source {source_id}")
+
+        except Exception as e:
+            logger.error(f"Error recording success for source {source_id}: {e}")
+            raise
