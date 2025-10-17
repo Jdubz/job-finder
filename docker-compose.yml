@@ -22,9 +22,12 @@ services:
       - PROFILE_DATABASE_NAME=portfolio-staging
       - STORAGE_DATABASE_NAME=portfolio-staging
 
-      # Config path
+      # Logging Configuration
+      - ENABLE_CLOUD_LOGGING=true
+      - LOG_LEVEL=INFO
       - CONFIG_PATH=/app/config/config.yaml
       - LOG_FILE=/app/logs/scheduler.log
+      - QUEUE_WORKER_LOG_FILE=/app/logs/queue_worker.log
 
       # Timezone for cron
       - TZ=America/Los_Angeles
