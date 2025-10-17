@@ -119,12 +119,12 @@ These issues occur when:
 
 ## Scripts Created
 
-1. **explore_firestore.py** - Explore and analyze Firestore collections
-2. **cleanup_firestore.py** - Main cleanup script (backs up and removes duplicates)
-3. **merge_company_duplicates.py** - Merge duplicate company records
-4. **cleanup_job_matches.py** - Analyze and clean up job-matches
+1. **scripts/database/explore_firestore.py** - Explore and analyze Firestore collections
+2. **scripts/database/cleanup_firestore.py** - Main cleanup script (backs up and removes duplicates)
+3. **scripts/database/merge_company_duplicates.py** - Merge duplicate company records
+4. **scripts/database/cleanup_job_matches.py** - Analyze and clean up job-matches
 
-All scripts are located in the project root directory.
+All scripts are now located in the `scripts/database/` directory.
 
 ## Next Steps
 

@@ -286,12 +286,12 @@ Set up job sources separately for each environment:
 
 **Staging**:
 ```bash
-docker exec job-finder-staging python setup_job_listings.py
+docker exec job-finder-staging python scripts/database/setup_job_listings.py
 ```
 
 **Production**:
 ```bash
-docker exec job-finder-production python setup_job_listings.py
+docker exec job-finder-production python scripts/database/setup_job_listings.py
 ```
 
 ### 4. **Monitor Both Environments**

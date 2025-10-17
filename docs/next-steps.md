@@ -314,7 +314,7 @@ None currently identified.
 
 1. **Duplicate jobs in matches (rare)**
    - Cause: URL already existed before queue system
-   - Workaround: Run cleanup script `cleanup_job_matches.py`
+   - Workaround: Run cleanup script `scripts/database/cleanup_job_matches.py`
    - Fix: Improve duplicate detection in intake
 
 2. **Timezone detection for global companies**

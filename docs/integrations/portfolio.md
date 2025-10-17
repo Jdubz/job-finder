@@ -613,7 +613,7 @@ export default function SubmitJobPage() {
 
 1. **Start the queue worker** (job-finder project):
    ```bash
-   python queue_worker.py
+   python scripts/workers/queue_worker.py
    ```
 
 2. **Access the submission form** in Portfolio:

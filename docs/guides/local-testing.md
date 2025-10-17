@@ -27,7 +27,7 @@ docker-compose -f docker-compose.local-prod.yml up
 docker exec -it job-finder-local-prod /bin/bash
 
 # Inside the container, test manually:
-python scheduler.py
+python scripts/workers/scripts/workers/scheduler.py
 # or
 python run_job_search.py
 ```
@@ -35,7 +35,7 @@ python run_job_search.py
 ### Run scheduler once and exit:
 ```bash
 # Edit docker-compose.local-prod.yml and change the command to:
-# command: python scheduler.py
+# command: python scripts/workers/scripts/workers/scheduler.py
 
 docker-compose -f docker-compose.local-prod.yml up
 ```
@@ -79,7 +79,7 @@ docker-compose -f docker-compose.local-build.yml up --build
 docker exec -it job-finder-local-build /bin/bash
 
 # Inside the container, test manually:
-python scheduler.py
+python scripts/workers/scripts/workers/scheduler.py
 # or
 python run_job_search.py
 ```
@@ -87,7 +87,7 @@ python run_job_search.py
 ### Run scheduler once and exit:
 ```bash
 # Edit docker-compose.local-build.yml and change the command to:
-# command: python scheduler.py
+# command: python scripts/workers/scripts/workers/scheduler.py
 
 docker-compose -f docker-compose.local-build.yml up --build
 ```
@@ -143,7 +143,7 @@ docker exec job-finder-local-prod crontab -l
 
 ### Manually trigger cron job:
 ```bash
-docker exec job-finder-local-prod /bin/bash -c "cd /app && /usr/local/bin/python scheduler.py"
+docker exec job-finder-local-prod /bin/bash -c "cd /app && /usr/local/bin/python scripts/workers/scripts/workers/scheduler.py"
 ```
 
 ### Check Python path and imports:
