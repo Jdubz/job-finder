@@ -22,6 +22,7 @@ from dotenv import load_dotenv  # noqa: E402
 from job_finder.ai import AIJobMatcher  # noqa: E402
 from job_finder.ai.providers import create_provider  # noqa: E402
 from job_finder.company_info_fetcher import CompanyInfoFetcher  # noqa: E402
+from job_finder.logging_config import setup_logging  # noqa: E402
 from job_finder.profile import FirestoreProfileLoader  # noqa: E402
 from job_finder.queue import ConfigLoader, QueueManager  # noqa: E402
 from job_finder.queue.processor import QueueItemProcessor  # noqa: E402
@@ -32,13 +33,9 @@ from job_finder.storage.job_sources_manager import JobSourcesManager  # noqa: E4
 # Load environment variables
 load_dotenv()
 
-# Configure logging
+# Configure logging (with Cloud Logging support)
 log_file = os.getenv("QUEUE_WORKER_LOG_FILE", "/app/logs/queue_worker.log")
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    handlers=[logging.FileHandler(log_file), logging.StreamHandler()],
-)
+setup_logging(log_file=log_file)
 logger = logging.getLogger(__name__)
 
 # Global flag for graceful shutdown

@@ -12,6 +12,7 @@ services:
       - GOOGLE_APPLICATION_CREDENTIALS=/app/credentials/serviceAccountKey.json
       - ENVIRONMENT=production
       - ENABLE_QUEUE_MODE=true
+      - ENABLE_CLOUD_LOGGING=true
       - PROFILE_DATABASE_NAME=portfolio
       - STORAGE_DATABASE_NAME=portfolio
       - CONFIG_PATH=/app/config/config.yaml
