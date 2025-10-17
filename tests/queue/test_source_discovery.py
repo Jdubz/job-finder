@@ -129,7 +129,7 @@ class TestGreenhouseDiscovery:
         mock_response = Mock()
         mock_response.status_code = 200
         mock_response.json.return_value = {"jobs": [{"id": 1}, {"id": 2}]}
-        mock_requests.get.return_value = mock_response
+        mock_get.return_value = mock_response
 
         # Mock source creation
         mock_dependencies["sources_manager"].create_from_discovery.return_value = "source-789"
@@ -138,8 +138,8 @@ class TestGreenhouseDiscovery:
         processor.process_item(item)
 
         # Verify API was called
-        mock_requests.get.assert_called_once()
-        assert "boards-api.greenhouse.io/v1/boards/stripe/jobs" in mock_requests.get.call_args[0][0]
+        mock_get.assert_called_once()
+        assert "boards-api.greenhouse.io/v1/boards/stripe/jobs" in mock_get.call_args[0][0]
 
         # Verify source was created
         mock_dependencies["sources_manager"].create_from_discovery.assert_called_once()
