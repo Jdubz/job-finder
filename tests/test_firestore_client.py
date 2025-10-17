@@ -1,5 +1,6 @@
 """Tests for FirestoreClient singleton."""
 
+import os
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
@@ -144,8 +145,11 @@ class TestFirestoreClient:
         assert client == mock_client
         mock_creds.Certificate.assert_called()
 
-    def test_get_client_missing_credentials(self):
+    @patch.dict(os.environ, {}, clear=True)
+    @patch("job_finder.storage.firestore_client.firebase_admin")
+    def test_get_client_missing_credentials(self, mock_firebase):
         """Test that get_client raises error when credentials not found."""
+        mock_firebase.get_app.side_effect = ValueError("No app")
         with pytest.raises(ValueError, match="Firebase credentials not found"):
             FirestoreClient.get_client(database_name="portfolio-staging")
 
