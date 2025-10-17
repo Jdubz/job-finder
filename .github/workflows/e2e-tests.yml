@@ -58,15 +58,9 @@ jobs:
           pip install -r requirements-test.txt || echo "No test requirements file"
 
       - name: Configure GCP credentials
-        env:
-          GCP_SA_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
         run: |
-          # Write credentials to file (handle base64 or raw JSON)
-          if echo "$GCP_SA_KEY" | base64 -d > /dev/null 2>&1; then
-            echo "$GCP_SA_KEY" | base64 -d > gcp-key.json
-          else
-            echo "$GCP_SA_KEY" > gcp-key.json
-          fi
+          # Write service account JSON to file
+          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > gcp-key.json
           chmod 600 gcp-key.json
 
           # Verify JSON is valid
@@ -141,15 +135,9 @@ jobs:
           pip install -e .
 
       - name: Configure GCP credentials
-        env:
-          GCP_SA_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
         run: |
-          # Write credentials to file (handle base64 or raw JSON)
-          if echo "$GCP_SA_KEY" | base64 -d > /dev/null 2>&1; then
-            echo "$GCP_SA_KEY" | base64 -d > gcp-key.json
-          else
-            echo "$GCP_SA_KEY" > gcp-key.json
-          fi
+          # Write service account JSON to file
+          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > gcp-key.json
           chmod 600 gcp-key.json
 
           # Verify JSON is valid
