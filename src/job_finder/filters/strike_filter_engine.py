@@ -332,7 +332,11 @@ class StrikeFilterEngine:
             ind in combined for ind in ["on-site", "onsite", "in-office", "office-based"]
         )
 
-        # Apply policy
+        # If we can't detect work arrangement, pass it through (don't reject on missing data)
+        if not is_remote and not is_hybrid and not is_onsite:
+            return False  # Unclear = allow (let AI analysis handle it)
+
+        # Apply policy to detected arrangements
         if is_remote and self.allow_remote:
             return False  # Remote OK
 
@@ -342,17 +346,15 @@ class StrikeFilterEngine:
         if is_onsite and self.allow_onsite:
             return False  # Onsite OK (if allowed)
 
-        # If none of the allowed conditions match, reject
+        # Only reject if we detected an arrangement that violates policy
         if is_remote:
             policy_reason = "Remote jobs not allowed"
         elif is_hybrid and is_portland:
             policy_reason = "Hybrid Portland jobs not allowed"
         elif is_hybrid:
             policy_reason = "Hybrid jobs outside Portland not allowed"
-        elif is_onsite:
+        else:  # is_onsite
             policy_reason = "On-site jobs not allowed"
-        else:
-            policy_reason = "Work arrangement unclear or not allowed"
 
         result.add_rejection(
             filter_category="hard_reject",
