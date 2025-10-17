@@ -109,6 +109,11 @@ class JobQueueItem(BaseModel):
         default=None, description="When processing finished (success/failed/skipped)"
     )
 
+    # Optional scraped data (populated by scrapers or API submissions)
+    scraped_data: Optional[Dict[str, Any]] = Field(
+        default=None, description="Pre-scraped job or company data"
+    )
+
     model_config = ConfigDict(use_enum_values=True)
 
     def to_firestore(self) -> Dict[str, Any]:
