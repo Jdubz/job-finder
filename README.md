@@ -309,6 +309,29 @@ Configure your preferred provider in `config/config.yaml` under the `ai` section
 - Do not scrape sites that explicitly prohibit automated access
 - Do not share or sell scraped data
 
+## Documentation
+
+Comprehensive documentation is available in the [`docs/`](docs/) directory:
+
+### Getting Started
+- **[Setup Guide](docs/setup.md)** - Complete installation and configuration instructions
+- **[Development Workflow](docs/development.md)** - Local development, testing, and code quality
+
+### Architecture & Design
+- **[System Architecture](docs/architecture.md)** - Complete system design, components, and data flow
+- **[Queue System](docs/queue-system.md)** - Queue-based pipeline architecture and processing
+
+### Deployment & Operations
+- **[Deployment Guide](docs/deployment.md)** - Docker deployment with Portainer
+- **[Environment Configuration](docs/guides/environments.md)** - Multi-environment setup (staging/production)
+- **[Local Testing](docs/guides/local-testing.md)** - Docker local testing guide
+
+### Integration & Planning
+- **[Portfolio Integration](docs/integrations/portfolio.md)** - Integrate with Portfolio web application
+- **[Next Steps](docs/next-steps.md)** - Roadmap, technical debt, and planned features
+
+See **[docs/README.md](docs/README.md)** for complete documentation navigation.
+
 ## Contributing
 
 Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests.

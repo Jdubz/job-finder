@@ -55,7 +55,35 @@ Job Finder is an AI-powered job search automation tool that scrapes job boards, 
 
 ## Core Pipeline
 
-The job search pipeline executes in five sequential stages:
+The job search pipeline operates in two modes:
+
+1. **Legacy Direct Processing** - Sequential 5-stage pipeline (deprecated)
+2. **Queue-Based Processing** - Asynchronous queue architecture (current production)
+
+### Queue-Based Pipeline (Current Architecture)
+
+The queue-based system separates job discovery from job analysis for better scalability and reliability:
+
+**Discovery Phase (Scrapers → Queue):**
+1. Cron triggers scrapers every 6 hours
+2. Scrapers collect jobs from sources
+3. Basic filtering applied (remote/hybrid only)
+4. Jobs added to Firestore `job-queue` collection
+5. Scraper exits (lightweight, fast)
+
+**Processing Phase (Queue Worker → Storage):**
+1. Queue worker daemon polls for pending jobs (60s intervals)
+2. Processes jobs in batches (10 items per cycle)
+3. Applies stop list filters (company/keyword/domain exclusions)
+4. Fetches company information (with caching)
+5. Runs AI matching and scoring
+6. Stores matched jobs (score >= 80) to Firestore
+
+See **[Queue System Guide](queue-system.md)** for complete architectural details and configuration.
+
+### Legacy Direct Processing Pipeline
+
+The original pipeline executes in five sequential stages:
 
 ### Stage 1: Profile Loading
 
@@ -259,6 +287,7 @@ The job search pipeline executes in five sequential stages:
 - `firestore_storage.py` - Job match storage
 - `listings_manager.py` - Job source listings management
 - `companies_manager.py` - Company data caching
+- `firestore_client.py` - Centralized Firestore connection management (singleton pattern)
 
 **Design Pattern:** Repository pattern
 
@@ -266,12 +295,41 @@ The job search pipeline executes in five sequential stages:
 - `job-matches` - Matched jobs with AI analysis
 - `job-listings` - Active job sources (boards, feeds, companies)
 - `companies` - Cached company information
+- `job-queue` - Queue items for asynchronous processing
+- `job-finder-config` - Stop lists and configuration
 
 **Key Features:**
 - Automatic deduplication by URL hash
 - Tracking fields (status, appliedAt, firstSeen, lastSeen)
 - Efficient querying with indexes
 - Update tracking and statistics
+
+### Queue System
+
+**Location:** `src/job_finder/queue/`
+
+**Components:**
+- `manager.py` - Queue CRUD operations and statistics
+- `processor.py` - Item processing logic with retry mechanism
+- `models.py` - Pydantic models for queue items
+- `config_loader.py` - Firestore configuration loading
+- `scraper_intake.py` - Helper for submitting jobs to queue
+
+**Design Pattern:** Producer-Consumer pattern
+
+**Key Features:**
+- FIFO queue processing
+- Duplicate detection before submission
+- Stop list filtering (companies, keywords, domains)
+- Retry logic with exponential backoff (max 3 retries)
+- Status tracking (pending → processing → success/failed/skipped)
+- Batch processing (10 items per cycle)
+
+**Integration:**
+- Scrapers produce jobs to queue
+- Queue worker consumes and processes jobs
+- Portfolio project can submit jobs via API
+- Real-time status updates in Firestore
 
 ---
 
@@ -788,5 +846,5 @@ The system is designed to run as a single containerized instance with scheduled 
 
 ---
 
-**Last Updated:** 2025-10-14
-**Version:** 1.0
+**Last Updated:** 2025-10-16
+**Version:** 2.0 (Queue-based architecture)
