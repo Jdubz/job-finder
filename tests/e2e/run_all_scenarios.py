@@ -19,6 +19,9 @@ from tests.e2e.scenarios import (
     TestStatus,
     JobSubmissionScenario,
     FilteredJobScenario,
+    CompanySourceDiscoveryScenario,
+    ScrapeRotationScenario,
+    FullDiscoveryCycleScenario,
 )
 
 
@@ -113,6 +116,9 @@ def run_scenarios(
     all_scenarios = {
         "job_submission": JobSubmissionScenario,
         "filtered_job": FilteredJobScenario,
+        "company_source_discovery": CompanySourceDiscoveryScenario,
+        "scrape_rotation": ScrapeRotationScenario,
+        "full_discovery_cycle": FullDiscoveryCycleScenario,
     }
 
     # Determine which scenarios to run

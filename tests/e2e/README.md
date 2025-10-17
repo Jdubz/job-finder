@@ -39,6 +39,57 @@ Tests cost optimization - filtered jobs should not reach AI analysis:
 - No AI analysis for filtered jobs
 - Fast processing time (< 5 seconds)
 
+### Scenario 3: Company Source Discovery
+**File:** `scenario_03_company_source_discovery.py`
+
+Tests company processing and automatic source discovery:
+1. Submit company with Greenhouse job board
+2. Company pipeline processes and detects job board
+3. SOURCE_DISCOVERY queue item spawned automatically
+4. Source is validated and configured
+5. Both company and source exist in Firestore
+
+**Verifies:**
+- Company granular pipeline (FETCH → EXTRACT → ANALYZE → SAVE)
+- Job board detection from company website
+- Automatic source discovery spawning
+- Source configuration and validation
+- Data enrichment (tech stack, company info)
+
+### Scenario 4: Scrape Rotation
+**File:** `scenario_04_scrape_rotation.py`
+
+Tests intelligent source rotation and health tracking:
+1. Submit SCRAPE request without specific sources
+2. Verify sources fetched with rotation (oldest first)
+3. Verify source priority scoring
+4. Respect target_matches and max_sources limits
+5. Update source health tracking
+
+**Verifies:**
+- Source rotation algorithm (oldest scraped_at first)
+- Priority scoring (S/A/B/C/D tiers)
+- Scrape limits respected
+- Health tracking (success/failure counts)
+- Source timestamp updates
+
+### Scenario 5: Full Discovery Cycle
+**File:** `scenario_05_full_discovery_cycle.py`
+
+**INTEGRATION TEST** - Tests complete intelligent data population:
+1. Submit company → discovers Greenhouse source
+2. Run scrape → finds jobs from discovered source
+3. Jobs filter → only high-quality matches analyzed
+4. AI analysis → creates job-match documents
+5. Verify complete chain exists
+
+**Verifies:**
+- Complete data chain: Company → Source → Jobs → Matches
+- System fills itself with valuable data automatically
+- All pipeline stages work together
+- Data quality maintained throughout
+- Match scores meet thresholds
+
 ## Running Tests
 
 ### Run All Scenarios
@@ -56,6 +107,18 @@ python tests/e2e/run_all_scenarios.py --scenarios job_submission
 
 # Run only filter test
 python tests/e2e/run_all_scenarios.py --scenarios filtered_job
+
+# Run company source discovery test
+python tests/e2e/run_all_scenarios.py --scenarios company_source_discovery
+
+# Run scrape rotation test
+python tests/e2e/run_all_scenarios.py --scenarios scrape_rotation
+
+# Run full integration test
+python tests/e2e/run_all_scenarios.py --scenarios full_discovery_cycle
+
+# Run multiple specific scenarios
+python tests/e2e/run_all_scenarios.py --scenarios job_submission filtered_job company_source_discovery
 ```
 
 ### Run with Verbose Logging
