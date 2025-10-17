@@ -318,7 +318,9 @@ class AIJobMatcher:
             max_tokens = model_settings.get("max_tokens", self.config.get("max_tokens", 4096))
             temperature = model_settings.get("temperature", self.config.get("temperature", 0.3))
 
-            response = self.provider.generate(prompt, max_tokens=max_tokens, temperature=temperature)
+            response = self.provider.generate(
+                prompt, max_tokens=max_tokens, temperature=temperature
+            )
 
             # Parse JSON response
             # Try to extract JSON from response (in case there's extra text)
@@ -384,9 +386,13 @@ class AIJobMatcher:
             # Use model-specific settings or fallback to top-level config
             max_tokens = model_settings.get("max_tokens", self.config.get("max_tokens", 4096))
             # Use slightly higher temperature for creative intake data generation
-            temperature = model_settings.get("temperature", self.config.get("temperature", 0.3)) + 0.1
+            temperature = (
+                model_settings.get("temperature", self.config.get("temperature", 0.3)) + 0.1
+            )
 
-            response = self.provider.generate(prompt, max_tokens=max_tokens, temperature=temperature)
+            response = self.provider.generate(
+                prompt, max_tokens=max_tokens, temperature=temperature
+            )
 
             # Parse JSON response
             response_clean = response.strip()

@@ -196,7 +196,7 @@ class JobSearchOrchestrator:
         # Initialize company info fetcher with AI provider and config (shares same provider as AI matcher)
         self.company_info_fetcher = CompanyInfoFetcher(
             ai_provider=self.ai_matcher.provider if self.ai_matcher else None,
-            ai_config=self.config.get("ai", {}) if self.ai_matcher else {}
+            ai_config=self.config.get("ai", {}) if self.ai_matcher else {},
         )
 
     def _get_active_sources(self) -> List[Dict[str, Any]]:

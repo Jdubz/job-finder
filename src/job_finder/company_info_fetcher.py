@@ -240,7 +240,9 @@ Return ONLY valid JSON in this format:
             max_tokens = min(model_settings.get("max_tokens", 1000), 1000)
             temperature = 0.2  # Lower temperature for factual extraction
 
-            response = self.ai_provider.generate(prompt, max_tokens=max_tokens, temperature=temperature)
+            response = self.ai_provider.generate(
+                prompt, max_tokens=max_tokens, temperature=temperature
+            )
 
             # Parse JSON response
             response_clean = response.strip()
