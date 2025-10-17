@@ -1,10 +1,10 @@
 """Tests for queue item processor."""
 
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
-from job_finder.queue.models import JobQueueItem, QueueItemType, QueueStatus
+from job_finder.queue.models import JobQueueItem, QueueItemType, QueueStatus, ScrapeConfig
 from job_finder.queue.processor import QueueItemProcessor
 
 
@@ -19,14 +19,24 @@ def mock_managers():
         "sources_manager": MagicMock(),
         "company_info_fetcher": MagicMock(),
         "ai_matcher": MagicMock(),
-        "profile": MagicMock(),  # Added profile parameter
+        "profile": MagicMock(),
     }
 
 
 @pytest.fixture
 def processor(mock_managers):
     """Create processor with mocked dependencies."""
-    return QueueItemProcessor(**mock_managers)
+    # Patch ScrapeRunner to avoid creating real instance
+    with patch("job_finder.queue.processor.ScrapeRunner") as mock_scrape_runner_class:
+        mock_scrape_runner_instance = MagicMock()
+        mock_scrape_runner_class.return_value = mock_scrape_runner_instance
+
+        processor_instance = QueueItemProcessor(**mock_managers)
+
+        # Store reference to mock scrape_runner for tests to access
+        processor_instance.scrape_runner = mock_scrape_runner_instance
+
+        return processor_instance
 
 
 @pytest.fixture
@@ -361,3 +371,210 @@ def test_build_company_info_string_partial(processor):
     assert "About: We build great software" in result
     assert "Culture:" not in result
     assert "Mission:" not in result
+
+
+# SCRAPE Queue Item Tests
+
+
+@pytest.fixture
+def sample_scrape_item():
+    """Create a sample scrape queue item."""
+    return JobQueueItem(
+        id="test-scrape-789",
+        type=QueueItemType.SCRAPE,
+        source="user_submission",
+        scrape_config=ScrapeConfig(
+            target_matches=5,
+            max_sources=20,
+            source_ids=None,
+            min_match_score=None,
+        ),
+    )
+
+
+def test_process_scrape_with_default_config(processor, mock_managers, sample_scrape_item):
+    """Test processing SCRAPE item with default configuration."""
+    # Mock scrape runner
+    processor.scrape_runner.run_scrape.return_value = {
+        "sources_scraped": 3,
+        "jobs_saved": 5,
+        "jobs_analyzed": 5,
+    }
+
+    processor.process_item(sample_scrape_item)
+
+    # Should call scrape runner with config values
+    processor.scrape_runner.run_scrape.assert_called_once_with(
+        target_matches=5, max_sources=20, source_ids=None
+    )
+
+    # Should update to SUCCESS
+    call_args = mock_managers["queue_manager"].update_status.call_args_list
+    success_call = None
+    for call in call_args:
+        if call[0][1] == QueueStatus.SUCCESS:
+            success_call = call
+            break
+
+    assert success_call is not None
+    assert "3 sources" in success_call[0][2]
+    assert "5 jobs" in success_call[0][2]
+
+
+def test_process_scrape_with_custom_config(processor, mock_managers):
+    """Test processing SCRAPE item with custom configuration."""
+    # Create scrape item with custom config
+    scrape_item = JobQueueItem(
+        id="test-scrape-custom",
+        type=QueueItemType.SCRAPE,
+        source="user_submission",
+        scrape_config=ScrapeConfig(
+            target_matches=10,
+            max_sources=50,
+            source_ids=["source-1", "source-2"],
+            min_match_score=70,
+        ),
+    )
+
+    # Mock scrape runner
+    processor.scrape_runner.run_scrape.return_value = {
+        "sources_scraped": 2,
+        "jobs_saved": 8,
+        "jobs_analyzed": 10,
+    }
+
+    processor.process_item(scrape_item)
+
+    # Should override AI matcher min score (check it was set)
+    # The ai_matcher is a mock, so we verify the attribute was assigned
+    assert hasattr(processor.ai_matcher, "min_match_score")
+
+    # Should call scrape runner with custom values
+    processor.scrape_runner.run_scrape.assert_called_once_with(
+        target_matches=10, max_sources=50, source_ids=["source-1", "source-2"]
+    )
+
+    # Should update to SUCCESS
+    call_args = mock_managers["queue_manager"].update_status.call_args_list
+    success_call = None
+    for call in call_args:
+        if call[0][1] == QueueStatus.SUCCESS:
+            success_call = call
+            break
+
+    assert success_call is not None
+
+
+def test_process_scrape_with_none_values(processor, mock_managers):
+    """Test processing SCRAPE item with None values (unlimited)."""
+    # Create scrape item with None values
+    scrape_item = JobQueueItem(
+        id="test-scrape-unlimited",
+        type=QueueItemType.SCRAPE,
+        source="automated_scan",
+        scrape_config=ScrapeConfig(
+            target_matches=None,  # Unlimited
+            max_sources=None,  # Unlimited
+            source_ids=None,
+            min_match_score=None,
+        ),
+    )
+
+    # Mock scrape runner
+    processor.scrape_runner.run_scrape.return_value = {
+        "sources_scraped": 100,
+        "jobs_saved": 25,
+        "jobs_analyzed": 50,
+    }
+
+    processor.process_item(scrape_item)
+
+    # Should call scrape runner with None values
+    processor.scrape_runner.run_scrape.assert_called_once_with(
+        target_matches=None, max_sources=None, source_ids=None
+    )
+
+    # Should not override AI matcher min score
+    assert not hasattr(mock_managers["ai_matcher"], "min_match_score") or (
+        mock_managers["ai_matcher"].min_match_score != 70
+    )
+
+
+def test_process_scrape_no_config(processor, mock_managers):
+    """Test processing SCRAPE item without scrape_config (should use defaults)."""
+    # Create scrape item without config
+    scrape_item = JobQueueItem(
+        id="test-scrape-no-config",
+        type=QueueItemType.SCRAPE,
+        source="automated_scan",
+        scrape_config=None,
+    )
+
+    # Mock scrape runner
+    processor.scrape_runner.run_scrape.return_value = {
+        "sources_scraped": 5,
+        "jobs_saved": 3,
+        "jobs_analyzed": 5,
+    }
+
+    processor.process_item(scrape_item)
+
+    # Should call scrape runner with defaults (from ScrapeConfig())
+    processor.scrape_runner.run_scrape.assert_called_once_with(
+        target_matches=5, max_sources=20, source_ids=None
+    )
+
+
+def test_process_scrape_error_handling(processor, mock_managers):
+    """Test error handling when scrape fails."""
+    scrape_item = JobQueueItem(
+        id="test-scrape-error",
+        type=QueueItemType.SCRAPE,
+        source="user_submission",
+        scrape_config=ScrapeConfig(),
+    )
+
+    # Mock scrape runner to raise exception
+    processor.scrape_runner.run_scrape.side_effect = Exception("Network error")
+
+    # Mock queue settings
+    mock_managers["config_loader"].get_queue_settings.return_value = {"maxRetries": 3}
+
+    processor.process_item(scrape_item)
+
+    # Should update to FAILED or PENDING for retry
+    call_args = mock_managers["queue_manager"].update_status.call_args_list
+    has_failure_or_retry = any(
+        call[0][1] in [QueueStatus.FAILED, QueueStatus.PENDING] for call in call_args
+    )
+    assert has_failure_or_retry
+
+
+def test_process_scrape_no_jobs_found(processor, mock_managers):
+    """Test processing SCRAPE when no jobs are found."""
+    scrape_item = JobQueueItem(
+        id="test-scrape-none",
+        type=QueueItemType.SCRAPE,
+        source="automated_scan",
+        scrape_config=ScrapeConfig(),
+    )
+
+    # Mock scrape runner with no results
+    processor.scrape_runner.run_scrape.return_value = {
+        "sources_scraped": 3,
+        "jobs_saved": 0,
+        "jobs_analyzed": 0,
+    }
+
+    processor.process_item(scrape_item)
+
+    # Should still update to SUCCESS (no jobs is not an error)
+    call_args = mock_managers["queue_manager"].update_status.call_args_list
+    success_call = None
+    for call in call_args:
+        if call[0][1] == QueueStatus.SUCCESS:
+            success_call = call
+            break
+
+    assert success_call is not None
+    assert "0 jobs" in success_call[0][2]

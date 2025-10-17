@@ -46,6 +46,46 @@ def test_add_item(queue_manager):
     queue_manager.db.collection.assert_called_with("job-queue")
 
 
+def test_has_pending_scrape_returns_true_when_exists(queue_manager):
+    """Test has_pending_scrape returns True when pending SCRAPE exists."""
+    # Mock query that returns a document
+    mock_doc = MagicMock()
+    queue_manager.db.collection.return_value.where.return_value.where.return_value.limit.return_value.stream.return_value = [
+        mock_doc
+    ]
+
+    result = queue_manager.has_pending_scrape()
+
+    assert result is True
+    # Verify correct query was made
+    queue_manager.db.collection.assert_called_with("job-queue")
+
+
+def test_has_pending_scrape_returns_false_when_none(queue_manager):
+    """Test has_pending_scrape returns False when no pending SCRAPE."""
+    # Mock query that returns empty list
+    queue_manager.db.collection.return_value.where.return_value.where.return_value.limit.return_value.stream.return_value = (
+        []
+    )
+
+    result = queue_manager.has_pending_scrape()
+
+    assert result is False
+
+
+def test_has_pending_scrape_handles_errors(queue_manager):
+    """Test has_pending_scrape handles errors gracefully."""
+    # Mock query that raises exception
+    queue_manager.db.collection.return_value.where.return_value.where.return_value.limit.return_value.stream.side_effect = Exception(
+        "Firestore error"
+    )
+
+    result = queue_manager.has_pending_scrape()
+
+    # Should return False on error (safe default)
+    assert result is False
+
+
 def test_get_pending_items(queue_manager):
     """Test getting pending items."""
     # Mock Firestore query
