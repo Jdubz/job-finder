@@ -46,6 +46,10 @@ class JobMatchResult(BaseModel):
     # Resume Intake Data (for resume generator)
     resume_intake_data: Optional[Dict[str, Any]] = None
 
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary for serialization."""
+        return self.model_dump()
+
 
 class AIJobMatcher:
     """AI-powered job matcher that analyzes jobs and generates resume intake data."""
