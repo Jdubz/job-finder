@@ -1,0 +1,54 @@
+name: Deploy Firestore Indexes
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'firestore.indexes.portfolio.json'
+      - '.github/workflows/deploy-firestore-indexes.yml'
+  workflow_dispatch:  # Allow manual trigger
+
+env:
+  PROJECT_ID: static-sites-257923
+  PORTFOLIO_DATABASE: portfolio
+
+jobs:
+  deploy-indexes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Deploy indexes to portfolio database
+        run: |
+          # Use gcloud to create the composite index for portfolio database
+          gcloud firestore indexes composite create \
+            --project=${{ env.PROJECT_ID }} \
+            --database=${{ env.PORTFOLIO_DATABASE }} \
+            --collection-group=job-queue \
+            --query-scope=COLLECTION \
+            --field-config field-path=status,order=ascending \
+            --field-config field-path=created_at,order=ascending \
+            --field-config field-path=__name__,order=ascending \
+            --quiet || echo "Index may already exist or is being created"
+
+      - name: Verify index creation
+        run: |
+          echo "Checking index status..."
+          gcloud firestore indexes composite list \
+            --project=${{ env.PROJECT_ID }} \
+            --database=${{ env.PORTFOLIO_DATABASE }} \
+            --filter="collectionGroup:job-queue"
