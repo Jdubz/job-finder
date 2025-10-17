@@ -138,6 +138,93 @@ class ConfigLoader:
                 "costBudgetDaily": 50.0,
             }
 
+    def get_job_filters(self) -> Dict[str, Any]:
+        """
+        Get job filter configuration.
+
+        Returns:
+            Dictionary with filter settings for pre-AI job filtering
+        """
+        if "job_filters" in self._cache:
+            return self._cache["job_filters"]
+
+        try:
+            doc = self.db.collection(self.collection_name).document("job-filters").get()
+
+            if doc.exists:
+                data = doc.to_dict()
+                filters = {
+                    # Exclusions
+                    "excludedCompanies": data.get("excludedCompanies", []),
+                    "excludedDomains": data.get("excludedDomains", []),
+                    "excludedKeywordsUrl": data.get("excludedKeywordsUrl", []),
+                    "excludedKeywordsTitle": data.get("excludedKeywordsTitle", []),
+                    "excludedKeywordsDescription": data.get("excludedKeywordsDescription", []),
+                    # Location & Remote
+                    "remotePolicy": data.get("remotePolicy", "remote_only"),
+                    "allowedLocations": data.get("allowedLocations", []),
+                    # Job Type
+                    "employmentType": data.get("employmentType", "full_time"),
+                    # Experience
+                    "minYearsExperience": data.get("minYearsExperience"),
+                    "maxYearsExperience": data.get("maxYearsExperience"),
+                    "allowedSeniority": data.get("allowedSeniority", []),
+                    # Salary
+                    "minSalary": data.get("minSalary"),
+                    # Tech Stack
+                    "requiredTech": data.get("requiredTech", []),
+                    "excludedTech": data.get("excludedTech", []),
+                    # Quality
+                    "minDescriptionLength": data.get("minDescriptionLength", 200),
+                    "rejectCommissionOnly": data.get("rejectCommissionOnly", True),
+                    # Meta
+                    "enabled": data.get("enabled", True),
+                }
+                self._cache["job_filters"] = filters
+                logger.info(
+                    f"Loaded job filters: enabled={filters['enabled']}, "
+                    f"remotePolicy={filters['remotePolicy']}, "
+                    f"requiredTech={len(filters['requiredTech'])} items"
+                )
+                return filters
+            else:
+                logger.warning("Job filters document not found, using defaults")
+                return self._get_default_job_filters()
+
+        except Exception as e:
+            logger.error(f"Error loading job filters from Firestore: {e}")
+            return self._get_default_job_filters()
+
+    def _get_default_job_filters(self) -> Dict[str, Any]:
+        """Get default job filter configuration."""
+        return {
+            # Exclusions
+            "excludedCompanies": [],
+            "excludedDomains": [],
+            "excludedKeywordsUrl": [],
+            "excludedKeywordsTitle": ["senior", "lead", "principal", "intern", "junior"],
+            "excludedKeywordsDescription": ["clearance required", "relocation required"],
+            # Location & Remote
+            "remotePolicy": "remote_only",
+            "allowedLocations": ["Portland, OR", "Remote"],
+            # Job Type
+            "employmentType": "full_time",
+            # Experience
+            "minYearsExperience": 3,
+            "maxYearsExperience": 10,
+            "allowedSeniority": ["mid", "senior"],
+            # Salary
+            "minSalary": 100000,
+            # Tech Stack
+            "requiredTech": ["Python", "TypeScript", "React", "Node.js", "AWS"],
+            "excludedTech": ["PHP", "WordPress", "Java"],
+            # Quality
+            "minDescriptionLength": 200,
+            "rejectCommissionOnly": True,
+            # Meta
+            "enabled": True,
+        }
+
     def refresh_cache(self) -> None:
         """Clear cache to force reload of all settings on next access."""
         self._cache.clear()
