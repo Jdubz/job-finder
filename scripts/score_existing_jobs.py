@@ -31,7 +31,17 @@ DEFAULT_FILTER_CONFIG = {
     "enabled": True,
     "strikeThreshold": 5,
     "hardRejections": {
-        "excludedJobTypes": ["sales", "hr", "recruiter", "support", "customer success"],
+        "excludedJobTypes": [
+            "sales",
+            "hr",
+            "human resources",
+            "people operations",
+            "talent acquisition",
+            "recruiter",
+            "recruiting",
+            "support",
+            "customer success",
+        ],
         "excludedSeniority": [
             "associate",
             "junior",
@@ -137,14 +147,14 @@ class JobScorer:
             data = doc.to_dict()
             job_count += 1
 
-            # Prepare job data for filtering
+            # Prepare job data for filtering (use actual field names from job-matches)
             job_data = {
-                "title": data.get("job_title", ""),
-                "company": data.get("company_name", ""),
-                "description": data.get("job_description", ""),
+                "title": data.get("title", ""),
+                "company": data.get("company", ""),
+                "description": data.get("description", ""),
                 "location": data.get("location", ""),
-                "salary": data.get("salary_range", ""),
-                "posted_date": None,  # Not stored in job-matches currently
+                "salary": data.get("salary", ""),
+                "posted_date": data.get("postedDate"),  # ISO format string
                 "url": data.get("url", ""),
             }
 
