@@ -6,27 +6,23 @@ This directory contains GitHub Actions workflows for CI/CD automation.
 
 The following secrets must be configured in the GitHub repository for workflows to function properly:
 
-### `GCP_SA_KEY`
+### `FIREBASE_SERVICE_ACCOUNT`
 
 **Required for**: `deploy-firestore-indexes.yml`
 
 **Description**: Google Cloud Platform service account key for Firestore index deployment.
 
-**Setup Instructions**:
-
-1. Go to repository **Settings** → **Secrets and variables** → **Actions**
-2. Click **New repository secret**
-3. Name: `GCP_SA_KEY`
-4. Value: Paste the **entire contents** of your service account JSON key file
-
-**Finding the service account key**:
-- Local path: `.firebase/static-sites-257923-firebase-adminsdk.json`
-- Or download from: [Google Cloud Console](https://console.cloud.google.com/iam-admin/serviceaccounts?project=static-sites-257923)
+**Status**: ✅ Already configured in repository
 
 **Required permissions**:
 - `datastore.indexes.create`
 - `datastore.indexes.list`
 - `datastore.indexes.get`
+
+**To update or verify**:
+1. Go to repository **Settings** → **Secrets and variables** → **Actions**
+2. Verify `FIREBASE_SERVICE_ACCOUNT` exists
+3. If needed, update with contents of `.firebase/static-sites-257923-firebase-adminsdk.json`
 
 ## Workflows
 
@@ -76,9 +72,9 @@ done'
 
 ### Error: "workflow must specify exactly one of workload_identity_provider or credentials_json"
 
-**Cause**: The `GCP_SA_KEY` secret is not set in GitHub repository secrets.
+**Cause**: The `FIREBASE_SERVICE_ACCOUNT` secret is not set or is empty in GitHub repository secrets.
 
-**Fix**: Follow the setup instructions above to add the secret.
+**Fix**: Verify the secret exists in repository settings. If not, add it with the contents of `.firebase/static-sites-257923-firebase-adminsdk.json`
 
 ### Error: "Permission denied" when deploying indexes
 
