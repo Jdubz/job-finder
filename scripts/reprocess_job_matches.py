@@ -34,9 +34,7 @@ from job_finder.queue.manager import QueueManager
 from job_finder.queue.scraper_intake import ScraperIntake
 from job_finder.storage.firestore_client import FirestoreClient
 
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 
@@ -112,11 +110,7 @@ class JobMatchReprocessor:
 
         while True:
             # Get a batch of documents
-            docs = (
-                self.db.collection(self.collection_name)
-                .limit(batch_size)
-                .stream()
-            )
+            docs = self.db.collection(self.collection_name).limit(batch_size).stream()
 
             doc_list = list(docs)
             if not doc_list:
@@ -134,9 +128,7 @@ class JobMatchReprocessor:
         logger.info(f"✅ Deleted {deleted_count} job matches")
         return deleted_count
 
-    def resubmit_jobs(
-        self, job_matches: List[Dict[str, Any]], dry_run: bool = False
-    ) -> int:
+    def resubmit_jobs(self, job_matches: List[Dict[str, Any]], dry_run: bool = False) -> int:
         """
         Re-submit all jobs through the queue intake system.
 
@@ -164,6 +156,11 @@ class JobMatchReprocessor:
                 "url": match.get("url", match.get("jobUrl", "")),
                 "company": match.get("company", ""),
                 "title": match.get("title", match.get("jobTitle", "")),
+                "description": match.get("description", ""),
+                "location": match.get("location", ""),
+                "salary": match.get("salary"),
+                "company_website": match.get("companyWebsite", ""),
+                "posted_date": match.get("postedDate"),
             }
 
             # Only submit if we have a URL
@@ -284,9 +281,7 @@ Examples:
         logger.info("\n🔍 DRY RUN COMPLETE - No changes were made")
     else:
         logger.info("\n✅ RE-PROCESSING COMPLETE")
-        logger.info(
-            f"\nJobs are now in the queue and will be processed by the queue worker."
-        )
+        logger.info(f"\nJobs are now in the queue and will be processed by the queue worker.")
         logger.info("Monitor the queue-worker logs to see progress.")
 
 

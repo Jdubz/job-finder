@@ -62,13 +62,16 @@ class ScraperIntake:
                     continue
 
                 # Create queue item
-                # Note: Full job data will be re-scraped during processing
+                # Note: Full job data will be re-scraped during processing if not provided
                 queue_item = JobQueueItem(
                     type=QueueItemType.JOB,
                     url=url,
                     company_name=job.get("company", ""),
                     company_id=company_id,
                     source=source,
+                    scraped_data=(
+                        job if len(job) > 2 else None
+                    ),  # Include full job data if available
                 )
 
                 # Add to queue

@@ -333,8 +333,7 @@ class QueueItemProcessor:
         """
         Scrape job details from URL.
 
-        Currently supports basic URL extraction. Can be extended to support
-        different job board formats.
+        Detects job board type from URL and uses appropriate scraper.
 
         Args:
             item: Job queue item
@@ -342,25 +341,182 @@ class QueueItemProcessor:
         Returns:
             Job data dictionary or None if scraping failed
         """
-        # For now, return basic job data from the queue item
-        # In future, can detect job board type and use appropriate scraper
-        job_data = {
-            "url": item.url,
-            "title": "Unknown",  # Would be scraped
-            "company": item.company_name or "Unknown",
-            "company_website": "",
-            "location": "Unknown",
-            "description": "",
-            "posted_date": None,
-            "salary": None,
-        }
-
         # If we have scraped_data from a previous scraper run, use it
         if item.scraped_data:
-            job_data.update(item.scraped_data)
+            logger.debug(
+                f"Using cached scraped data: {item.scraped_data.get('title')} "
+                f"at {item.scraped_data.get('company')}"
+            )
+            return item.scraped_data
 
-        logger.debug(f"Job data prepared: {job_data.get('title')} " f"at {job_data.get('company')}")
-        return job_data
+        # Detect job board type and scrape
+        url = item.url
+        job_data = None
+
+        try:
+            # Greenhouse (MongoDB, Spotify, etc.)
+            if "greenhouse" in url or "gh_jid=" in url:
+                job_data = self._scrape_greenhouse_url(url)
+
+            # WeWorkRemotely
+            elif "weworkremotely.com" in url:
+                job_data = self._scrape_weworkremotely_url(url)
+
+            # Remotive
+            elif "remotive.com" in url or "remotive.io" in url:
+                job_data = self._scrape_remotive_url(url)
+
+            # Generic fallback - try basic scraping
+            else:
+                logger.warning(f"Unknown job board URL: {url}, using generic scraper")
+                job_data = self._scrape_generic_url(url)
+
+        except Exception as e:
+            logger.error(f"Error scraping job from {url}: {e}")
+            return None
+
+        if job_data:
+            # Ensure URL is set
+            job_data["url"] = url
+            logger.debug(f"Job scraped: {job_data.get('title')} at {job_data.get('company')}")
+            return job_data
+
+        return None
+
+    def _scrape_greenhouse_url(self, url: str) -> Optional[Dict[str, Any]]:
+        """Scrape job details from Greenhouse URL."""
+        import re
+
+        import requests
+        from bs4 import BeautifulSoup
+
+        try:
+            response = requests.get(url, timeout=30)
+            response.raise_for_status()
+            soup = BeautifulSoup(response.content, "html.parser")
+
+            # Extract job details
+            title_elem = soup.find("h1", class_="app-title")
+            company_elem = soup.find("span", class_="company-name")
+            location_elem = soup.find("div", class_="location")
+            description_elem = soup.find("div", id="content")
+
+            return {
+                "title": title_elem.text.strip() if title_elem else "Unknown",
+                "company": company_elem.text.strip() if company_elem else "Unknown",
+                "location": location_elem.text.strip() if location_elem else "Unknown",
+                "description": (
+                    description_elem.get_text(separator="\n", strip=True)
+                    if description_elem
+                    else ""
+                ),
+                "company_website": self._extract_company_domain(url),
+                "url": url,
+            }
+        except Exception as e:
+            logger.error(f"Failed to scrape Greenhouse URL {url}: {e}")
+            return None
+
+    def _scrape_weworkremotely_url(self, url: str) -> Optional[Dict[str, Any]]:
+        """Scrape job details from WeWorkRemotely URL."""
+        import requests
+        from bs4 import BeautifulSoup
+
+        try:
+            response = requests.get(url, timeout=30)
+            response.raise_for_status()
+            soup = BeautifulSoup(response.content, "html.parser")
+
+            # Extract job details
+            title_elem = soup.find("h1")
+            company_elem = soup.find("h2")
+            description_elem = soup.find("div", class_="listing-container")
+
+            return {
+                "title": title_elem.text.strip() if title_elem else "Unknown",
+                "company": company_elem.text.strip() if company_elem else "Unknown",
+                "location": "Remote",
+                "description": (
+                    description_elem.get_text(separator="\n", strip=True)
+                    if description_elem
+                    else ""
+                ),
+                "company_website": self._extract_company_domain(url),
+                "url": url,
+            }
+        except Exception as e:
+            logger.error(f"Failed to scrape WeWorkRemotely URL {url}: {e}")
+            return None
+
+    def _scrape_remotive_url(self, url: str) -> Optional[Dict[str, Any]]:
+        """Scrape job details from Remotive URL."""
+        import requests
+        from bs4 import BeautifulSoup
+
+        try:
+            response = requests.get(url, timeout=30)
+            response.raise_for_status()
+            soup = BeautifulSoup(response.content, "html.parser")
+
+            # Extract job details (adjust selectors based on actual Remotive HTML)
+            title_elem = soup.find("h1")
+            company_elem = soup.find("a", class_="company-name")
+            description_elem = soup.find("div", class_="job-description")
+
+            return {
+                "title": title_elem.text.strip() if title_elem else "Unknown",
+                "company": company_elem.text.strip() if company_elem else "Unknown",
+                "location": "Remote",
+                "description": (
+                    description_elem.get_text(separator="\n", strip=True)
+                    if description_elem
+                    else ""
+                ),
+                "company_website": self._extract_company_domain(url),
+                "url": url,
+            }
+        except Exception as e:
+            logger.error(f"Failed to scrape Remotive URL {url}: {e}")
+            return None
+
+    def _scrape_generic_url(self, url: str) -> Optional[Dict[str, Any]]:
+        """Generic fallback scraper for unknown job boards."""
+        import requests
+        from bs4 import BeautifulSoup
+
+        try:
+            response = requests.get(url, timeout=30)
+            response.raise_for_status()
+            soup = BeautifulSoup(response.content, "html.parser")
+
+            # Try to extract basic info
+            title = soup.find("h1")
+            description = soup.find("body")
+
+            return {
+                "title": title.text.strip() if title else "Unknown",
+                "company": "Unknown",
+                "location": "Unknown",
+                "description": (
+                    description.get_text(separator="\n", strip=True) if description else ""
+                ),
+                "company_website": self._extract_company_domain(url),
+                "url": url,
+            }
+        except Exception as e:
+            logger.error(f"Failed to scrape generic URL {url}: {e}")
+            return None
+
+    def _extract_company_domain(self, url: str) -> str:
+        """Extract company domain from job URL."""
+        from urllib.parse import urlparse
+
+        parsed = urlparse(url)
+        # Remove www. prefix
+        domain = parsed.netloc.replace("www.", "")
+        # For job boards, try to find actual company domain in the content
+        # For now, just return the job board domain
+        return f"https://{domain}"
 
     def _build_company_info_string(self, company_info: Dict[str, Any]) -> str:
         """
