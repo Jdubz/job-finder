@@ -1,0 +1,18 @@
+{
+  "url": "https://test.example.com/jobs/junior-java-developer-onsite",
+  "title": "Junior Java Developer - On-site Only",
+  "company": "LegacyCorp",
+  "company_website": "https://legacycorp.example.com",
+  "location": "New York, NY (On-site)",
+  "salary": "$70,000 - $90,000",
+  "description": "We're seeking a Junior Java Developer to join our team at our New York office. This is an on-site position requiring daily office attendance.\n\nKey Responsibilities:\n- Maintain legacy Java applications\n- Write code using Java 8 and Spring Framework\n- Fix bugs in existing codebase\n- Attend daily stand-ups in person\n\nRequired Skills:\n- 1-2 years of Java development experience\n- Knowledge of Spring Framework\n- Willingness to work on-site full-time in New York\n- Bachelor's degree in Computer Science\n\nNote: This position requires you to be in our New York office Monday through Friday, 9am-6pm. No remote work options available.\n\nOur tech stack is primarily Java 8, Spring, Oracle Database, and on-premise servers. We value stability and maintaining our existing systems.",
+  "posted_date": "2025-10-15",
+  "company_info": "LegacyCorp is a traditional enterprise software company specializing in on-premise solutions for financial institutions.",
+  "expected_status": "filtered",
+  "filter_reasons": [
+    "on-site/hybrid requirement (not remote)",
+    "junior position (below experience level)",
+    "tech stack mismatch (Java, not Python)"
+  ],
+  "test_name": "filtered_job"
+}
