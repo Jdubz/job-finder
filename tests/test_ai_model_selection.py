@@ -1,6 +1,7 @@
 """Tests for AI model selection and cost optimization."""
 
 import pytest
+from unittest.mock import patch, MagicMock
 
 from job_finder.ai.providers import AITask, ModelTier, create_provider, get_model_for_task
 
@@ -42,25 +43,62 @@ class TestModelSelection:
 class TestProviderCreation:
     """Test provider creation with task-based selection."""
 
-    def test_creates_with_scrape_task(self):
+    @patch("job_finder.ai.providers.ClaudeProvider")
+    def test_creates_with_scrape_task(self, mock_claude):
         """Should create provider with SCRAPE task model."""
+        mock_instance = MagicMock()
+        mock_instance.model = "claude-3-5-haiku-20241022"
+        mock_claude.return_value = mock_instance
+
         provider = create_provider("claude", task=AITask.SCRAPE)
-        assert provider.model == "claude-3-5-haiku-20241022"
 
-    def test_creates_with_analyze_task(self):
+        # Verify ClaudeProvider was called with correct model
+        mock_claude.assert_called_once()
+        call_kwargs = mock_claude.call_args[1]
+        assert call_kwargs["model"] == "claude-3-5-haiku-20241022"
+
+    @patch("job_finder.ai.providers.ClaudeProvider")
+    def test_creates_with_analyze_task(self, mock_claude):
         """Should create provider with ANALYZE task model."""
+        mock_instance = MagicMock()
+        mock_instance.model = "claude-3-5-sonnet-20241022"
+        mock_claude.return_value = mock_instance
+
         provider = create_provider("claude", task=AITask.ANALYZE)
-        assert provider.model == "claude-3-5-sonnet-20241022"
 
-    def test_explicit_model_overrides_task(self):
+        # Verify ClaudeProvider was called with correct model
+        mock_claude.assert_called_once()
+        call_kwargs = mock_claude.call_args[1]
+        assert call_kwargs["model"] == "claude-3-5-sonnet-20241022"
+
+    @patch("job_finder.ai.providers.ClaudeProvider")
+    def test_explicit_model_overrides_task(self, mock_claude):
         """Explicit model should override task-based selection."""
-        provider = create_provider("claude", model="claude-opus-4-20250514", task=AITask.SCRAPE)
-        assert provider.model == "claude-opus-4-20250514"
+        mock_instance = MagicMock()
+        mock_instance.model = "claude-opus-4-20250514"
+        mock_claude.return_value = mock_instance
 
-    def test_no_task_uses_default(self):
+        provider = create_provider("claude", model="claude-opus-4-20250514", task=AITask.SCRAPE)
+
+        # Verify ClaudeProvider was called with explicit model (not task model)
+        mock_claude.assert_called_once()
+        call_kwargs = mock_claude.call_args[1]
+        assert call_kwargs["model"] == "claude-opus-4-20250514"
+
+    @patch("job_finder.ai.providers.ClaudeProvider")
+    def test_no_task_uses_default(self, mock_claude):
         """Should use provider default when no task specified."""
+        mock_instance = MagicMock()
+        mock_instance.model = "claude-opus-4-20250514"
+        mock_claude.return_value = mock_instance
+
         provider = create_provider("claude")
-        assert provider.model == "claude-opus-4-20250514"
+
+        # Verify ClaudeProvider was called without explicit model (uses provider default)
+        mock_claude.assert_called_once()
+        call_kwargs = mock_claude.call_args[1]
+        # When no task is specified, no model kwarg is passed (provider uses its default)
+        assert "model" not in call_kwargs
 
 
 class TestCostOptimization:
