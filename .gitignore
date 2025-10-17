@@ -43,6 +43,7 @@ htmlcov/
 data/*.json
 data/*.csv
 data/*.db
+data/backups/
 logs/*.log
 !data/.gitkeep
 !logs/.gitkeep
@@ -62,6 +63,8 @@ serviceAccountKey.json
 *-firebase-adminsdk-*.json
 **/*-firebase-adminsdk-*.json
 **/serviceAccountKey.json
+firebase-debug.log
+firestore-debug.log
 
 # OS
 .DS_Store
