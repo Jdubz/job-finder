@@ -55,6 +55,29 @@ class JobSubTask(str, Enum):
     SAVE = "save"
 
 
+class CompanySubTask(str, Enum):
+    """
+    Granular sub-tasks for company processing pipeline.
+
+    When a COMPANY queue item has a company_sub_task, it represents one step in the
+    multi-stage processing pipeline. Items without company_sub_task (legacy) are
+    processed monolithically through all stages.
+
+    Pipeline flow:
+    1. FETCH: Fetch website HTML content (cheap AI if needed)
+    2. EXTRACT: Extract company info using AI (expensive AI)
+    3. ANALYZE: Tech stack detection, job board discovery, priority scoring (rule-based)
+    4. SAVE: Save to Firestore, spawn source_discovery if job board found (no AI)
+
+    TypeScript equivalent: CompanySubTask in queue.types.ts
+    """
+
+    FETCH = "fetch"
+    EXTRACT = "extract"
+    ANALYZE = "analyze"
+    SAVE = "save"
+
+
 class QueueStatus(str, Enum):
     """
     Status of queue item processing.
@@ -243,6 +266,12 @@ class JobQueueItem(BaseModel):
     )
     parent_item_id: Optional[str] = Field(
         default=None, description="Document ID of parent item that spawned this sub-task"
+    )
+
+    # Company granular pipeline fields (only used when type is COMPANY with company_sub_task)
+    company_sub_task: Optional[CompanySubTask] = Field(
+        default=None,
+        description="Company pipeline step (fetch/extract/analyze/save). None = legacy monolithic processing",
     )
 
     model_config = ConfigDict(use_enum_values=True)

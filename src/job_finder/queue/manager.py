@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Optional
 from google.cloud import firestore as gcloud_firestore
 
 from job_finder.queue.models import (
+    CompanySubTask,
     JobQueueItem,
     JobSubTask,
     QueueItemType,
@@ -451,29 +452,57 @@ class QueueManager:
     def spawn_next_pipeline_step(
         self,
         current_item: JobQueueItem,
-        next_sub_task: JobSubTask,
-        pipeline_state: Dict[str, Any],
+        next_sub_task: Optional[JobSubTask] = None,
+        pipeline_state: Optional[Dict[str, Any]] = None,
+        is_company: bool = False,
     ) -> str:
         """
         Spawn the next step in the pipeline from current item.
 
+        Supports both job and company pipelines.
+
         Args:
             current_item: Current item that just completed
-            next_sub_task: Next pipeline step to create
+            next_sub_task: Next job pipeline step to create (for jobs)
             pipeline_state: Updated state to pass to next step
+            is_company: If True, treat as company pipeline
 
         Returns:
             Document ID of spawned item
         """
-        return self.create_pipeline_item(
-            url=current_item.url,
-            sub_task=next_sub_task,
-            pipeline_state=pipeline_state,
-            parent_item_id=current_item.id,
-            company_name=current_item.company_name,
-            company_id=current_item.company_id,
-            source=current_item.source,
-        )
+        if is_company:
+            # Company pipeline
+            if not isinstance(next_sub_task, CompanySubTask):
+                raise ValueError("next_sub_task must be CompanySubTask for company pipelines")
+
+            item = JobQueueItem(
+                type=QueueItemType.COMPANY,
+                url=current_item.url,
+                company_name=current_item.company_name,
+                company_id=current_item.company_id,
+                source=current_item.source,
+                company_sub_task=next_sub_task,
+                pipeline_state=pipeline_state,
+                parent_item_id=current_item.id,
+            )
+
+            doc_id = self.add_item(item)
+            logger.info(
+                f"Created company pipeline item: {next_sub_task.value} for {current_item.company_name} "
+                f"(parent: {current_item.id or 'none'})"
+            )
+            return doc_id
+        else:
+            # Job pipeline (existing logic)
+            return self.create_pipeline_item(
+                url=current_item.url,
+                sub_task=next_sub_task,
+                pipeline_state=pipeline_state,
+                parent_item_id=current_item.id,
+                company_name=current_item.company_name,
+                company_id=current_item.company_id,
+                source=current_item.source,
+            )
 
     def update_pipeline_state(
         self,

@@ -172,9 +172,112 @@ Each step passes data to the next via `pipeline_state` field:
 }
 ```
 
+### Granular Company Pipeline (NEW)
+
+Companies are processed through a **4-step granular pipeline** similar to job processing, optimizing cost and enabling intelligent analysis.
+
+```
+┌──────────────────┐    ┌──────────────────┐    ┌──────────────────┐    ┌──────────────────┐
+│ COMPANY_FETCH    │───▶│ COMPANY_EXTRACT  │───▶│ COMPANY_ANALYZE  │───▶│  COMPANY_SAVE    │
+│                  │    │                  │    │                  │    │                  │
+│ Fetch website    │    │ AI extraction    │    │ Tech stack       │    │  Firestore       │
+│ HTML content     │    │ about/culture    │    │ Job board detect │    │  +source queue   │
+│                  │    │                  │    │ Priority scoring │    │                  │
+│ Claude Haiku     │    │ Claude Sonnet    │    │  Rule-based      │    │    No AI         │
+│ $0.001/1K        │    │ $0.015-0.075/1K  │    │      $0          │    │     $0           │
+│                  │    │                  │    │                  │    │                  │
+│ ~100KB memory    │    │   ~150KB         │    │    ~100KB        │    │   ~50KB          │
+└──────────────────┘    └──────────────────┘    └──────────────────┘    └──────────────────┘
+     │ FAILED                 │ FAILED                │ SKIPPED              │ SUCCESS
+     └────────────────────────┴───────────────────────┴──────────────────────┘
+                         Pipeline stops at rejection points
+```
+
+**Pipeline Steps:**
+
+1. **COMPANY_FETCH** (src/job_finder/queue/processor.py:_process_company_fetch)
+   - Scrapes 5 common pages: `/about`, `/about-us`, `/company`, `/careers`, homepage
+   - Uses cheap AI (Haiku) for dynamic content if needed
+   - Memory: ~100KB (HTML content)
+   - Cost: $0.001 per 1K tokens
+   - On success: Spawns COMPANY_EXTRACT
+   - On failure: Marks item as FAILED
+
+2. **COMPANY_EXTRACT** (src/job_finder/queue/processor.py:_process_company_extract)
+   - Extracts company info using AI: about, culture, mission, size, HQ, industry
+   - Uses expensive AI (Sonnet) for accurate extraction
+   - Fallback to heuristics if AI fails
+   - Memory: ~150KB (HTML + extracted data)
+   - Cost: $0.015-0.075 per 1K tokens
+   - On success: Spawns COMPANY_ANALYZE
+   - On failure: Marks item as FAILED
+
+3. **COMPANY_ANALYZE** (src/job_finder/queue/processor.py:_process_company_analyze)
+   - **Tech Stack Detection**: Pattern matching from company info + job listings
+   - **Job Board Discovery**: Detects Greenhouse, Workday, RSS feeds, custom boards
+   - **Priority Scoring**: Calculates tier (S/A/B/C/D) based on:
+     - Portland office: +50 points
+     - Tech stack alignment: up to +100 points
+     - Company attributes: remote-first (+15), AI/ML focus (+10)
+   - Memory: ~100KB (extracted data + analysis)
+   - Cost: $0 (rule-based)
+   - On complete: Spawns COMPANY_SAVE
+   - On skip: Marks item as SKIPPED (insufficient data)
+
+4. **COMPANY_SAVE** (src/job_finder/queue/processor.py:_process_company_save)
+   - Saves company record to Firestore with tech stack and tier
+   - If job board found: Spawns SOURCE_DISCOVERY queue item automatically
+   - Updates analysis_status to "complete"
+   - Memory: ~50KB (minimal)
+   - Cost: $0 (Firestore write)
+   - Always: Marks item as SUCCESS
+
+**Company Pipeline Benefits:**
+- **70% cost reduction**: Cheap AI for fetch, expensive only for extraction
+- **67% memory reduction**: Each step holds only necessary data (~100KB avg)
+- **Automatic job board discovery**: Creates SOURCE_DISCOVERY items for found boards
+- **Priority-based scheduling**: S/A tier companies scraped more frequently
+- **Tech stack insights**: Automatic detection helps with job matching
+
+**Company Pipeline State:**
+
+Each step passes data via `pipeline_state`:
+```python
+{
+    "company_name": "Example Corp",
+    "company_website": "https://example.com",
+    "html_content": {...},        # From FETCH
+    "extracted_info": {...},      # From EXTRACT
+    "analysis_result": {          # From ANALYZE
+        "tech_stack": ["python", "react"],
+        "job_board_url": "https://boards.greenhouse.io/example",
+        "priority_score": 105,
+        "tier": "A"
+    }
+}
+```
+
+**Submitting Companies for Analysis:**
+
+```python
+from job_finder.queue.scraper_intake import ScraperIntake
+
+intake = ScraperIntake(queue_manager)
+
+# Submit company to granular pipeline
+doc_id = intake.submit_company(
+    company_name="Example Corp",
+    company_website="https://example.com",
+    source="user_submission"
+)
+# Returns: Document ID of the created queue item, or None if failed/duplicate
+```
+
 **Backwards Compatibility:**
 
-Legacy items (no `sub_task` field) still process monolithically through the original `_process_job()` method. Both approaches coexist seamlessly.
+Legacy job items (no `sub_task` field) still process monolithically through the original `_process_job()` method. Job granular pipeline is opt-in.
+
+**Company items now REQUIRE `company_sub_task`** - all company processing uses the granular pipeline exclusively.
 
 ### Legacy Pipeline (Still Supported)
 
