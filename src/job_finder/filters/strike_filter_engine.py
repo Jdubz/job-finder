@@ -517,8 +517,8 @@ class StrikeFilterEngine:
 
     def _check_quality_strikes(self, description: str, result: FilterResult) -> None:
         """Check description quality and add strikes."""
-        # Short description
-        if len(description) < self.min_description_length:
+        # Short description (only if we have a description)
+        if description and len(description) < self.min_description_length:
             result.add_strike(
                 filter_category="quality",
                 filter_name="short_description",
