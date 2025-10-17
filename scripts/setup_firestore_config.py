@@ -182,9 +182,39 @@ def get_ai_settings_config() -> Dict[str, Any]:
     """Get AI matching settings."""
     return {
         "provider": "claude",
-        "model": "claude-3-5-sonnet-20241022",
+        "model": "claude-3-5-haiku-20241022",  # Haiku for cost-effective processing
         "minMatchScore": 80,
         "costBudgetDaily": 50.0,
+        # Model-specific settings
+        "models": {
+            "claude-3-5-haiku-20241022": {
+                "maxTokens": 4096,  # Haiku's maximum output token limit
+                "temperature": 0.3,
+            },
+            "claude-3-5-sonnet-20241022": {
+                "maxTokens": 8000,  # Sonnet supports up to 8192
+                "temperature": 0.3,
+            },
+            "claude-opus-4-20250514": {
+                "maxTokens": 8000,  # Opus supports up to 16384
+                "temperature": 0.3,
+            },
+            "gpt-4": {
+                "maxTokens": 8000,
+                "temperature": 0.3,
+            },
+            "gpt-4o": {
+                "maxTokens": 8000,
+                "temperature": 0.3,
+            },
+        },
+        # Fallback settings if model not in models map
+        "maxTokens": 4096,  # Conservative default
+        "temperature": 0.3,
+        # Scoring preferences
+        "portlandOfficeBonus": 15,
+        "userTimezone": -8,  # Pacific Time
+        "preferLargeCompanies": True,
         "updatedAt": datetime.utcnow().isoformat(),
         "updatedBy": "setup_script",
     }
