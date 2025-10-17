@@ -63,6 +63,10 @@ serviceAccountKey.json
 **/*-firebase-adminsdk-*.json
 **/serviceAccountKey.json
 
+# Gmail API credentials
+credentials/gmail-oauth-credentials.json
+credentials/gmail-token.json
+
 # OS
 .DS_Store
 Thumbs.db
