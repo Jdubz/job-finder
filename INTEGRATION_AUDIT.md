@@ -57,6 +57,8 @@
    - Retry logic with configurable max retries
    - Get pending items (FIFO order)
    - Queue statistics
+   - ✅ **NEW:** Retry failed items (manager.py:291)
+   - ✅ **NEW:** Delete queue items (manager.py:335)
 
 2. **Configuration Loading**
    - Stop list (excluded companies, keywords, domains)
@@ -178,17 +180,19 @@ None identified. All features defined in shared-types are implemented.
      - Form to edit: maxRetries, retryDelaySeconds, processingTimeout
      - API endpoint: `GET /config/queue-settings` and `PUT /config/queue-settings`
 
-3. **Retry Queue Item API** ❌ Not Implemented
-   - **What's Missing:** API endpoint to retry failed items
-   - **Current State:** UI has retry button but API endpoint doesn't exist
+3. **Retry Queue Item API** ⚠️ Partially Implemented
+   - **What's Complete:** Backend method `retry_item()` in QueueManager (2025-10-16)
+   - **What's Missing:** API endpoint in Portfolio to expose this functionality
    - **Needed:**
-     - API endpoint: `POST /retry/:id` to reset status to pending
+     - API endpoint: `POST /retry/:id` to call `queue_manager.retry_item(id)`
+   - **Implementation:** Backend supports resetting failed items to pending status with error cleanup
 
-4. **Delete Queue Item API** ❌ Not Implemented
-   - **What's Missing:** API endpoint to delete queue items
-   - **Current State:** UI has delete button but API endpoint doesn't exist
+4. **Delete Queue Item API** ⚠️ Partially Implemented
+   - **What's Complete:** Backend method `delete_item()` in QueueManager (2025-10-16)
+   - **What's Missing:** API endpoint in Portfolio to expose this functionality
    - **Needed:**
-     - API endpoint: `DELETE /queue/:id` to remove item from queue
+     - API endpoint: `DELETE /queue/:id` to call `queue_manager.delete_item(id)`
+   - **Implementation:** Backend supports full item deletion from Firestore
 
 ---
 
@@ -371,12 +375,12 @@ None.
    - 15 sources enabled and ready for scraping
 
 2. **Implement Missing API Endpoints** (2-4 hours)
-   - Add `POST /retry/:id` endpoint
-   - Add `DELETE /queue/:id` endpoint
-   - Add `GET /config/ai-settings` endpoint
-   - Add `PUT /config/ai-settings` endpoint
-   - Add `GET /config/queue-settings` endpoint
-   - Add `PUT /config/queue-settings` endpoint
+   - ⚠️ Add `POST /retry/:id` endpoint (backend ready: `queue_manager.retry_item()`)
+   - ⚠️ Add `DELETE /queue/:id` endpoint (backend ready: `queue_manager.delete_item()`)
+   - ❌ Add `GET /config/ai-settings` endpoint
+   - ❌ Add `PUT /config/ai-settings` endpoint
+   - ❌ Add `GET /config/queue-settings` endpoint
+   - ❌ Add `PUT /config/queue-settings` endpoint
 
 3. **Create Configuration UI** (4-6 hours)
    - Create `AISettingsTab.tsx` component
@@ -429,10 +433,14 @@ None.
 
 **Completion Status:**
 - Core Pipeline: **100%** ✅
-- API Layer: **85%** (missing retry/delete endpoints)
+- Backend Methods: **100%** ✅ (retry_item & delete_item added 2025-10-16)
+- API Layer: **85%** (retry/delete endpoints ready for integration)
 - UI Components: **80%** (missing AI/Queue settings tabs)
 - Type Safety: **100%** ✅
 - Documentation: **100%** ✅
 - Production Deployment: **100%** ✅
 
-**Next Priority:** Implement the 6 missing API endpoints and 2 configuration UI tabs to achieve full feature parity with the shared-types specification.
+**Next Priority:**
+1. Expose retry/delete backend methods via Portfolio API endpoints (1-2 hours)
+2. Implement AI Settings and Queue Settings API endpoints (2-3 hours)
+3. Create UI tabs for AI/Queue settings configuration (4-6 hours)

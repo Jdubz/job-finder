@@ -287,3 +287,74 @@ class QueueManager:
         except Exception as e:
             logger.error(f"Error cleaning old completed items: {e}")
             return 0
+
+    def retry_item(self, item_id: str) -> bool:
+        """
+        Retry a failed queue item by resetting it to pending status.
+
+        Resets the item status to PENDING and clears error details,
+        allowing it to be picked up again by the queue processor.
+
+        Args:
+            item_id: Queue item document ID
+
+        Returns:
+            True if item was reset successfully, False otherwise
+        """
+        try:
+            # First check if item exists
+            item = self.get_item(item_id)
+            if not item:
+                logger.warning(f"Cannot retry: Queue item {item_id} not found")
+                return False
+
+            # Only retry failed items
+            if item.status != QueueStatus.FAILED:
+                logger.warning(
+                    f"Cannot retry item {item_id}: status is {item.status.value}, not failed"
+                )
+                return False
+
+            # Reset to pending
+            update_data = {
+                "status": QueueStatus.PENDING.value,
+                "updated_at": gcloud_firestore.SERVER_TIMESTAMP,
+                "processed_at": gcloud_firestore.DELETE_FIELD,
+                "completed_at": gcloud_firestore.DELETE_FIELD,
+                "error_details": gcloud_firestore.DELETE_FIELD,
+            }
+
+            self.db.collection(self.collection_name).document(item_id).update(update_data)
+            logger.info(f"Reset queue item {item_id} to pending for retry")
+            return True
+
+        except Exception as e:
+            logger.error(f"Error retrying queue item {item_id}: {e}")
+            return False
+
+    def delete_item(self, item_id: str) -> bool:
+        """
+        Delete a queue item from Firestore.
+
+        Args:
+            item_id: Queue item document ID
+
+        Returns:
+            True if item was deleted successfully, False otherwise
+        """
+        try:
+            # Check if item exists first
+            item = self.get_item(item_id)
+            if not item:
+                logger.warning(f"Cannot delete: Queue item {item_id} not found")
+                return False
+
+            # Delete the document
+            self.db.collection(self.collection_name).document(item_id).delete()
+            status_str = item.status.value if isinstance(item.status, QueueStatus) else item.status
+            logger.info(f"Deleted queue item {item_id} (was {status_str})")
+            return True
+
+        except Exception as e:
+            logger.error(f"Error deleting queue item {item_id}: {e}")
+            return False
