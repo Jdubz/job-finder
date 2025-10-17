@@ -149,13 +149,14 @@ class TestInitializeAI:
         mock_create_provider.assert_called_once_with(
             provider_type="claude", model="claude-3-haiku-20240307"
         )
-        mock_matcher_class.assert_called_once_with(
-            provider=mock_provider,
-            profile=mock_profile,
-            min_match_score=80,
-            generate_intake=True,
-            portland_office_bonus=15,
-        )
+        # Check that AIJobMatcher was called with correct arguments
+        call_kwargs = mock_matcher_class.call_args.kwargs
+        assert call_kwargs["provider"] == mock_provider
+        assert call_kwargs["profile"] == mock_profile
+        assert call_kwargs["min_match_score"] == 80
+        assert call_kwargs["generate_intake"] is True
+        assert call_kwargs["portland_office_bonus"] == 15
+        assert "config" in call_kwargs  # Config should be passed
 
 
 class TestInitializeStorage:

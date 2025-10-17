@@ -212,6 +212,44 @@ class JobMatchPrompts:
 
 Provide a thorough, accurate analysis of job fit. Be HONEST and REALISTIC - false positives waste the candidate's time.
 
+## CRITICAL PRE-SCREENING CHECKS (Auto-Reject if True):
+
+Before scoring, check for these AUTOMATIC DISQUALIFIERS:
+
+1. **Hidden Non-Engineering Role**
+   - Is this actually a management role disguised as IC? (e.g., "Technical Program Manager", "Delivery Manager")
+   - Is it primarily sales/customer-facing? (e.g., "Solutions Architect" that's 80% sales, "Customer Success Engineer")
+   - Does it require minimal coding? (e.g., "oversee", "coordinate", "manage team" but no "build", "develop", "code")
+   - **If YES to any:** Set match_score = 0 and explain why in potential_concerns
+
+2. **Remote Work Red Flags**
+   - Does it require frequent travel (25%+ of time)?
+   - Does it say "remote for now, relocate later" or "remote during pandemic only"?
+   - Does it require specific timezone hours incompatible with Pacific Time? (e.g., "must work UK hours")
+   - Is it "remote" but requires regular in-office attendance outside Portland, OR?
+   - **If YES to any:** Set match_score = 0 and explain in potential_concerns
+
+3. **Compensation/Employment Structure Issues**
+   - Is this a contract/1099 position when candidate wants FTE?
+   - Does it emphasize equity over base salary for an unproven startup?
+   - Does "competitive salary" seem like code for below-market pay?
+   - Is it commission-based or performance-pay heavy?
+   - **If YES to any:** Reduce score by 30 points minimum
+
+4. **Unrealistic Expectations**
+   - Does it list 10+ required technologies that no one person could master?
+   - Does it want senior-level skills but offer mid-level compensation?
+   - Is the title inflated for the actual role? (e.g., "Senior" but requires only 2 years experience)
+   - **If YES:** Reduce score by 20 points minimum
+
+5. **Quality/Culture Red Flags**
+   - Excessive buzzwords with no substance ("rockstar", "ninja", "10x engineer")?
+   - "Fast-paced startup environment" + "wear many hats" = chaotic/undefined role?
+   - "Unlimited PTO" without clear team boundaries = overwork culture?
+   - "Family atmosphere" + "we work hard and play hard" = poor work-life balance?
+   - No mention of WLB, benefits, or team structure?
+   - **If multiple flags:** Reduce score by 10-15 points
+
 ## Step 1: Extract Job Requirements
 
 From the title and description, identify:
@@ -324,6 +362,20 @@ Return detailed analysis in JSON format with:
 - Job: "Senior DevOps Engineer (Kubernetes/AWS)"
 - Candidate: Junior developer with 2 years, no infrastructure or cloud experience
 - Title skills (0) + Description (5) + Experience (0) + Seniority cap = 15
+
+**Example 7 - Auto-Reject (Score: 0) - HIDDEN NON-ENGINEERING**
+- Job: "Technical Program Manager" with "coordinate teams", "manage stakeholders", minimal coding
+- Candidate: IC engineer seeking hands-on role
+- Score: 0 - Not an engineering role despite "technical" in title
+
+**Example 8 - Auto-Reject (Score: 0) - REMOTE RED FLAG**
+- Job: "Remote" but requires "50% travel" or "must work EST hours" from Pacific timezone
+- Score: 0 - Remote restrictions incompatible with candidate location/preferences
+
+**PORTLAND BONUS:**
+- If job explicitly mentions Portland, OR office/presence: +15 bonus points (shows local opportunity)
+- If hybrid Portland option mentioned: +10 bonus points
+- Apply AFTER calculating base score, can push borderline matches over threshold
 
 **Remember:** Only scores 80+ should realistically pass. Be harsh - candidate's time is valuable.
 
