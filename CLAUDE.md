@@ -440,6 +440,92 @@ sources_manager.update_source_selectors(
 )
 ```
 
+### Source Submission System
+
+**Portfolio Integration** (src/job_finder/queue/processor.py:1032):
+
+Users can submit job board URLs through the Portfolio UI for automated discovery and configuration. The system supports:
+
+**Supported Source Types:**
+- **Greenhouse**: boards.greenhouse.io/* (API validation, high confidence)
+- **Workday**: *.myworkdayjobs.com/* (requires manual validation, medium confidence)
+- **RSS Feeds**: *.xml, */feed, */rss (feed format validation, high confidence)
+- **Generic HTML**: Any career page (AI selector discovery, variable confidence)
+
+**Submission Flow:**
+
+```typescript
+// In Portfolio project
+const queueItem: QueueItem = {
+  type: 'source_discovery',
+  url: '',  // Not used for source_discovery
+  company_name: companyName || '',
+  company_id: companyId,
+  source: 'user_submission',
+  submitted_by: currentUser.uid,
+  source_discovery_config: {
+    url: 'https://boards.greenhouse.io/stripe',
+    type_hint: 'auto',  // or 'greenhouse', 'workday', 'rss', 'generic'
+    company_id: companyId,
+    company_name: companyName,
+    auto_enable: true,
+    validation_required: false,
+  },
+  status: 'pending',
+  created_at: new Date(),
+}
+
+await db.collection('job-queue').add(queueItem)
+```
+
+**Discovery Process:**
+
+1. **Type Detection** (src/job_finder/utils/source_type_detector.py:25):
+   - Auto-detects from URL patterns
+   - Extracts configuration (board_token, company_id, etc.)
+   - Infers company name from URL
+
+2. **Validation**:
+   - **Greenhouse**: Fetches API to verify jobs exist
+   - **Workday**: Basic validation (full scraping requires manual testing)
+   - **RSS**: Parses feed to verify format
+   - **Generic**: Uses AI to discover CSS selectors
+
+3. **Source Creation** (src/job_finder/storage/job_sources_manager.py:538):
+   - Creates job-source document with discovered config
+   - Sets confidence level (high/medium/low)
+   - Auto-enables high confidence sources
+   - Flags low confidence for manual validation
+
+4. **Result Notification**:
+   - Success: Returns source_id in queue item result_message
+   - Failure: Returns error details in result_message
+
+**Monitoring Submission:**
+
+```typescript
+// Monitor queue item for completion
+db.collection('job-queue')
+  .doc(queueItemId)
+  .onSnapshot(snapshot => {
+    const item = snapshot.data()
+
+    if (item.status === 'success') {
+      const sourceId = item.result_message  // Contains source ID
+      console.log(`Source created: ${sourceId}`)
+    } else if (item.status === 'failed') {
+      console.error(`Discovery failed: ${item.result_message}`)
+    }
+  })
+```
+
+**Confidence Levels:**
+- **High**: Greenhouse (API validated), RSS (valid feed) → Auto-enabled
+- **Medium**: Workday (needs testing) → Requires validation
+- **Low**: Generic AI discovery → Requires validation
+
+For detailed implementation, see [SOURCE_SUBMISSION_DESIGN.md](docs/SOURCE_SUBMISSION_DESIGN.md).
+
 ### Profile System
 
 User profiles are managed through Pydantic models in `src/job_finder/profile/schema.py`:
