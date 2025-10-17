@@ -1,6 +1,7 @@
 """Process queue items (jobs and companies)."""
 
 import logging
+import traceback
 from typing import Any, Dict, Optional
 
 from job_finder.ai import AIJobMatcher
@@ -92,8 +93,13 @@ class QueueItemProcessor:
                 raise ValueError(f"Unknown item type: {item.type}")
 
         except Exception as e:
-            logger.error(f"Error processing item {item.id}: {e}", exc_info=True)
-            self._handle_failure(item, str(e))
+            error_msg = str(e)
+            error_details = traceback.format_exc()
+            logger.error(
+                f"Error processing item {item.id}: {error_msg}\n{error_details}",
+                exc_info=True,
+            )
+            self._handle_failure(item, error_msg, error_details)
 
     def _should_skip_by_stop_list(self, item: JobQueueItem) -> bool:
         """
@@ -160,8 +166,18 @@ class QueueItemProcessor:
 
             if not company_info:
                 if item.id:
+                    error_msg = "Could not fetch company information from website"
+                    error_details = (
+                        f"Failed to scrape company info from: {item.url}\n"
+                        f"Company: {company_name}\n\n"
+                        f"Possible causes:\n"
+                        f"- Website is down or blocking requests\n"
+                        f"- Company website structure has changed\n"
+                        f"- Network connectivity issues\n"
+                        f"- Rate limiting from target website"
+                    )
                     self.queue_manager.update_status(
-                        item.id, QueueStatus.FAILED, "Could not fetch company info"
+                        item.id, QueueStatus.FAILED, error_msg, error_details=error_details
                     )
                 return
 
@@ -202,8 +218,18 @@ class QueueItemProcessor:
 
         if not job_data:
             if item.id:
+                error_msg = "Could not scrape job details from URL"
+                error_details = (
+                    f"Failed to scrape job from: {item.url}\n"
+                    f"Company: {item.company_name}\n\n"
+                    f"Possible causes:\n"
+                    f"- Job posting has been removed or expired\n"
+                    f"- Job board URL structure has changed\n"
+                    f"- Job board requires login or is blocking scraping\n"
+                    f"- Network connectivity issues"
+                )
                 self.queue_manager.update_status(
-                    item.id, QueueStatus.FAILED, "Could not scrape job details"
+                    item.id, QueueStatus.FAILED, error_msg, error_details=error_details
                 )
             return
 
@@ -311,13 +337,16 @@ class QueueItemProcessor:
 
         return "\n\n".join(company_info_parts)
 
-    def _handle_failure(self, item: JobQueueItem, error_message: str) -> None:
+    def _handle_failure(
+        self, item: JobQueueItem, error_message: str, error_details: Optional[str] = None
+    ) -> None:
         """
         Handle item processing failure with retry logic.
 
         Args:
             item: Failed queue item
-            error_message: Error description
+            error_message: Brief error description (shown in UI)
+            error_details: Detailed error information including stack trace (for debugging)
         """
         if not item.id:
             logger.error("Cannot handle failure for item without ID")
@@ -329,20 +358,44 @@ class QueueItemProcessor:
         # Increment retry count
         self.queue_manager.increment_retry(item.id)
 
+        # Build context for error details
+        error_context = (
+            f"Queue Item: {item.id}\n"
+            f"Type: {item.type}\n"
+            f"URL: {item.url}\n"
+            f"Company: {item.company_name}\n"
+            f"Retry Count: {item.retry_count + 1}/{max_retries}\n\n"
+        )
+
         # Check if we should retry
         if item.retry_count + 1 < max_retries:
             # Reset to pending for retry
-            self.queue_manager.update_status(
-                item.id,
-                QueueStatus.PENDING,
-                f"Retry {item.retry_count + 1}/{max_retries}: {error_message}",
+            retry_msg = f"Processing failed. Will retry ({item.retry_count + 1}/{max_retries})"
+            retry_details = (
+                f"{error_context}"
+                f"Error: {error_message}\n\n"
+                f"This item will be automatically retried.\n\n"
+                f"{'Stack Trace:\n' + error_details if error_details else ''}"
             )
-            logger.info(f"Item {item.id} will be retried " f"(attempt {item.retry_count + 1})")
+            self.queue_manager.update_status(
+                item.id, QueueStatus.PENDING, retry_msg, error_details=retry_details
+            )
+            logger.info(f"Item {item.id} will be retried (attempt {item.retry_count + 1})")
         else:
             # Max retries exceeded, mark as failed
-            self.queue_manager.update_status(
-                item.id,
-                QueueStatus.FAILED,
-                f"Max retries exceeded: {error_message}",
+            failed_msg = f"Failed after {max_retries} retries: {error_message}"
+            failed_details = (
+                f"{error_context}"
+                f"Error: {error_message}\n\n"
+                f"Max retries ({max_retries}) exceeded. Manual intervention may be required.\n\n"
+                f"Troubleshooting:\n"
+                f"1. Check if the URL is still valid\n"
+                f"2. Review error details below for specific issues\n"
+                f"3. Verify network connectivity and API credentials\n"
+                f"4. Check if the source website has changed structure\n\n"
+                f"{'Stack Trace:\n' + error_details if error_details else ''}"
             )
-            logger.error(f"Item {item.id} failed after {max_retries} retries: " f"{error_message}")
+            self.queue_manager.update_status(
+                item.id, QueueStatus.FAILED, failed_msg, error_details=failed_details
+            )
+            logger.error(f"Item {item.id} failed after {max_retries} retries: {error_message}")

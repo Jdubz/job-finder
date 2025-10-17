@@ -108,6 +108,7 @@ class QueueManager:
         status: QueueStatus,
         result_message: Optional[str] = None,
         scraped_data: Optional[dict] = None,
+        error_details: Optional[str] = None,
     ) -> None:
         """
         Update item status and optional message.
@@ -117,6 +118,7 @@ class QueueManager:
             status: New status
             result_message: Optional message describing result
             scraped_data: Optional scraped data to store
+            error_details: Optional detailed error information for debugging
         """
         update_data = {
             "status": status.value,
@@ -128,6 +130,9 @@ class QueueManager:
 
         if scraped_data is not None:
             update_data["scraped_data"] = scraped_data
+
+        if error_details is not None:
+            update_data["error_details"] = error_details
 
         # Set processed_at when starting processing
         if status == QueueStatus.PROCESSING:
