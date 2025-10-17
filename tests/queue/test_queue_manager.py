@@ -167,6 +167,7 @@ def test_retry_item_success(queue_manager):
         assert "updated_at" in call_args
         # Verify fields are deleted
         from google.cloud import firestore as gcloud_firestore
+
         assert call_args["processed_at"] == gcloud_firestore.DELETE_FIELD
         assert call_args["completed_at"] == gcloud_firestore.DELETE_FIELD
         assert call_args["error_details"] == gcloud_firestore.DELETE_FIELD
