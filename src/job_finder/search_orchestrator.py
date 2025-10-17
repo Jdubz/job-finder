@@ -175,6 +175,7 @@ class JobSearchOrchestrator:
             min_match_score=ai_config.get("min_match_score", 70),
             generate_intake=ai_config.get("generate_intake_data", True),
             portland_office_bonus=ai_config.get("portland_office_bonus", 15),
+            config=ai_config,
         )
 
         return matcher
@@ -192,9 +193,10 @@ class JobSearchOrchestrator:
         self.sources_manager = JobSourcesManager(database_name=database_name)
         self.companies_manager = CompaniesManager(database_name=database_name)
 
-        # Initialize company info fetcher with AI provider (shares same provider as AI matcher)
+        # Initialize company info fetcher with AI provider and config (shares same provider as AI matcher)
         self.company_info_fetcher = CompanyInfoFetcher(
-            ai_provider=self.ai_matcher.provider if self.ai_matcher else None
+            ai_provider=self.ai_matcher.provider if self.ai_matcher else None,
+            ai_config=self.config.get("ai", {}) if self.ai_matcher else {}
         )
 
     def _get_active_sources(self) -> List[Dict[str, Any]]:

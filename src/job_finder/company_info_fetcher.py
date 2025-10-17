@@ -14,14 +14,16 @@ logger = logging.getLogger(__name__)
 class CompanyInfoFetcher:
     """Fetches and extracts company information from websites."""
 
-    def __init__(self, ai_provider=None):
+    def __init__(self, ai_provider=None, ai_config=None):
         """
         Initialize company info fetcher.
 
         Args:
             ai_provider: Optional AI provider for content extraction
+            ai_config: Optional AI configuration dictionary
         """
         self.ai_provider = ai_provider
+        self.ai_config = ai_config or {}
         self.session = requests.Session()
         self.session.headers.update(
             {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
@@ -229,7 +231,16 @@ Return ONLY valid JSON in this format:
   "founded": "..."
 }}"""
 
-            response = self.ai_provider.generate(prompt, max_tokens=1000, temperature=0.2)
+            # Get model-specific settings or use fallback
+            model_name = self.ai_config.get("model", "")
+            models_config = self.ai_config.get("models", {})
+            model_settings = models_config.get(model_name, {})
+
+            # Use conservative token limit for company info extraction
+            max_tokens = min(model_settings.get("max_tokens", 1000), 1000)
+            temperature = 0.2  # Lower temperature for factual extraction
+
+            response = self.ai_provider.generate(prompt, max_tokens=max_tokens, temperature=temperature)
 
             # Parse JSON response
             response_clean = response.strip()
@@ -310,14 +321,15 @@ Return ONLY valid JSON in this format:
         return result
 
 
-def create_company_info_fetcher(ai_provider=None) -> CompanyInfoFetcher:
+def create_company_info_fetcher(ai_provider=None, ai_config=None) -> CompanyInfoFetcher:
     """
     Factory function to create a CompanyInfoFetcher.
 
     Args:
         ai_provider: Optional AI provider for intelligent extraction
+        ai_config: Optional AI configuration dictionary
 
     Returns:
         CompanyInfoFetcher instance
     """
-    return CompanyInfoFetcher(ai_provider=ai_provider)
+    return CompanyInfoFetcher(ai_provider=ai_provider, ai_config=ai_config)

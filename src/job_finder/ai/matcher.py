@@ -59,6 +59,7 @@ class AIJobMatcher:
         portland_office_bonus: int = 15,
         user_timezone: float = -8,
         prefer_large_companies: bool = True,
+        config: Optional[Dict[str, Any]] = None,
     ):
         """
         Initialize AI job matcher.
@@ -71,6 +72,7 @@ class AIJobMatcher:
             portland_office_bonus: Bonus points to add for Portland, OR offices.
             user_timezone: User's timezone offset from UTC (default: -8).
             prefer_large_companies: Prefer large companies (default: True).
+            config: Optional AI configuration dictionary (for model-specific settings).
         """
         self.provider = provider
         self.profile = profile
@@ -79,6 +81,7 @@ class AIJobMatcher:
         self.portland_office_bonus = portland_office_bonus
         self.user_timezone = user_timezone
         self.prefer_large_companies = prefer_large_companies
+        self.config = config or {}
         self.prompts = JobMatchPrompts()
 
     def analyze_job(
@@ -305,8 +308,17 @@ class AIJobMatcher:
         """
         try:
             prompt = self.prompts.analyze_job_match(self.profile, job)
-            # Using 8000 max_tokens for detailed analysis (Sonnet 3.5 supports up to 8192)
-            response = self.provider.generate(prompt, max_tokens=8000, temperature=0.3)
+
+            # Get model-specific settings or use fallback
+            model_name = self.config.get("model", "")
+            models_config = self.config.get("models", {})
+            model_settings = models_config.get(model_name, {})
+
+            # Use model-specific settings or fallback to top-level config
+            max_tokens = model_settings.get("max_tokens", self.config.get("max_tokens", 4096))
+            temperature = model_settings.get("temperature", self.config.get("temperature", 0.3))
+
+            response = self.provider.generate(prompt, max_tokens=max_tokens, temperature=temperature)
 
             # Parse JSON response
             # Try to extract JSON from response (in case there's extra text)
@@ -363,8 +375,18 @@ class AIJobMatcher:
         """
         try:
             prompt = self.prompts.generate_resume_intake_data(self.profile, job, match_analysis)
-            # Using 8000 max_tokens for comprehensive intake data (Sonnet 3.5 supports up to 8192)
-            response = self.provider.generate(prompt, max_tokens=8000, temperature=0.4)
+
+            # Get model-specific settings or use fallback
+            model_name = self.config.get("model", "")
+            models_config = self.config.get("models", {})
+            model_settings = models_config.get(model_name, {})
+
+            # Use model-specific settings or fallback to top-level config
+            max_tokens = model_settings.get("max_tokens", self.config.get("max_tokens", 4096))
+            # Use slightly higher temperature for creative intake data generation
+            temperature = model_settings.get("temperature", self.config.get("temperature", 0.3)) + 0.1
+
+            response = self.provider.generate(prompt, max_tokens=max_tokens, temperature=temperature)
 
             # Parse JSON response
             response_clean = response.strip()

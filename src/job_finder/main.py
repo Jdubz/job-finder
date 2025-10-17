@@ -121,6 +121,7 @@ def apply_ai_matching(
             generate_intake=ai_config.get("generate_intake_data", True),
             user_timezone=ai_config.get("user_timezone", -8),  # Default to Pacific Time
             prefer_large_companies=ai_config.get("prefer_large_companies", True),
+            config=ai_config,
         )
 
         # Analyze jobs
