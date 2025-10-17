@@ -482,10 +482,10 @@ class QueueItemProcessor:
                 )
                 self.ai_matcher.min_match_score = scrape_config.min_match_score
 
-            # Run scrape
+            # Run scrape (pass None values through, don't use defaults here)
             stats = self.scrape_runner.run_scrape(
-                target_matches=scrape_config.target_matches or 5,
-                max_sources=scrape_config.max_sources or 20,
+                target_matches=scrape_config.target_matches,
+                max_sources=scrape_config.max_sources,
                 source_ids=scrape_config.source_ids,
             )
 

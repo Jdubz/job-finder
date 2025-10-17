@@ -23,8 +23,8 @@ load_dotenv()
 
 
 def trigger_scrape(
-    target_matches: int = 5,
-    max_sources: int = 20,
+    target_matches: int | None = 5,
+    max_sources: int | None = 20,
     source_ids: list[str] | None = None,
     min_match_score: int | None = None,
     database: str = "portfolio-staging",
@@ -34,9 +34,9 @@ def trigger_scrape(
     Trigger a scrape by creating a queue item.
 
     Args:
-        target_matches: Number of potential matches to find before stopping
-        max_sources: Maximum number of sources to scrape
-        source_ids: Specific source IDs to scrape (None = rotation)
+        target_matches: Number of potential matches to find before stopping (None = unlimited)
+        max_sources: Maximum number of sources to scrape (None = unlimited)
+        source_ids: Specific source IDs to scrape (None = all sources)
         min_match_score: Override minimum match score threshold
         database: Database name
         force: Force trigger even if pending scrape exists
@@ -48,10 +48,23 @@ def trigger_scrape(
     print("TRIGGERING ON-DEMAND SCRAPE")
     print("=" * 70)
     print(f"Database: {database}")
-    print(f"Target matches: {target_matches}")
-    print(f"Max sources: {max_sources}")
+
+    # Display configuration
+    if target_matches is None:
+        print("Target matches: UNLIMITED (scrape all allowed sources)")
+    else:
+        print(f"Target matches: {target_matches}")
+
+    if max_sources is None:
+        print("Max sources: UNLIMITED")
+    else:
+        print(f"Max sources: {max_sources}")
+
     if source_ids:
         print(f"Specific sources: {source_ids}")
+    else:
+        print("Sources: ALL (with rotation)")
+
     if min_match_score:
         print(f"Min match score override: {min_match_score}")
     print("")
@@ -107,8 +120,14 @@ Examples:
   # Find 10 potential matches
   python scripts/trigger_scrape.py --target-matches 10
 
-  # Scrape specific sources
+  # Scrape ALL sources until exhausted (no limits)
+  python scripts/trigger_scrape.py --no-target-limit --no-source-limit
+
+  # Scrape specific sources only
   python scripts/trigger_scrape.py --sources source-id-1 source-id-2
+
+  # Scrape all sources for specific companies until done
+  python scripts/trigger_scrape.py --sources src-1 src-2 src-3 --no-target-limit
 
   # Override min match score
   python scripts/trigger_scrape.py --min-score 75
@@ -126,7 +145,13 @@ Examples:
         "-t",
         type=int,
         default=5,
-        help="Stop after finding this many potential matches (default: 5)",
+        help="Stop after finding this many potential matches (default: 5, use --no-target-limit for unlimited)",
+    )
+
+    parser.add_argument(
+        "--no-target-limit",
+        action="store_true",
+        help="No limit on target matches - scrape all allowed sources",
     )
 
     parser.add_argument(
@@ -134,7 +159,13 @@ Examples:
         "-m",
         type=int,
         default=20,
-        help="Maximum number of sources to scrape (default: 20)",
+        help="Maximum number of sources to scrape (default: 20, use --no-source-limit for unlimited)",
+    )
+
+    parser.add_argument(
+        "--no-source-limit",
+        action="store_true",
+        help="No limit on number of sources - scrape all available sources",
     )
 
     parser.add_argument(
@@ -166,6 +197,10 @@ Examples:
 
     args = parser.parse_args()
 
+    # Handle unlimited flags
+    target_matches = None if args.no_target_limit else args.target_matches
+    max_sources = None if args.no_source_limit else args.max_sources
+
     # Validate min_score range
     if args.min_score is not None and (args.min_score < 0 or args.min_score > 100):
         print("ERROR: --min-score must be between 0 and 100")
@@ -173,8 +208,8 @@ Examples:
 
     try:
         trigger_scrape(
-            target_matches=args.target_matches,
-            max_sources=args.max_sources,
+            target_matches=target_matches,
+            max_sources=max_sources,
             source_ids=args.sources,
             min_match_score=args.min_score,
             database=args.database,

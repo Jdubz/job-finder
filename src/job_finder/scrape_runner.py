@@ -59,17 +59,17 @@ class ScrapeRunner:
 
     def run_scrape(
         self,
-        target_matches: int = 5,
-        max_sources: int = 20,
+        target_matches: Optional[int] = 5,
+        max_sources: Optional[int] = 20,
         source_ids: Optional[List[str]] = None,
     ) -> Dict[str, Any]:
         """
         Run a scraping operation.
 
         Args:
-            target_matches: Stop after finding this many potential matches
-            max_sources: Maximum number of sources to scrape
-            source_ids: Specific source IDs to scrape (None = use rotation)
+            target_matches: Stop after finding this many potential matches (None = no limit)
+            max_sources: Maximum number of sources to scrape (None = unlimited)
+            source_ids: Specific source IDs to scrape (None = all sources with rotation)
 
         Returns:
             Dictionary with scraping statistics
@@ -77,12 +77,22 @@ class ScrapeRunner:
         logger.info("=" * 70)
         logger.info("STARTING SCRAPE")
         logger.info("=" * 70)
-        logger.info(f"Target matches: {target_matches}")
-        logger.info(f"Max sources: {max_sources}")
+
+        # Log configuration
+        if target_matches is None:
+            logger.info("Target matches: UNLIMITED (will scrape all allowed sources)")
+        else:
+            logger.info(f"Target matches: {target_matches}")
+
+        if max_sources is None:
+            logger.info("Max sources: UNLIMITED")
+        else:
+            logger.info(f"Max sources: {max_sources}")
+
         if source_ids:
             logger.info(f"Specific sources: {source_ids}")
         else:
-            logger.info("Using source rotation (oldest first)")
+            logger.info("Using all sources with rotation (oldest first)")
 
         # Get sources to scrape
         sources = self._get_sources(max_sources, source_ids)
@@ -105,8 +115,9 @@ class ScrapeRunner:
         potential_matches = 0
 
         for source in sources:
-            if potential_matches >= target_matches:
-                logger.info(f"\n✅ Found {potential_matches} potential matches, stopping early")
+            # Check if we should stop (only if target_matches is set)
+            if target_matches is not None and potential_matches >= target_matches:
+                logger.info(f"\n✅ Reached target: {potential_matches} potential matches, stopping")
                 break
 
             try:
@@ -165,14 +176,14 @@ class ScrapeRunner:
         return stats
 
     def _get_sources(
-        self, max_sources: int, source_ids: Optional[List[str]]
+        self, max_sources: Optional[int], source_ids: Optional[List[str]]
     ) -> List[Dict[str, Any]]:
         """
         Get sources to scrape.
 
         Args:
-            max_sources: Maximum number of sources
-            source_ids: Specific source IDs (None = use rotation)
+            max_sources: Maximum number of sources (None = unlimited)
+            source_ids: Specific source IDs (None = all sources with rotation)
 
         Returns:
             List of source documents
@@ -191,12 +202,12 @@ class ScrapeRunner:
             # Use rotation (oldest lastScrapedAt first)
             return self._get_next_sources_by_rotation(max_sources)
 
-    def _get_next_sources_by_rotation(self, limit: int) -> List[Dict[str, Any]]:
+    def _get_next_sources_by_rotation(self, limit: Optional[int]) -> List[Dict[str, Any]]:
         """
         Get next sources by rotation (oldest lastScrapedAt first).
 
         Args:
-            limit: Maximum number of sources
+            limit: Maximum number of sources (None = all sources)
 
         Returns:
             List of source documents sorted by lastScrapedAt
@@ -214,7 +225,12 @@ class ScrapeRunner:
             return last_scraped
 
         sources_sorted = sorted(sources, key=sort_key)
-        return sources_sorted[:limit]
+
+        # Return limited or all sources
+        if limit is None:
+            return sources_sorted
+        else:
+            return sources_sorted[:limit]
 
     def _scrape_source(self, source: Dict[str, Any]) -> Dict[str, Any]:
         """

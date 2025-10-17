@@ -23,9 +23,9 @@ SCRAPE is a new queue item type (alongside JOB and COMPANY):
   type: "scrape",
   status: "pending" | "processing" | "success" | "failed",
   scrape_config: {
-    target_matches: 5,        // Stop after finding N potential matches
-    max_sources: 20,          // Max sources to check
-    source_ids: [...],        // Specific sources (null = use rotation)
+    target_matches: 5,        // Stop after N matches (null = unlimited, scrape all sources)
+    max_sources: 20,          // Max sources to check (null = unlimited)
+    source_ids: [...],        // Specific sources (null = all sources with rotation)
     min_match_score: 75       // Override AI threshold (null = use default)
   },
   source: "user_submission" | "automated_scan",
@@ -101,11 +101,14 @@ python scripts/trigger_scrape.py
 # Find 10 potential matches
 python scripts/trigger_scrape.py --target-matches 10
 
+# Scrape ALL sources until exhausted (no limits)
+python scripts/trigger_scrape.py --no-target-limit --no-source-limit
+
+# Scrape specific sources only (all jobs from these sources)
+python scripts/trigger_scrape.py --sources source-id-1 source-id-2 --no-target-limit
+
 # Scrape up to 50 sources
 python scripts/trigger_scrape.py --max-sources 50
-
-# Scrape specific sources only
-python scripts/trigger_scrape.py --sources source-id-1 source-id-2
 
 # Override minimum match score
 python scripts/trigger_scrape.py --min-score 70
@@ -120,12 +123,22 @@ python scripts/trigger_scrape.py --force
 **Full options:**
 ```
 --target-matches, -t    Stop after N potential matches (default: 5)
+--no-target-limit       No limit - scrape all allowed sources
 --max-sources, -m       Maximum sources to scrape (default: 20)
---sources, -s           Specific source IDs (space-separated)
+--no-source-limit       No limit - scrape all available sources
+--sources, -s           Specific source IDs (space-separated, default: all with rotation)
 --min-score            Override AI match threshold (0-100)
 --database, -d          Database name (default: portfolio-staging)
 --force, -f             Force trigger even if pending scrape exists
 ```
+
+**Behavior Rules:**
+- `source_ids` omitted → scrape all sources (with rotation, oldest first)
+- `source_ids` specified → scrape only those specific sources
+- `target_matches` omitted → default to 5
+- `--no-target-limit` → scrape all allowed sources (no early exit)
+- `max_sources` omitted → default to 20
+- `--no-source-limit` → unlimited sources (until target_matches or all sources done)
 
 ### 3. From Portfolio UI (Future)
 

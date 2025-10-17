@@ -64,16 +64,27 @@ class ScrapeConfig(BaseModel):
     Configuration for a scrape request.
 
     Used when QueueItemType is SCRAPE to specify custom scraping parameters.
+
+    Behavior:
+    - source_ids=None → scrape all available sources (with rotation)
+    - source_ids=[...] → scrape only specific sources
+    - target_matches=None → no early exit, scrape all allowed sources
+    - target_matches=N → stop after finding N potential matches
+    - max_sources=None → unlimited sources (until target_matches or all sources done)
+    - max_sources=N → stop after scraping N sources
     """
 
     target_matches: Optional[int] = Field(
-        default=5, description="Stop after finding this many potential matches"
+        default=5,
+        description="Stop after finding this many potential matches (None = no limit)",
     )
     max_sources: Optional[int] = Field(
-        default=20, description="Maximum number of sources to scrape"
+        default=20,
+        description="Maximum number of sources to scrape (None = unlimited)",
     )
     source_ids: Optional[List[str]] = Field(
-        default=None, description="Specific source IDs to scrape (if None, use rotation)"
+        default=None,
+        description="Specific source IDs to scrape (None = all sources with rotation)",
     )
     min_match_score: Optional[int] = Field(
         default=None, description="Override minimum match score threshold"
