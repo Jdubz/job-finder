@@ -180,9 +180,7 @@ def scrape_source(
             result = ai_matcher.analyze_job(job)
 
             if not result:
-                logger.debug(
-                    f"  ✗ Below threshold: {job.get('title')} at {company_name}"
-                )
+                logger.debug(f"  ✗ Below threshold: {job.get('title')} at {company_name}")
                 continue
 
             # Job matched!
@@ -275,7 +273,9 @@ def run_hourly_scrape(config: Dict[str, Any]) -> Dict[str, Any]:
     firestore_ai_settings = config_loader.get_ai_settings()
     ai_provider_type = firestore_ai_settings.get("provider", ai_config.get("provider", "claude"))
     ai_model = firestore_ai_settings.get("model", ai_config.get("model", "claude-3-haiku-20240307"))
-    min_match_score = firestore_ai_settings.get("minMatchScore", ai_config.get("min_match_score", 70))
+    min_match_score = firestore_ai_settings.get(
+        "minMatchScore", ai_config.get("min_match_score", 70)
+    )
 
     provider = create_provider(provider_type=ai_provider_type, model=ai_model)
     ai_matcher = AIJobMatcher(
@@ -320,9 +320,7 @@ def run_hourly_scrape(config: Dict[str, Any]) -> Dict[str, Any]:
 
     for source in sources:
         if potential_matches >= target_matches:
-            logger.info(
-                f"\n✅ Found {potential_matches} potential matches, stopping early"
-            )
+            logger.info(f"\n✅ Found {potential_matches} potential matches, stopping early")
             break
 
         try:
@@ -362,9 +360,7 @@ def run_hourly_scrape(config: Dict[str, Any]) -> Dict[str, Any]:
             total_stats["errors"].append(error_msg)
 
             # Update source status with error
-            sources_manager.update_scrape_status(
-                source["id"], status="error", error=str(e)
-            )
+            sources_manager.update_scrape_status(source["id"], status="error", error=str(e))
 
     # Final summary
     logger.info("\n" + "=" * 70)

@@ -171,7 +171,9 @@ class JobScorer:
                     "passed": result.passed,
                     "total_strikes": result.total_strikes,
                     "strike_threshold": result.strike_threshold,
-                    "hard_rejections": [r.to_dict() for r in result.rejections if r.severity == "hard_reject"],
+                    "hard_rejections": [
+                        r.to_dict() for r in result.rejections if r.severity == "hard_reject"
+                    ],
                     "strikes": [r.to_dict() for r in result.rejections if r.severity == "strike"],
                     "rejection_summary": result.get_rejection_summary(),
                 }
@@ -252,9 +254,7 @@ class JobScorer:
         output_file = OUTPUT_DIR / "job_scoring_results.json"
 
         with open(output_file, "w") as f:
-            json.dump(
-                {"analysis": analysis, "scored_jobs": scored_jobs}, f, indent=2
-            )
+            json.dump({"analysis": analysis, "scored_jobs": scored_jobs}, f, indent=2)
 
         logger.info(f"Saved results to: {output_file}")
 

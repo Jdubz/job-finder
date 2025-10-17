@@ -121,6 +121,8 @@ class QueueItemProcessor:
                     self._process_job(item)
             elif item.type == QueueItemType.SCRAPE:
                 self._process_scrape(item)
+            elif item.type == QueueItemType.SOURCE_DISCOVERY:
+                self._process_source_discovery(item)
             else:
                 raise ValueError(f"Unknown item type: {item.type}")
 
@@ -1022,3 +1024,346 @@ class QueueItemProcessor:
             logger.debug(f"Failed to extract with selector '{selector}': {e}")
 
         return None
+
+    # ========================================================================
+    # Source Discovery Processor
+    # ========================================================================
+
+    def _process_source_discovery(self, item: JobQueueItem) -> None:
+        """
+        Process SOURCE_DISCOVERY queue item.
+
+        Flow:
+        1. Fetch URL and detect source type
+        2. For known types (GH/WD/RSS): validate and create config
+        3. For generic HTML: use AI selector discovery
+        4. Test scrape to validate configuration
+        5. Create job-source document if successful
+
+        Args:
+            item: Queue item with source_discovery_config
+        """
+        if not item.id or not item.source_discovery_config:
+            logger.error("Cannot process SOURCE_DISCOVERY without ID or config")
+            return
+
+        config = item.source_discovery_config
+        url = config.url
+
+        logger.info(f"SOURCE_DISCOVERY: Processing {url}")
+
+        try:
+            from job_finder.utils.source_type_detector import SourceTypeDetector
+
+            # Validate URL
+            if not SourceTypeDetector.is_valid_url(url):
+                self.queue_manager.update_status(
+                    item.id,
+                    QueueStatus.FAILED,
+                    "Invalid URL format",
+                    error_details=f"URL is not valid: {url}",
+                )
+                return
+
+            # Detect source type
+            source_type, source_config = SourceTypeDetector.detect(url, config.type_hint)
+
+            logger.info(f"Detected source type: {source_type} for {url}")
+
+            # Extract company name if not provided
+            company_name = config.company_name or SourceTypeDetector.get_company_name_from_url(url)
+
+            # Process based on detected type
+            if source_type == "greenhouse":
+                success, source_id, message = self._discover_greenhouse_source(
+                    url, source_config, config, company_name
+                )
+            elif source_type == "workday":
+                success, source_id, message = self._discover_workday_source(
+                    url, source_config, config, company_name
+                )
+            elif source_type == "rss":
+                success, source_id, message = self._discover_rss_source(
+                    url, source_config, config, company_name
+                )
+            else:  # generic
+                success, source_id, message = self._discover_generic_source(
+                    url, source_config, config, company_name
+                )
+
+            if success:
+                # Update queue item with success
+                self.queue_manager.update_status(
+                    item.id,
+                    QueueStatus.SUCCESS,
+                    source_id,  # Return source ID in result_message for portfolio
+                    scraped_data={"source_id": source_id, "source_type": source_type},
+                )
+                logger.info(f"SOURCE_DISCOVERY complete: Created source {source_id}")
+            else:
+                # Discovery failed
+                self.queue_manager.update_status(
+                    item.id, QueueStatus.FAILED, message, error_details=f"Source: {url}"
+                )
+                logger.warning(f"SOURCE_DISCOVERY failed: {message}")
+
+        except Exception as e:
+            logger.error(f"Error in SOURCE_DISCOVERY: {e}")
+            raise
+
+    def _discover_greenhouse_source(
+        self,
+        url: str,
+        source_config: Dict[str, str],
+        discovery_config: Any,
+        company_name: Optional[str],
+    ) -> tuple[bool, Optional[str], str]:
+        """
+        Discover and validate Greenhouse source.
+
+        Args:
+            url: Greenhouse board URL
+            source_config: Extracted config with board_token
+            discovery_config: SourceDiscoveryConfig from queue item
+            company_name: Company name
+
+        Returns:
+            (success, source_id, message)
+        """
+        try:
+            import requests
+
+            board_token = source_config.get("board_token")
+            if not board_token:
+                return False, None, "Could not extract board_token from URL"
+
+            # Validate by fetching Greenhouse API
+            api_url = f"https://boards-api.greenhouse.io/v1/boards/{board_token}/jobs"
+
+            response = requests.get(api_url, timeout=10)
+
+            if response.status_code != 200:
+                return (
+                    False,
+                    None,
+                    f"Greenhouse board not found (HTTP {response.status_code})",
+                )
+
+            jobs = response.json().get("jobs", [])
+
+            logger.info(f"Greenhouse board validated: {len(jobs)} jobs found")
+
+            # Create source
+            source_name = (
+                f"{company_name or board_token} Greenhouse"
+                if company_name
+                else f"{board_token} Greenhouse"
+            )
+
+            source_id = self.sources_manager.create_from_discovery(
+                name=source_name,
+                source_type="greenhouse",
+                config={"board_token": board_token},
+                discovered_via=discovery_config.source or "user_submission",
+                discovered_by=discovery_config.submitted_by,
+                discovery_confidence="high",  # Greenhouse is reliable
+                discovery_queue_item_id=discovery_config.id,
+                company_id=discovery_config.company_id,
+                company_name=company_name,
+                enabled=discovery_config.auto_enable,
+                validation_required=discovery_config.validation_required,
+            )
+
+            return True, source_id, f"Greenhouse source created ({len(jobs)} jobs available)"
+
+        except Exception as e:
+            logger.error(f"Error discovering Greenhouse source: {e}")
+            return False, None, f"Error validating Greenhouse board: {str(e)}"
+
+    def _discover_workday_source(
+        self,
+        url: str,
+        source_config: Dict[str, str],
+        discovery_config: Any,
+        company_name: Optional[str],
+    ) -> tuple[bool, Optional[str], str]:
+        """
+        Discover and validate Workday source.
+
+        Args:
+            url: Workday board URL
+            source_config: Extracted config with company_id, base_url
+            discovery_config: SourceDiscoveryConfig from queue item
+            company_name: Company name
+
+        Returns:
+            (success, source_id, message)
+        """
+        try:
+            # For Workday, we'll do basic validation
+            # Full Workday scraping requires more complex logic
+            company_id = source_config.get("company_id")
+            base_url = source_config.get("base_url")
+
+            if not company_id or not base_url:
+                return False, None, "Could not extract company_id or base_url from URL"
+
+            # Create source (enable with medium confidence - requires testing)
+            source_name = f"{company_name or company_id} Workday"
+
+            source_id = self.sources_manager.create_from_discovery(
+                name=source_name,
+                source_type="workday",
+                config={"company_id": company_id, "base_url": base_url},
+                discovered_via=discovery_config.source or "user_submission",
+                discovered_by=discovery_config.submitted_by,
+                discovery_confidence="medium",  # Workday needs validation
+                discovery_queue_item_id=discovery_config.id,
+                company_id=discovery_config.company_id,
+                company_name=company_name,
+                enabled=False,  # Workday requires manual validation
+                validation_required=True,
+            )
+
+            return (
+                True,
+                source_id,
+                "Workday source created (requires manual validation before enabling)",
+            )
+
+        except Exception as e:
+            logger.error(f"Error discovering Workday source: {e}")
+            return False, None, f"Error validating Workday board: {str(e)}"
+
+    def _discover_rss_source(
+        self,
+        url: str,
+        source_config: Dict[str, str],
+        discovery_config: Any,
+        company_name: Optional[str],
+    ) -> tuple[bool, Optional[str], str]:
+        """
+        Discover and validate RSS source.
+
+        Args:
+            url: RSS feed URL
+            source_config: Config with RSS URL
+            discovery_config: SourceDiscoveryConfig from queue item
+            company_name: Company name
+
+        Returns:
+            (success, source_id, message)
+        """
+        try:
+            import feedparser
+
+            # Parse RSS feed
+            feed = feedparser.parse(url)
+
+            if feed.bozo:  # Feed has errors
+                return False, None, f"Invalid RSS feed: {feed.bozo_exception}"
+
+            if not feed.entries:
+                return False, None, "RSS feed is empty (no entries found)"
+
+            logger.info(f"RSS feed validated: {len(feed.entries)} entries found")
+
+            # Create source
+            source_name = f"{company_name or 'RSS'} Feed"
+
+            source_id = self.sources_manager.create_from_discovery(
+                name=source_name,
+                source_type="rss",
+                config={"url": url, "parse_format": "standard"},
+                discovered_via=discovery_config.source or "user_submission",
+                discovered_by=discovery_config.submitted_by,
+                discovery_confidence="high",  # RSS is reliable if valid
+                discovery_queue_item_id=discovery_config.id,
+                company_id=discovery_config.company_id,
+                company_name=company_name,
+                enabled=discovery_config.auto_enable,
+                validation_required=discovery_config.validation_required,
+            )
+
+            return True, source_id, f"RSS source created ({len(feed.entries)} entries available)"
+
+        except Exception as e:
+            logger.error(f"Error discovering RSS source: {e}")
+            return False, None, f"Error validating RSS feed: {str(e)}"
+
+    def _discover_generic_source(
+        self,
+        url: str,
+        source_config: Dict[str, str],
+        discovery_config: Any,
+        company_name: Optional[str],
+    ) -> tuple[bool, Optional[str], str]:
+        """
+        Discover generic HTML source using AI selector discovery.
+
+        Args:
+            url: Career page URL
+            source_config: Config with base_url
+            discovery_config: SourceDiscoveryConfig from queue item
+            company_name: Company name
+
+        Returns:
+            (success, source_id, message)
+        """
+        try:
+            import requests
+            from job_finder.ai.selector_discovery import SelectorDiscovery
+
+            # Fetch HTML
+            response = requests.get(url, timeout=30)
+            response.raise_for_status()
+            html = response.text
+
+            # Use AI to discover selectors
+            discovery = SelectorDiscovery()
+            result = discovery.discover_selectors(html, url)
+
+            if not result:
+                return False, None, "AI selector discovery failed (could not find job listings)"
+
+            selectors = result.get("selectors", {})
+            confidence = result.get("confidence", "medium")
+
+            logger.info(f"AI discovered selectors with {confidence} confidence")
+
+            # Create source
+            source_name = f"{company_name or 'Generic'} Careers"
+
+            # Lower confidence sources should require validation
+            auto_enable = discovery_config.auto_enable and confidence == "high"
+            validation_required = discovery_config.validation_required or confidence != "high"
+
+            source_id = self.sources_manager.create_from_discovery(
+                name=source_name,
+                source_type="scraper",
+                config={
+                    "url": url,
+                    "method": "requests",
+                    "selectors": selectors,
+                    "discovered_by_ai": True,
+                },
+                discovered_via=discovery_config.source or "user_submission",
+                discovered_by=discovery_config.submitted_by,
+                discovery_confidence=confidence,
+                discovery_queue_item_id=discovery_config.id,
+                company_id=discovery_config.company_id,
+                company_name=company_name,
+                enabled=auto_enable,
+                validation_required=validation_required,
+            )
+
+            status = "enabled" if auto_enable else "pending validation"
+            return (
+                True,
+                source_id,
+                f"Generic scraper source created with {confidence} confidence ({status})",
+            )
+
+        except Exception as e:
+            logger.error(f"Error discovering generic source: {e}")
+            return False, None, f"Error discovering selectors: {str(e)}"

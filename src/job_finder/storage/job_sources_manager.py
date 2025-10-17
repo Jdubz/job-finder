@@ -535,6 +535,99 @@ class JobSourcesManager:
             tags=tags,
         )
 
+    def create_from_discovery(
+        self,
+        name: str,
+        source_type: str,
+        config: Dict[str, Any],
+        discovered_via: str = "user_submission",
+        discovered_by: Optional[str] = None,
+        discovery_confidence: str = "high",
+        discovery_queue_item_id: Optional[str] = None,
+        company_id: Optional[str] = None,
+        company_name: Optional[str] = None,
+        enabled: bool = True,
+        validation_required: bool = False,
+    ) -> str:
+        """
+        Create a new source from discovery process.
+
+        This is used by the SOURCE_DISCOVERY queue processor to create sources
+        after validation.
+
+        Args:
+            name: Human-readable name
+            source_type: greenhouse, workday, rss, scraper, etc.
+            config: Source-specific configuration
+            discovered_via: How it was discovered (user_submission, automated_scan)
+            discovered_by: User ID if submitted by user
+            discovery_confidence: high, medium, low
+            discovery_queue_item_id: Reference to queue item that triggered discovery
+            company_id: Optional company reference
+            company_name: Optional company name
+            enabled: Whether to enable immediately
+            validation_required: If true, requires manual validation before enabling
+
+        Returns:
+            Document ID of created source
+        """
+        if not self.db:
+            raise RuntimeError("Firestore not initialized")
+
+        # If validation required, disable until manually enabled
+        if validation_required:
+            enabled = False
+
+        source_doc = {
+            "name": name,
+            "sourceType": source_type,
+            "config": config,
+            "enabled": enabled,
+            "tags": [f"discovered-via-{discovered_via}", f"confidence-{discovery_confidence}"],
+            # Company linkage (optional)
+            "companyId": company_id,
+            "companyName": company_name,
+            # Discovery metadata
+            "discoveredVia": discovered_via,
+            "discoveredBy": discovered_by,
+            "discoveredAt": gcloud_firestore.SERVER_TIMESTAMP,
+            "discoveryConfidence": discovery_confidence,
+            "discoveryQueueItemId": discovery_queue_item_id,
+            "validationRequired": validation_required,
+            # Tracking
+            "lastScrapedAt": None,
+            "lastScrapedStatus": None,
+            "lastScrapedError": None,
+            "totalJobsFound": 0,
+            "totalJobsMatched": 0,
+            "consecutiveFailures": 0,
+            # Metadata
+            "createdAt": gcloud_firestore.SERVER_TIMESTAMP,
+            "updatedAt": gcloud_firestore.SERVER_TIMESTAMP,
+        }
+
+        try:
+            doc_ref = self.db.collection(self.collection_name).add(source_doc)
+            doc_id = doc_ref[1].id
+
+            status = "enabled" if enabled else "pending validation"
+            logger.info(
+                f"Created source from discovery: {name} ({source_type}) "
+                f"[{discovery_confidence} confidence, {status}] - ID: {doc_id}"
+            )
+
+            return doc_id
+
+        except (RuntimeError, ValueError, AttributeError) as e:
+            logger.error(f"Error creating source from discovery (database/validation): {str(e)}")
+            raise
+        except Exception as e:
+            logger.error(
+                f"Unexpected error creating source from discovery ({type(e).__name__}): {str(e)}",
+                exc_info=True,
+            )
+            raise
+
     def update_source_selectors(
         self,
         source_id: str,

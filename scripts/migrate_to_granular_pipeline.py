@@ -24,9 +24,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from job_finder.queue.manager import QueueManager
 from job_finder.queue.models import JobQueueItem, JobSubTask, QueueItemType, QueueStatus
 
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 
@@ -241,9 +239,7 @@ class GranularPipelineMigrator:
 
 def main():
     """Run migration."""
-    parser = argparse.ArgumentParser(
-        description="Migrate legacy queue items to granular pipeline"
-    )
+    parser = argparse.ArgumentParser(description="Migrate legacy queue items to granular pipeline")
     parser.add_argument(
         "--database",
         default="portfolio-staging",
@@ -252,14 +248,10 @@ def main():
     parser.add_argument(
         "--status",
         default="pending",
-        help='Status filter: pending, failed, all (default: pending)',
+        help="Status filter: pending, failed, all (default: pending)",
     )
-    parser.add_argument(
-        "--max-items", type=int, help="Maximum number of items to migrate"
-    )
-    parser.add_argument(
-        "--dry-run", action="store_true", help="Dry run (don't actually migrate)"
-    )
+    parser.add_argument("--max-items", type=int, help="Maximum number of items to migrate")
+    parser.add_argument("--dry-run", action="store_true", help="Dry run (don't actually migrate)")
     parser.add_argument(
         "--confirm",
         action="store_true",
@@ -294,9 +286,7 @@ def main():
             return
 
     # Run migration
-    migrator.migrate_all(
-        status_filter=args.status, dry_run=dry_run, max_items=args.max_items
-    )
+    migrator.migrate_all(status_filter=args.status, dry_run=dry_run, max_items=args.max_items)
 
 
 if __name__ == "__main__":

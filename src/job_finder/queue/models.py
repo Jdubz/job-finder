@@ -23,12 +23,13 @@ class QueueItemType(str, Enum):
     Type of queue item.
 
     TypeScript equivalent: QueueItemType in queue.types.ts
-    Values must match exactly: "job" | "company" | "scrape"
+    Values must match exactly: "job" | "company" | "scrape" | "source_discovery"
     """
 
     JOB = "job"
     COMPANY = "company"
     SCRAPE = "scrape"
+    SOURCE_DISCOVERY = "source_discovery"
 
 
 class JobSubTask(str, Enum):
@@ -116,6 +117,53 @@ class ScrapeConfig(BaseModel):
     model_config = ConfigDict(use_enum_values=True)
 
 
+class SourceTypeHint(str, Enum):
+    """
+    Source type hint for discovery.
+
+    TypeScript equivalent: SourceTypeHint in queue.types.ts
+    """
+
+    AUTO = "auto"
+    GREENHOUSE = "greenhouse"
+    WORKDAY = "workday"
+    RSS = "rss"
+    GENERIC = "generic"
+
+
+class SourceDiscoveryConfig(BaseModel):
+    """
+    Configuration for source discovery requests.
+
+    Used when QueueItemType is SOURCE_DISCOVERY to discover and configure a new job source.
+
+    Flow:
+    1. Portfolio submits URL for discovery
+    2. Job-finder detects source type (greenhouse, workday, rss, generic)
+    3. For known types: validate and create config
+    4. For generic: use AI selector discovery
+    5. Test scrape to validate
+    6. Create job-source document if successful
+
+    TypeScript equivalent: SourceDiscoveryConfig in queue.types.ts
+    """
+
+    url: str = Field(description="URL to analyze and configure")
+    type_hint: Optional[SourceTypeHint] = Field(
+        default=SourceTypeHint.AUTO, description="Optional hint about source type"
+    )
+    company_id: Optional[str] = Field(default=None, description="Optional company reference")
+    company_name: Optional[str] = Field(default=None, description="Optional company name")
+    auto_enable: bool = Field(
+        default=True, description="Auto-enable if discovery succeeds (default: true)"
+    )
+    validation_required: bool = Field(
+        default=False, description="Require manual validation before enabling (default: false)"
+    )
+
+    model_config = ConfigDict(use_enum_values=True)
+
+
 class JobQueueItem(BaseModel):
     """
     Queue item representing a job or company to be processed.
@@ -177,6 +225,11 @@ class JobQueueItem(BaseModel):
     # Scrape configuration (only used when type is SCRAPE)
     scrape_config: Optional[ScrapeConfig] = Field(
         default=None, description="Configuration for scrape requests"
+    )
+
+    # Source discovery configuration (only used when type is SOURCE_DISCOVERY)
+    source_discovery_config: Optional[SourceDiscoveryConfig] = Field(
+        default=None, description="Configuration for source discovery"
     )
 
     # Granular pipeline fields (only used when type is JOB with sub_task)
