@@ -76,10 +76,9 @@ class TestQueueWorkflow:
             "status": "pending",
             "url": "https://example.com/job/123",
             "company_name": "Test Corp",
-            "source": "test_scraper",
+            "source": "scraper",
             "retry_count": 0,
             "max_retries": 3,
-            "scraped_data": jobs[0],
         }
 
         mock_query = MagicMock()
@@ -95,7 +94,7 @@ class TestQueueWorkflow:
 
         assert len(pending) == 1
         assert pending[0].url == "https://example.com/job/123"
-        assert pending[0].scraped_data["title"] == "Software Engineer"
+        assert pending[0].company_name == "Test Corp"
 
     def test_stop_list_filtering_workflow(self, config_loader, mock_firestore):
         """Test stop list filtering workflow."""
@@ -244,7 +243,7 @@ class TestEndToEndScenarios:
         assert call_args["type"] == "job"
         assert call_args["status"] == "pending"
         assert call_args["source"] == "user_submission"
-        assert call_args["scraped_data"]["title"] == "Senior Python Developer"
+        assert call_args["company_name"] == "Great Company"
 
     def test_scraper_to_queue_workflow(self, scraper_intake, mock_firestore):
         """
@@ -270,7 +269,7 @@ class TestEndToEndScenarios:
             {"title": "Job 3", "url": "https://example.com/3", "company": "Test"},
         ]
 
-        count1 = scraper_intake.submit_jobs(batch1, source="greenhouse_scraper")
+        count1 = scraper_intake.submit_jobs(batch1, source="scraper")
         assert count1 == 3
 
         # Second batch - some duplicates
@@ -290,7 +289,7 @@ class TestEndToEndScenarios:
 
         # Manually check duplicates
         unique_jobs = [j for j in batch2 if j["url"] == "https://example.com/4"]
-        count2 = scraper_intake.submit_jobs(unique_jobs, source="greenhouse_scraper")
+        count2 = scraper_intake.submit_jobs(unique_jobs, source="scraper")
 
         # Only new job should be added
         assert count2 == 1
@@ -315,7 +314,7 @@ class TestEndToEndScenarios:
         company_added = scraper_intake.submit_company(
             company_name="New Startup",
             company_website="https://newstartup.com",
-            source="discovery",
+            source="automated_scan",
         )
 
         assert company_added is True
@@ -334,7 +333,7 @@ class TestEndToEndScenarios:
             },
         ]
 
-        count = scraper_intake.submit_jobs(jobs, source="greenhouse_scraper", company_id=None)
+        count = scraper_intake.submit_jobs(jobs, source="scraper", company_id=None)
 
         assert count == 2
 
@@ -347,7 +346,12 @@ class TestErrorHandling:
         # Mock Firestore error on add
         mock_firestore.collection.return_value.add.side_effect = Exception("Firestore error")
 
-        item = JobQueueItem(type=QueueItemType.JOB, url="https://example.com/job", source="scraper")
+        item = JobQueueItem(
+            type=QueueItemType.JOB,
+            url="https://example.com/job",
+            company_name="Test Corp",
+            source="scraper",
+        )
 
         # Should raise exception
         with pytest.raises(Exception):

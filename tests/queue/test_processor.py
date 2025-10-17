@@ -58,6 +58,7 @@ def test_process_item_without_id(processor, mock_managers):
         id=None,
         type=QueueItemType.JOB,
         url="https://example.com/job",
+        company_name="Test Corp",
         source="scraper",
     )
 
@@ -101,6 +102,7 @@ def test_should_skip_by_stop_list_excluded_domain(processor, mock_managers):
         id="test-123",
         type=QueueItemType.JOB,
         url="https://spam.com/job/123",
+        company_name="Spam Corp",
         source="scraper",
     )
 
@@ -121,6 +123,7 @@ def test_should_skip_by_stop_list_excluded_keyword(processor, mock_managers):
         id="test-123",
         type=QueueItemType.JOB,
         url="https://example.com/jobs/commission-only-position",
+        company_name="Example Corp",
         source="scraper",
     )
 
@@ -288,6 +291,7 @@ def test_handle_failure_retry(processor, mock_managers):
         id="test-123",
         type=QueueItemType.JOB,
         url="https://example.com/job",
+        company_name="Test Corp",
         source="scraper",
         retry_count=1,  # First retry
     )
@@ -312,6 +316,7 @@ def test_handle_failure_max_retries(processor, mock_managers):
         id="test-123",
         type=QueueItemType.JOB,
         url="https://example.com/job",
+        company_name="Test Corp",
         source="scraper",
         retry_count=2,  # At max retries
     )
@@ -355,34 +360,3 @@ def test_build_company_info_string_partial(processor):
     assert "About: We build great software" in result
     assert "Culture:" not in result
     assert "Mission:" not in result
-
-
-def test_scrape_job_with_scraped_data(processor, sample_job_item):
-    """Test job scraping with pre-scraped data."""
-    sample_job_item.scraped_data = {
-        "title": "Senior Engineer",
-        "description": "Build amazing things",
-        "location": "Remote",
-    }
-
-    result = processor._scrape_job(sample_job_item)
-
-    assert result is not None
-    assert result["title"] == "Senior Engineer"
-    assert result["description"] == "Build amazing things"
-    assert result["location"] == "Remote"
-    assert result["url"] == sample_job_item.url
-
-
-def test_scrape_job_without_scraped_data(processor, sample_job_item):
-    """Test job scraping without pre-scraped data."""
-    sample_job_item.scraped_data = None
-
-    result = processor._scrape_job(sample_job_item)
-
-    assert result is not None
-    assert result["url"] == sample_job_item.url
-    assert result["company"] == sample_job_item.company_name
-    # Should have default values
-    assert "title" in result
-    assert "description" in result
