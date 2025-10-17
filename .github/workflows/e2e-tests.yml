@@ -59,7 +59,7 @@ jobs:
 
       - name: Configure GCP credentials
         env:
-          GCP_SA_KEY: ${{ secrets.GCP_SA_KEY_STAGING }}
+          GCP_SA_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
         run: |
           # Write credentials to file (handle base64 or raw JSON)
           if echo "$GCP_SA_KEY" | base64 -d > /dev/null 2>&1; then
@@ -71,7 +71,7 @@ jobs:
 
           # Verify JSON is valid
           if ! python3 -c "import json; json.load(open('gcp-key.json'))"; then
-            echo "::error::Invalid GCP credentials JSON. Please check GCP_SA_KEY_STAGING secret."
+            echo "::error::Invalid GCP credentials JSON. Please check FIREBASE_SERVICE_ACCOUNT secret."
             exit 1
           fi
 
@@ -142,7 +142,7 @@ jobs:
 
       - name: Configure GCP credentials
         env:
-          GCP_SA_KEY: ${{ secrets.GCP_SA_KEY_STAGING }}
+          GCP_SA_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
         run: |
           # Write credentials to file (handle base64 or raw JSON)
           if echo "$GCP_SA_KEY" | base64 -d > /dev/null 2>&1; then
@@ -154,7 +154,7 @@ jobs:
 
           # Verify JSON is valid
           if ! python3 -c "import json; json.load(open('gcp-key.json'))"; then
-            echo "::error::Invalid GCP credentials JSON. Please check GCP_SA_KEY_STAGING secret."
+            echo "::error::Invalid GCP credentials JSON. Please check FIREBASE_SERVICE_ACCOUNT secret."
             exit 1
           fi
 
