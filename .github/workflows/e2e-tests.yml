@@ -50,12 +50,6 @@ jobs:
 
       - name: Install job-finder dependencies
         run: |
-          # Clone job-finder repo (or use workspace if already checked out)
-          if [ ! -d "../job-finder" ]; then
-            git clone https://github.com/Jdubz/job-finder.git ../job-finder
-          fi
-
-          cd ../job-finder
           pip install -r requirements.txt
           pip install -e .
 
@@ -67,8 +61,19 @@ jobs:
         env:
           GCP_SA_KEY: ${{ secrets.GCP_SA_KEY_STAGING }}
         run: |
-          echo "$GCP_SA_KEY" > gcp-key.json
+          # Write credentials to file (handle base64 or raw JSON)
+          if echo "$GCP_SA_KEY" | base64 -d > /dev/null 2>&1; then
+            echo "$GCP_SA_KEY" | base64 -d > gcp-key.json
+          else
+            echo "$GCP_SA_KEY" > gcp-key.json
+          fi
           chmod 600 gcp-key.json
+
+          # Verify JSON is valid
+          if ! python3 -c "import json; json.load(open('gcp-key.json'))"; then
+            echo "::error::Invalid GCP credentials JSON. Please check GCP_SA_KEY_STAGING secret."
+            exit 1
+          fi
 
       - name: Run E2E tests
         id: tests
@@ -132,11 +137,6 @@ jobs:
 
       - name: Install dependencies
         run: |
-          if [ ! -d "../job-finder" ]; then
-            git clone https://github.com/Jdubz/job-finder.git ../job-finder
-          fi
-
-          cd ../job-finder
           pip install -r requirements.txt
           pip install -e .
 
@@ -144,8 +144,19 @@ jobs:
         env:
           GCP_SA_KEY: ${{ secrets.GCP_SA_KEY_STAGING }}
         run: |
-          echo "$GCP_SA_KEY" > gcp-key.json
+          # Write credentials to file (handle base64 or raw JSON)
+          if echo "$GCP_SA_KEY" | base64 -d > /dev/null 2>&1; then
+            echo "$GCP_SA_KEY" | base64 -d > gcp-key.json
+          else
+            echo "$GCP_SA_KEY" > gcp-key.json
+          fi
           chmod 600 gcp-key.json
+
+          # Verify JSON is valid
+          if ! python3 -c "import json; json.load(open('gcp-key.json'))"; then
+            echo "::error::Invalid GCP credentials JSON. Please check GCP_SA_KEY_STAGING secret."
+            exit 1
+          fi
 
       - name: Clean up old test data
         run: |
