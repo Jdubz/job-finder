@@ -6,7 +6,7 @@ from typing import Any, Dict, Optional
 
 from job_finder.ai import AIJobMatcher
 from job_finder.company_info_fetcher import CompanyInfoFetcher
-from job_finder.filters import JobFilterEngine
+from job_finder.filters import StrikeFilterEngine
 from job_finder.queue.config_loader import ConfigLoader
 from job_finder.queue.manager import QueueManager
 from job_finder.queue.models import JobQueueItem, QueueItemType, QueueStatus
@@ -54,9 +54,10 @@ class QueueItemProcessor:
         self.company_info_fetcher = company_info_fetcher
         self.ai_matcher = ai_matcher
 
-        # Initialize filter engine
+        # Initialize strike-based filter engine
         filter_config = config_loader.get_job_filters()
-        self.filter_engine = JobFilterEngine(filter_config)
+        tech_ranks = config_loader.get_technology_ranks()
+        self.filter_engine = StrikeFilterEngine(filter_config, tech_ranks)
 
     def process_item(self, item: JobQueueItem) -> None:
         """
