@@ -187,25 +187,126 @@ def get_ai_settings_config() -> Dict[str, Any]:
         "costBudgetDaily": 50.0,
         # Model-specific settings
         "models": {
+            # === Claude Models ===
+            # Haiku - Fast & cost-effective
             "claude-3-5-haiku-20241022": {
                 "maxTokens": 4096,  # Haiku's maximum output token limit
                 "temperature": 0.3,
+                "provider": "claude",
+                "cost_per_1k_input": 0.001,  # $1 per MTok input
+                "cost_per_1k_output": 0.005,  # $5 per MTok output
             },
+            "claude-3-haiku-20240307": {
+                "maxTokens": 4096,
+                "temperature": 0.3,
+                "provider": "claude",
+                "cost_per_1k_input": 0.00025,
+                "cost_per_1k_output": 0.00125,
+            },
+            # Sonnet - Balanced performance & cost
             "claude-3-5-sonnet-20241022": {
                 "maxTokens": 8000,  # Sonnet supports up to 8192
                 "temperature": 0.3,
+                "provider": "claude",
+                "cost_per_1k_input": 0.003,  # $3 per MTok input
+                "cost_per_1k_output": 0.015,  # $15 per MTok output
+            },
+            "claude-3-5-sonnet-20240620": {
+                "maxTokens": 8000,
+                "temperature": 0.3,
+                "provider": "claude",
+                "cost_per_1k_input": 0.003,
+                "cost_per_1k_output": 0.015,
+            },
+            "claude-3-sonnet-20240229": {
+                "maxTokens": 4096,
+                "temperature": 0.3,
+                "provider": "claude",
+                "cost_per_1k_input": 0.003,
+                "cost_per_1k_output": 0.015,
+            },
+            # Opus - Most capable, highest cost
+            "claude-3-opus-20240229": {
+                "maxTokens": 4096,
+                "temperature": 0.3,
+                "provider": "claude",
+                "cost_per_1k_input": 0.015,  # $15 per MTok input
+                "cost_per_1k_output": 0.075,  # $75 per MTok output
             },
             "claude-opus-4-20250514": {
-                "maxTokens": 8000,  # Opus supports up to 16384
+                "maxTokens": 8000,  # Opus 4 supports up to 16384
                 "temperature": 0.3,
+                "provider": "claude",
+                "cost_per_1k_input": 0.015,
+                "cost_per_1k_output": 0.075,
             },
+            # === OpenAI Models ===
+            # GPT-4 Turbo
+            "gpt-4-turbo": {
+                "maxTokens": 4096,
+                "temperature": 0.3,
+                "provider": "openai",
+                "cost_per_1k_input": 0.01,  # $10 per MTok input
+                "cost_per_1k_output": 0.03,  # $30 per MTok output
+            },
+            "gpt-4-turbo-2024-04-09": {
+                "maxTokens": 4096,
+                "temperature": 0.3,
+                "provider": "openai",
+                "cost_per_1k_input": 0.01,
+                "cost_per_1k_output": 0.03,
+            },
+            # GPT-4o - Latest multimodal
+            "gpt-4o": {
+                "maxTokens": 4096,
+                "temperature": 0.3,
+                "provider": "openai",
+                "cost_per_1k_input": 0.005,  # $5 per MTok input
+                "cost_per_1k_output": 0.015,  # $15 per MTok output
+            },
+            "gpt-4o-2024-11-20": {
+                "maxTokens": 4096,
+                "temperature": 0.3,
+                "provider": "openai",
+                "cost_per_1k_input": 0.0025,  # $2.50 per MTok input
+                "cost_per_1k_output": 0.01,  # $10 per MTok output
+            },
+            "gpt-4o-2024-08-06": {
+                "maxTokens": 4096,
+                "temperature": 0.3,
+                "provider": "openai",
+                "cost_per_1k_input": 0.0025,
+                "cost_per_1k_output": 0.01,
+            },
+            # GPT-4o Mini - Most cost-effective
+            "gpt-4o-mini": {
+                "maxTokens": 4096,
+                "temperature": 0.3,
+                "provider": "openai",
+                "cost_per_1k_input": 0.00015,  # $0.15 per MTok input
+                "cost_per_1k_output": 0.0006,  # $0.60 per MTok output
+            },
+            "gpt-4o-mini-2024-07-18": {
+                "maxTokens": 4096,
+                "temperature": 0.3,
+                "provider": "openai",
+                "cost_per_1k_input": 0.00015,
+                "cost_per_1k_output": 0.0006,
+            },
+            # Legacy GPT-4
             "gpt-4": {
                 "maxTokens": 8000,
                 "temperature": 0.3,
+                "provider": "openai",
+                "cost_per_1k_input": 0.03,  # $30 per MTok input
+                "cost_per_1k_output": 0.06,  # $60 per MTok output
             },
-            "gpt-4o": {
+            "gpt-4-0613": {
                 "maxTokens": 8000,
                 "temperature": 0.3,
+                "provider": "openai",
+                "cost_per_1k_input": 0.03,
+                "cost_per_1k_output": 0.06,
             },
         },
         # Fallback settings if model not in models map
