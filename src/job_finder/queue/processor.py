@@ -1,4 +1,4 @@
-"""Process queue items (jobs and companies)."""
+"""Process queue items (jobs, companies, and scrape requests)."""
 
 import logging
 import traceback
@@ -7,9 +7,11 @@ from typing import Any, Dict, Optional
 from job_finder.ai import AIJobMatcher
 from job_finder.company_info_fetcher import CompanyInfoFetcher
 from job_finder.filters import StrikeFilterEngine
+from job_finder.profile.schema import Profile
 from job_finder.queue.config_loader import ConfigLoader
 from job_finder.queue.manager import QueueManager
 from job_finder.queue.models import JobQueueItem, QueueItemType, QueueStatus
+from job_finder.scrape_runner import ScrapeRunner
 from job_finder.storage import FirestoreJobStorage
 from job_finder.storage.companies_manager import CompaniesManager
 from job_finder.storage.job_sources_manager import JobSourcesManager
@@ -19,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 class QueueItemProcessor:
     """
-    Processes individual queue items (jobs and companies).
+    Processes individual queue items (jobs, companies, and scrape requests).
 
     Handles scraping, AI analysis, and storage based on item type.
     """
@@ -33,6 +35,7 @@ class QueueItemProcessor:
         sources_manager: JobSourcesManager,
         company_info_fetcher: CompanyInfoFetcher,
         ai_matcher: AIJobMatcher,
+        profile: Profile,
     ):
         """
         Initialize processor with required managers.
@@ -45,6 +48,7 @@ class QueueItemProcessor:
             sources_manager: Job sources manager
             company_info_fetcher: Company info scraper
             ai_matcher: AI job matcher
+            profile: User profile (for scrape requests)
         """
         self.queue_manager = queue_manager
         self.config_loader = config_loader
@@ -53,11 +57,22 @@ class QueueItemProcessor:
         self.sources_manager = sources_manager
         self.company_info_fetcher = company_info_fetcher
         self.ai_matcher = ai_matcher
+        self.profile = profile
 
         # Initialize strike-based filter engine
         filter_config = config_loader.get_job_filters()
         tech_ranks = config_loader.get_technology_ranks()
         self.filter_engine = StrikeFilterEngine(filter_config, tech_ranks)
+
+        # Initialize scrape runner
+        self.scrape_runner = ScrapeRunner(
+            ai_matcher=ai_matcher,
+            job_storage=job_storage,
+            companies_manager=companies_manager,
+            sources_manager=sources_manager,
+            company_info_fetcher=company_info_fetcher,
+            profile=profile,
+        )
 
     def process_item(self, item: JobQueueItem) -> None:
         """
@@ -70,14 +85,18 @@ class QueueItemProcessor:
             logger.error("Cannot process item without ID")
             return
 
-        logger.info(f"Processing queue item {item.id}: {item.type} - {item.url[:50]}...")
+        # Log differently for scrape requests
+        if item.type == QueueItemType.SCRAPE:
+            logger.info(f"Processing queue item {item.id}: SCRAPE request")
+        else:
+            logger.info(f"Processing queue item {item.id}: {item.type} - {item.url[:50]}...")
 
         try:
             # Update status to processing
             self.queue_manager.update_status(item.id, QueueStatus.PROCESSING)
 
-            # Check stop list
-            if self._should_skip_by_stop_list(item):
+            # Check stop list (skip for SCRAPE requests)
+            if item.type != QueueItemType.SCRAPE and self._should_skip_by_stop_list(item):
                 self.queue_manager.update_status(
                     item.id, QueueStatus.SKIPPED, "Excluded by stop list"
                 )
@@ -95,6 +114,8 @@ class QueueItemProcessor:
                 self._process_company(item)
             elif item.type == QueueItemType.JOB:
                 self._process_job(item)
+            elif item.type == QueueItemType.SCRAPE:
+                self._process_scrape(item)
             else:
                 raise ValueError(f"Unknown item type: {item.type}")
 
@@ -427,3 +448,62 @@ class QueueItemProcessor:
                 item.id, QueueStatus.FAILED, failed_msg, error_details=failed_details
             )
             logger.error(f"Item {item.id} failed after {max_retries} retries: {error_message}")
+
+    def _process_scrape(self, item: JobQueueItem) -> None:
+        """
+        Process a scrape queue item.
+
+        Runs a scraping operation with custom configuration.
+
+        Args:
+            item: Scrape queue item
+        """
+        if not item.id:
+            logger.error("Cannot process scrape item without ID")
+            return
+
+        # Get scrape configuration
+        scrape_config = item.scrape_config
+        if not scrape_config:
+            # Use defaults
+            from job_finder.queue.models import ScrapeConfig
+
+            scrape_config = ScrapeConfig()
+
+        logger.info(f"Starting scrape with config: {scrape_config.model_dump()}")
+
+        try:
+            # Override AI match score if specified
+            original_min_score = self.ai_matcher.min_match_score
+            if scrape_config.min_match_score is not None:
+                logger.info(
+                    f"Overriding min_match_score: {original_min_score} -> "
+                    f"{scrape_config.min_match_score}"
+                )
+                self.ai_matcher.min_match_score = scrape_config.min_match_score
+
+            # Run scrape
+            stats = self.scrape_runner.run_scrape(
+                target_matches=scrape_config.target_matches or 5,
+                max_sources=scrape_config.max_sources or 20,
+                source_ids=scrape_config.source_ids,
+            )
+
+            # Restore original min score
+            self.ai_matcher.min_match_score = original_min_score
+
+            # Update queue item with success
+            result_message = (
+                f"Scrape completed: {stats['jobs_saved']} jobs saved, "
+                f"{stats['sources_scraped']} sources scraped"
+            )
+
+            self.queue_manager.update_status(
+                item.id, QueueStatus.SUCCESS, result_message, scraped_data=stats
+            )
+
+            logger.info(f"Scrape completed successfully: {result_message}")
+
+        except Exception as e:
+            logger.error(f"Error processing scrape request: {e}")
+            raise

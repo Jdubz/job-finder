@@ -289,9 +289,13 @@ def run_hourly_scrape(config: Dict[str, Any]) -> Dict[str, Any]:
     company_info_fetcher = CompanyInfoFetcher(ai_provider=provider, ai_config=ai_config)
     logger.info("✓ AI matcher initialized")
 
+    # Get scheduler settings from config (before getting sources)
+    scheduler_config = config.get("scheduler", {})
+    max_sources = scheduler_config.get("max_sources_per_run", 20)
+
     # Get next sources to scrape (rotation)
     logger.info("\n📋 Getting next sources to scrape...")
-    sources = get_next_sources(sources_manager, limit=20)
+    sources = get_next_sources(sources_manager, limit=max_sources)
     logger.info(f"✓ Found {len(sources)} sources in rotation")
 
     # Scraping stats
@@ -307,8 +311,11 @@ def run_hourly_scrape(config: Dict[str, Any]) -> Dict[str, Any]:
         "errors": [],
     }
 
-    # Scrape until we find 5 potential matches or run out of sources
-    target_matches = 5
+    # Get target matches setting (max_sources already retrieved above)
+    target_matches = scheduler_config.get("target_matches", 5)
+    logger.info(f"Scheduler settings: target_matches={target_matches}, max_sources={max_sources}")
+
+    # Scrape until we find target potential matches or run out of sources
     potential_matches = 0  # Tracks jobs that went to AI analysis
 
     for source in sources:
