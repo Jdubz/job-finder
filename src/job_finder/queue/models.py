@@ -1,13 +1,14 @@
 """
 Pydantic models for queue items.
 
-These models are derived from TypeScript definitions in @jdubz/shared-types.
-See: /home/jdubz/Development/shared-types/src/queue.types.ts
+These models are derived from TypeScript definitions in @jdubz/job-finder-shared-types.
+See: https://github.com/Jdubz/job-finder-shared-types/blob/main/src/queue.types.ts
 
 IMPORTANT: TypeScript types are the source of truth. When modifying queue schema:
-1. Update TypeScript first in shared-types repository
-2. Update these Python models to match
-3. Test compatibility with portfolio project
+1. Update TypeScript first in shared-types GitHub repository
+2. Create PR, merge, and publish new npm version
+3. Update these Python models to match
+4. Test compatibility with portfolio project
 """
 
 from datetime import datetime
@@ -58,7 +59,7 @@ class JobQueueItem(BaseModel):
     Items are processed in FIFO order (oldest created_at first).
 
     IMPORTANT: This model must match the TypeScript QueueItem interface exactly.
-    See: /home/jdubz/Development/shared-types/src/queue.types.ts
+    See: https://github.com/Jdubz/job-finder-shared-types/blob/main/src/queue.types.ts
     """
 
     # Identity
