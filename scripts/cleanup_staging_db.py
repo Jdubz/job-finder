@@ -175,7 +175,9 @@ class StagingDBCleanup:
         logger.info("=" * 80)
         logger.info("CLEANUP COMPLETE")
         logger.info("=" * 80)
-        logger.info(f"Backup file: {BACKUP_DIR / f'job_matches_backup_{self.backup_timestamp}.json'}")
+        logger.info(
+            f"Backup file: {BACKUP_DIR / f'job_matches_backup_{self.backup_timestamp}.json'}"
+        )
         logger.info(f"Original job count: {len(job_matches)}")
         logger.info("")
         logger.info("Next steps:")

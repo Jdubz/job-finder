@@ -90,7 +90,9 @@ def trigger_hourly_scrape(config: dict) -> dict:
     target_matches = scheduler_config.get("target_matches", 5)
     max_sources = scheduler_config.get("max_sources_per_run", 20)
 
-    logger.info(f"Creating SCRAPE request: target_matches={target_matches}, max_sources={max_sources}")
+    logger.info(
+        f"Creating SCRAPE request: target_matches={target_matches}, max_sources={max_sources}"
+    )
 
     # Create scrape configuration
     scrape_config = ScrapeConfig(

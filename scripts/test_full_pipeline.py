@@ -158,9 +158,7 @@ class PipelineTester:
                 )
 
             except Exception as e:
-                logger.error(
-                    f"[{i}/{len(jobs_to_submit)}] Error queueing {job.get('title')}: {e}"
-                )
+                logger.error(f"[{i}/{len(jobs_to_submit)}] Error queueing {job.get('title')}: {e}")
 
         logger.info(f"Submitted {len(queue_ids)} jobs to queue")
         return queue_ids
@@ -282,9 +280,7 @@ class PipelineTester:
             "medium_priority": sum(1 for j in jobs_list if j["priority"] == "Medium"),
             "low_priority": sum(1 for j in jobs_list if j["priority"] == "Low"),
             "avg_match_score": (
-                sum(j["match_score"] for j in jobs_list) / len(jobs_list)
-                if jobs_list
-                else 0
+                sum(j["match_score"] for j in jobs_list) / len(jobs_list) if jobs_list else 0
             ),
             "jobs": jobs_list,
         }

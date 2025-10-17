@@ -4,13 +4,13 @@ import logging
 import traceback
 from typing import Any, Dict, Optional
 
-from job_finder.ai import AIJobMatcher
+from job_finder.ai import AIJobMatcher, AITask, create_provider
 from job_finder.company_info_fetcher import CompanyInfoFetcher
 from job_finder.filters import StrikeFilterEngine
 from job_finder.profile.schema import Profile
 from job_finder.queue.config_loader import ConfigLoader
 from job_finder.queue.manager import QueueManager
-from job_finder.queue.models import JobQueueItem, QueueItemType, QueueStatus
+from job_finder.queue.models import JobQueueItem, JobSubTask, QueueItemType, QueueStatus
 from job_finder.scrape_runner import ScrapeRunner
 from job_finder.storage import FirestoreJobStorage
 from job_finder.storage.companies_manager import CompaniesManager
@@ -109,13 +109,20 @@ class QueueItemProcessor:
                 )
                 return
 
-            # Process based on type
+            # Process based on type and sub_task
             if item.type == QueueItemType.COMPANY:
                 self._process_company(item)
             elif item.type == QueueItemType.JOB:
-                self._process_job(item)
+                # Check if this is a granular pipeline item
+                if item.sub_task:
+                    self._process_granular_job(item)
+                else:
+                    # Legacy monolithic processing
+                    self._process_job(item)
             elif item.type == QueueItemType.SCRAPE:
                 self._process_scrape(item)
+            elif item.type == QueueItemType.SOURCE_DISCOVERY:
+                self._process_source_discovery(item)
             else:
                 raise ValueError(f"Unknown item type: {item.type}")
 
@@ -663,3 +670,700 @@ class QueueItemProcessor:
         except Exception as e:
             logger.error(f"Error processing scrape request: {e}")
             raise
+
+    # ========================================================================
+    # Granular Pipeline Processors
+    # ========================================================================
+
+    def _process_granular_job(self, item: JobQueueItem) -> None:
+        """
+        Route granular pipeline job to appropriate processor.
+
+        Args:
+            item: Job queue item with sub_task specified
+        """
+        if not item.sub_task:
+            raise ValueError("sub_task required for granular processing")
+
+        if item.sub_task == JobSubTask.SCRAPE:
+            self._process_job_scrape(item)
+        elif item.sub_task == JobSubTask.FILTER:
+            self._process_job_filter(item)
+        elif item.sub_task == JobSubTask.ANALYZE:
+            self._process_job_analyze(item)
+        elif item.sub_task == JobSubTask.SAVE:
+            self._process_job_save(item)
+        else:
+            raise ValueError(f"Unknown sub_task: {item.sub_task}")
+
+    def _process_job_scrape(self, item: JobQueueItem) -> None:
+        """
+        JOB_SCRAPE: Fetch HTML and extract basic job data.
+
+        Uses Claude Haiku (cheap, fast) for structured data extraction.
+        Spawns JOB_FILTER as next step.
+
+        Args:
+            item: Job queue item with sub_task=SCRAPE
+        """
+        if not item.id:
+            logger.error("Cannot process item without ID")
+            return
+
+        logger.info(f"JOB_SCRAPE: Extracting job data from {item.url[:50]}...")
+
+        try:
+            # Get source configuration for this URL
+            source = self.sources_manager.get_source_for_url(item.url)
+
+            if source:
+                # Use source-specific scraping method
+                job_data = self._scrape_with_source_config(item.url, source)
+            else:
+                # Fall back to generic scraping (or use AI extraction)
+                job_data = self._scrape_job(item)
+
+            if not job_data:
+                error_msg = "Could not scrape job details from URL"
+                error_details = f"Failed to extract data from: {item.url}"
+                self.queue_manager.update_status(
+                    item.id, QueueStatus.FAILED, error_msg, error_details=error_details
+                )
+                return
+
+            # Prepare pipeline state for next step
+            pipeline_state = {
+                "job_data": job_data,
+                "scrape_method": source.get("name") if source else "generic",
+            }
+
+            # Mark this step complete
+            self.queue_manager.update_status(
+                item.id,
+                QueueStatus.SUCCESS,
+                "Job data scraped successfully",
+            )
+
+            # Spawn next pipeline step (FILTER)
+            self.queue_manager.spawn_next_pipeline_step(
+                current_item=item,
+                next_sub_task=JobSubTask.FILTER,
+                pipeline_state=pipeline_state,
+            )
+
+            logger.info(
+                f"JOB_SCRAPE complete: {job_data.get('title')} at {job_data.get('company')}"
+            )
+
+        except Exception as e:
+            logger.error(f"Error in JOB_SCRAPE: {e}")
+            raise
+
+    def _process_job_filter(self, item: JobQueueItem) -> None:
+        """
+        JOB_FILTER: Apply strike-based filtering.
+
+        No AI used - pure rule-based filtering.
+        Spawns JOB_ANALYZE if passed, or marks FILTERED if failed.
+
+        Args:
+            item: Job queue item with sub_task=FILTER
+        """
+        if not item.id or not item.pipeline_state:
+            logger.error("Cannot process FILTER without ID or pipeline_state")
+            return
+
+        job_data = item.pipeline_state.get("job_data")
+        if not job_data:
+            logger.error("No job_data in pipeline_state")
+            return
+
+        logger.info(f"JOB_FILTER: Evaluating {job_data.get('title')} at {job_data.get('company')}")
+
+        try:
+            # Run strike-based filter
+            filter_result = self.filter_engine.evaluate_job(job_data)
+
+            if not filter_result.passed:
+                # Job rejected by filters
+                rejection_summary = filter_result.get_rejection_summary()
+                rejection_data = filter_result.to_dict()
+
+                logger.info(f"JOB_FILTER: Rejected - {rejection_summary}")
+
+                self.queue_manager.update_status(
+                    item.id,
+                    QueueStatus.FILTERED,
+                    f"Rejected by filters: {rejection_summary}",
+                    scraped_data={"job_data": job_data, "filter_result": rejection_data},
+                )
+                return
+
+            # Filter passed - prepare for AI analysis
+            pipeline_state = {
+                **item.pipeline_state,
+                "filter_result": filter_result.to_dict(),
+            }
+
+            # Mark this step complete
+            self.queue_manager.update_status(
+                item.id,
+                QueueStatus.SUCCESS,
+                "Passed filtering",
+            )
+
+            # Spawn next pipeline step (ANALYZE)
+            self.queue_manager.spawn_next_pipeline_step(
+                current_item=item,
+                next_sub_task=JobSubTask.ANALYZE,
+                pipeline_state=pipeline_state,
+            )
+
+            logger.info(f"JOB_FILTER complete: Passed with {filter_result.total_strikes} strikes")
+
+        except Exception as e:
+            logger.error(f"Error in JOB_FILTER: {e}")
+            raise
+
+    def _process_job_analyze(self, item: JobQueueItem) -> None:
+        """
+        JOB_ANALYZE: Run AI matching and resume intake generation.
+
+        Uses Claude Sonnet (expensive, high quality) for detailed analysis.
+        Spawns JOB_SAVE if score meets threshold, or marks SKIPPED if below.
+
+        Args:
+            item: Job queue item with sub_task=ANALYZE
+        """
+        if not item.id or not item.pipeline_state:
+            logger.error("Cannot process ANALYZE without ID or pipeline_state")
+            return
+
+        job_data = item.pipeline_state.get("job_data")
+        if not job_data:
+            logger.error("No job_data in pipeline_state")
+            return
+
+        logger.info(f"JOB_ANALYZE: Analyzing {job_data.get('title')} at {job_data.get('company')}")
+
+        try:
+            # Ensure company exists
+            company_name = job_data.get("company", item.company_name)
+            company_website = job_data.get("company_website", "")
+
+            if company_name and company_website:
+                company = self.companies_manager.get_or_create_company(
+                    company_name=company_name,
+                    company_website=company_website,
+                    fetch_info_func=self.company_info_fetcher.fetch_company_info,
+                )
+                company_id = company.get("id")
+                job_data["companyId"] = company_id
+                job_data["company_info"] = self._build_company_info_string(company)
+
+            # Run AI matching (uses configured model - Sonnet by default)
+            result = self.ai_matcher.analyze_job(job_data)
+
+            if not result:
+                # Below match threshold
+                self.queue_manager.update_status(
+                    item.id,
+                    QueueStatus.SKIPPED,
+                    f"Job score below threshold (< {self.ai_matcher.min_match_score})",
+                )
+                return
+
+            # Prepare pipeline state with analysis results
+            pipeline_state = {
+                **item.pipeline_state,
+                "match_result": result.to_dict(),
+            }
+
+            # Mark this step complete
+            self.queue_manager.update_status(
+                item.id,
+                QueueStatus.SUCCESS,
+                f"AI analysis complete (score: {result.match_score})",
+            )
+
+            # Spawn next pipeline step (SAVE)
+            self.queue_manager.spawn_next_pipeline_step(
+                current_item=item,
+                next_sub_task=JobSubTask.SAVE,
+                pipeline_state=pipeline_state,
+            )
+
+            logger.info(
+                f"JOB_ANALYZE complete: Score {result.match_score}, "
+                f"Priority {result.application_priority}"
+            )
+
+        except Exception as e:
+            logger.error(f"Error in JOB_ANALYZE: {e}")
+            raise
+
+    def _process_job_save(self, item: JobQueueItem) -> None:
+        """
+        JOB_SAVE: Save job match to Firestore.
+
+        Final step - no further spawning.
+
+        Args:
+            item: Job queue item with sub_task=SAVE
+        """
+        if not item.id or not item.pipeline_state:
+            logger.error("Cannot process SAVE without ID or pipeline_state")
+            return
+
+        job_data = item.pipeline_state.get("job_data")
+        match_result_dict = item.pipeline_state.get("match_result")
+
+        if not job_data or not match_result_dict:
+            logger.error("Missing job_data or match_result in pipeline_state")
+            return
+
+        logger.info(f"JOB_SAVE: Saving {job_data.get('title')} at {job_data.get('company')}")
+
+        try:
+            # Reconstruct JobMatchResult from dict
+            from job_finder.ai.matcher import JobMatchResult
+
+            result = JobMatchResult(**match_result_dict)
+
+            # Save to job-matches
+            doc_id = self.job_storage.save_job_match(job_data, result)
+
+            logger.info(
+                f"Job matched and saved: {job_data.get('title')} at {job_data.get('company')} "
+                f"(Score: {result.match_score}, ID: {doc_id})"
+            )
+
+            self.queue_manager.update_status(
+                item.id,
+                QueueStatus.SUCCESS,
+                f"Job saved successfully (ID: {doc_id}, Score: {result.match_score})",
+            )
+
+        except Exception as e:
+            logger.error(f"Error in JOB_SAVE: {e}")
+            raise
+
+    def _scrape_with_source_config(
+        self, url: str, source: Dict[str, Any]
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Scrape job using source-specific configuration.
+
+        Args:
+            url: Job URL
+            source: Source configuration with selectors
+
+        Returns:
+            Job data dict or None if scraping failed
+        """
+        try:
+            import requests
+            from bs4 import BeautifulSoup
+
+            config = source.get("config", {})
+            selectors = config.get("selectors", {})
+
+            if not selectors:
+                # No selectors, fall back to generic
+                logger.debug(f"No selectors for source {source.get('name')}, using generic scrape")
+                return None
+
+            # Fetch HTML
+            response = requests.get(url, timeout=30)
+            response.raise_for_status()
+            soup = BeautifulSoup(response.text, "html.parser")
+
+            # Extract data using selectors
+            job_data = {
+                "url": url,
+                "title": self._extract_with_selector(soup, selectors.get("title")),
+                "company": self._extract_with_selector(soup, selectors.get("company")),
+                "location": self._extract_with_selector(soup, selectors.get("location")),
+                "description": self._extract_with_selector(soup, selectors.get("description")),
+                "salary": self._extract_with_selector(soup, selectors.get("salary")),
+                "posted_date": self._extract_with_selector(soup, selectors.get("posted_date")),
+            }
+
+            # Remove None values
+            job_data = {k: v for k, v in job_data.items() if v is not None}
+
+            if not job_data.get("title") or not job_data.get("description"):
+                logger.warning("Missing required fields (title/description) from selector scrape")
+                return None
+
+            return job_data
+
+        except Exception as e:
+            logger.error(f"Error scraping with source config: {e}")
+            return None
+
+    def _extract_with_selector(self, soup: Any, selector: Optional[str]) -> Optional[str]:
+        """
+        Extract text using CSS selector.
+
+        Args:
+            soup: BeautifulSoup object
+            selector: CSS selector string
+
+        Returns:
+            Extracted text or None
+        """
+        if not selector:
+            return None
+
+        try:
+            element = soup.select_one(selector)
+            if element:
+                return element.get_text(strip=True)
+        except Exception as e:
+            logger.debug(f"Failed to extract with selector '{selector}': {e}")
+
+        return None
+
+    # ========================================================================
+    # Source Discovery Processor
+    # ========================================================================
+
+    def _process_source_discovery(self, item: JobQueueItem) -> None:
+        """
+        Process SOURCE_DISCOVERY queue item.
+
+        Flow:
+        1. Fetch URL and detect source type
+        2. For known types (GH/WD/RSS): validate and create config
+        3. For generic HTML: use AI selector discovery
+        4. Test scrape to validate configuration
+        5. Create job-source document if successful
+
+        Args:
+            item: Queue item with source_discovery_config
+        """
+        if not item.id or not item.source_discovery_config:
+            logger.error("Cannot process SOURCE_DISCOVERY without ID or config")
+            return
+
+        config = item.source_discovery_config
+        url = config.url
+
+        logger.info(f"SOURCE_DISCOVERY: Processing {url}")
+
+        try:
+            from job_finder.utils.source_type_detector import SourceTypeDetector
+
+            # Validate URL
+            if not SourceTypeDetector.is_valid_url(url):
+                self.queue_manager.update_status(
+                    item.id,
+                    QueueStatus.FAILED,
+                    "Invalid URL format",
+                    error_details=f"URL is not valid: {url}",
+                )
+                return
+
+            # Detect source type
+            source_type, source_config = SourceTypeDetector.detect(url, config.type_hint)
+
+            logger.info(f"Detected source type: {source_type} for {url}")
+
+            # Extract company name if not provided
+            company_name = config.company_name or SourceTypeDetector.get_company_name_from_url(url)
+
+            # Process based on detected type
+            if source_type == "greenhouse":
+                success, source_id, message = self._discover_greenhouse_source(
+                    url, source_config, config, company_name
+                )
+            elif source_type == "workday":
+                success, source_id, message = self._discover_workday_source(
+                    url, source_config, config, company_name
+                )
+            elif source_type == "rss":
+                success, source_id, message = self._discover_rss_source(
+                    url, source_config, config, company_name
+                )
+            else:  # generic
+                success, source_id, message = self._discover_generic_source(
+                    url, source_config, config, company_name
+                )
+
+            if success:
+                # Update queue item with success
+                self.queue_manager.update_status(
+                    item.id,
+                    QueueStatus.SUCCESS,
+                    source_id,  # Return source ID in result_message for portfolio
+                    scraped_data={"source_id": source_id, "source_type": source_type},
+                )
+                logger.info(f"SOURCE_DISCOVERY complete: Created source {source_id}")
+            else:
+                # Discovery failed
+                self.queue_manager.update_status(
+                    item.id, QueueStatus.FAILED, message, error_details=f"Source: {url}"
+                )
+                logger.warning(f"SOURCE_DISCOVERY failed: {message}")
+
+        except Exception as e:
+            logger.error(f"Error in SOURCE_DISCOVERY: {e}")
+            raise
+
+    def _discover_greenhouse_source(
+        self,
+        url: str,
+        source_config: Dict[str, str],
+        discovery_config: Any,
+        company_name: Optional[str],
+    ) -> tuple[bool, Optional[str], str]:
+        """
+        Discover and validate Greenhouse source.
+
+        Args:
+            url: Greenhouse board URL
+            source_config: Extracted config with board_token
+            discovery_config: SourceDiscoveryConfig from queue item
+            company_name: Company name
+
+        Returns:
+            (success, source_id, message)
+        """
+        try:
+            import requests
+
+            board_token = source_config.get("board_token")
+            if not board_token:
+                return False, None, "Could not extract board_token from URL"
+
+            # Validate by fetching Greenhouse API
+            api_url = f"https://boards-api.greenhouse.io/v1/boards/{board_token}/jobs"
+
+            response = requests.get(api_url, timeout=10)
+
+            if response.status_code != 200:
+                return (
+                    False,
+                    None,
+                    f"Greenhouse board not found (HTTP {response.status_code})",
+                )
+
+            jobs = response.json().get("jobs", [])
+
+            logger.info(f"Greenhouse board validated: {len(jobs)} jobs found")
+
+            # Create source
+            source_name = (
+                f"{company_name or board_token} Greenhouse"
+                if company_name
+                else f"{board_token} Greenhouse"
+            )
+
+            source_id = self.sources_manager.create_from_discovery(
+                name=source_name,
+                source_type="greenhouse",
+                config={"board_token": board_token},
+                discovered_via=discovery_config.source or "user_submission",
+                discovered_by=discovery_config.submitted_by,
+                discovery_confidence="high",  # Greenhouse is reliable
+                discovery_queue_item_id=discovery_config.id,
+                company_id=discovery_config.company_id,
+                company_name=company_name,
+                enabled=discovery_config.auto_enable,
+                validation_required=discovery_config.validation_required,
+            )
+
+            return True, source_id, f"Greenhouse source created ({len(jobs)} jobs available)"
+
+        except Exception as e:
+            logger.error(f"Error discovering Greenhouse source: {e}")
+            return False, None, f"Error validating Greenhouse board: {str(e)}"
+
+    def _discover_workday_source(
+        self,
+        url: str,
+        source_config: Dict[str, str],
+        discovery_config: Any,
+        company_name: Optional[str],
+    ) -> tuple[bool, Optional[str], str]:
+        """
+        Discover and validate Workday source.
+
+        Args:
+            url: Workday board URL
+            source_config: Extracted config with company_id, base_url
+            discovery_config: SourceDiscoveryConfig from queue item
+            company_name: Company name
+
+        Returns:
+            (success, source_id, message)
+        """
+        try:
+            # For Workday, we'll do basic validation
+            # Full Workday scraping requires more complex logic
+            company_id = source_config.get("company_id")
+            base_url = source_config.get("base_url")
+
+            if not company_id or not base_url:
+                return False, None, "Could not extract company_id or base_url from URL"
+
+            # Create source (enable with medium confidence - requires testing)
+            source_name = f"{company_name or company_id} Workday"
+
+            source_id = self.sources_manager.create_from_discovery(
+                name=source_name,
+                source_type="workday",
+                config={"company_id": company_id, "base_url": base_url},
+                discovered_via=discovery_config.source or "user_submission",
+                discovered_by=discovery_config.submitted_by,
+                discovery_confidence="medium",  # Workday needs validation
+                discovery_queue_item_id=discovery_config.id,
+                company_id=discovery_config.company_id,
+                company_name=company_name,
+                enabled=False,  # Workday requires manual validation
+                validation_required=True,
+            )
+
+            return (
+                True,
+                source_id,
+                "Workday source created (requires manual validation before enabling)",
+            )
+
+        except Exception as e:
+            logger.error(f"Error discovering Workday source: {e}")
+            return False, None, f"Error validating Workday board: {str(e)}"
+
+    def _discover_rss_source(
+        self,
+        url: str,
+        source_config: Dict[str, str],
+        discovery_config: Any,
+        company_name: Optional[str],
+    ) -> tuple[bool, Optional[str], str]:
+        """
+        Discover and validate RSS source.
+
+        Args:
+            url: RSS feed URL
+            source_config: Config with RSS URL
+            discovery_config: SourceDiscoveryConfig from queue item
+            company_name: Company name
+
+        Returns:
+            (success, source_id, message)
+        """
+        try:
+            import feedparser
+
+            # Parse RSS feed
+            feed = feedparser.parse(url)
+
+            if feed.bozo:  # Feed has errors
+                return False, None, f"Invalid RSS feed: {feed.bozo_exception}"
+
+            if not feed.entries:
+                return False, None, "RSS feed is empty (no entries found)"
+
+            logger.info(f"RSS feed validated: {len(feed.entries)} entries found")
+
+            # Create source
+            source_name = f"{company_name or 'RSS'} Feed"
+
+            source_id = self.sources_manager.create_from_discovery(
+                name=source_name,
+                source_type="rss",
+                config={"url": url, "parse_format": "standard"},
+                discovered_via=discovery_config.source or "user_submission",
+                discovered_by=discovery_config.submitted_by,
+                discovery_confidence="high",  # RSS is reliable if valid
+                discovery_queue_item_id=discovery_config.id,
+                company_id=discovery_config.company_id,
+                company_name=company_name,
+                enabled=discovery_config.auto_enable,
+                validation_required=discovery_config.validation_required,
+            )
+
+            return True, source_id, f"RSS source created ({len(feed.entries)} entries available)"
+
+        except Exception as e:
+            logger.error(f"Error discovering RSS source: {e}")
+            return False, None, f"Error validating RSS feed: {str(e)}"
+
+    def _discover_generic_source(
+        self,
+        url: str,
+        source_config: Dict[str, str],
+        discovery_config: Any,
+        company_name: Optional[str],
+    ) -> tuple[bool, Optional[str], str]:
+        """
+        Discover generic HTML source using AI selector discovery.
+
+        Args:
+            url: Career page URL
+            source_config: Config with base_url
+            discovery_config: SourceDiscoveryConfig from queue item
+            company_name: Company name
+
+        Returns:
+            (success, source_id, message)
+        """
+        try:
+            import requests
+            from job_finder.ai.selector_discovery import SelectorDiscovery
+
+            # Fetch HTML
+            response = requests.get(url, timeout=30)
+            response.raise_for_status()
+            html = response.text
+
+            # Use AI to discover selectors
+            discovery = SelectorDiscovery()
+            result = discovery.discover_selectors(html, url)
+
+            if not result:
+                return False, None, "AI selector discovery failed (could not find job listings)"
+
+            selectors = result.get("selectors", {})
+            confidence = result.get("confidence", "medium")
+
+            logger.info(f"AI discovered selectors with {confidence} confidence")
+
+            # Create source
+            source_name = f"{company_name or 'Generic'} Careers"
+
+            # Lower confidence sources should require validation
+            auto_enable = discovery_config.auto_enable and confidence == "high"
+            validation_required = discovery_config.validation_required or confidence != "high"
+
+            source_id = self.sources_manager.create_from_discovery(
+                name=source_name,
+                source_type="scraper",
+                config={
+                    "url": url,
+                    "method": "requests",
+                    "selectors": selectors,
+                    "discovered_by_ai": True,
+                },
+                discovered_via=discovery_config.source or "user_submission",
+                discovered_by=discovery_config.submitted_by,
+                discovery_confidence=confidence,
+                discovery_queue_item_id=discovery_config.id,
+                company_id=discovery_config.company_id,
+                company_name=company_name,
+                enabled=auto_enable,
+                validation_required=validation_required,
+            )
+
+            status = "enabled" if auto_enable else "pending validation"
+            return (
+                True,
+                source_id,
+                f"Generic scraper source created with {confidence} confidence ({status})",
+            )
+
+        except Exception as e:
+            logger.error(f"Error discovering generic source: {e}")
+            return False, None, f"Error discovering selectors: {str(e)}"
