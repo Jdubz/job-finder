@@ -5,13 +5,21 @@ on:
     branches:
       - main
     paths:
-      - 'firestore.indexes.portfolio.json'
+      - 'firestore.indexes.json'
       - '.github/workflows/deploy-firestore-indexes.yml'
-  workflow_dispatch:  # Allow manual trigger
+  workflow_dispatch:
+    inputs:
+      database:
+        description: 'Database to deploy to (portfolio or portfolio-staging)'
+        required: true
+        default: 'portfolio'
+        type: choice
+        options:
+          - portfolio
+          - portfolio-staging
 
 env:
   PROJECT_ID: static-sites-257923
-  PORTFOLIO_DATABASE: portfolio
 
 jobs:
   deploy-indexes:
@@ -32,23 +40,67 @@ jobs:
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
 
-      - name: Deploy indexes to portfolio database
-        run: |
-          # Use gcloud to create the composite index for portfolio database
-          gcloud firestore indexes composite create \
-            --project=${{ env.PROJECT_ID }} \
-            --database=${{ env.PORTFOLIO_DATABASE }} \
-            --collection-group=job-queue \
-            --query-scope=COLLECTION \
-            --field-config field-path=status,order=ascending \
-            --field-config field-path=created_at,order=ascending \
-            --field-config field-path=__name__,order=ascending \
-            --quiet || echo "Index may already exist or is being created"
+      - name: Install jq for JSON parsing
+        run: sudo apt-get update && sudo apt-get install -y jq
 
-      - name: Verify index creation
+      - name: Determine target database
+        id: database
         run: |
-          echo "Checking index status..."
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "database=${{ inputs.database }}" >> $GITHUB_OUTPUT
+          else
+            echo "database=portfolio" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Deploy indexes to database
+        run: |
+          DATABASE="${{ steps.database.outputs.database }}"
+          echo "=========================================="
+          echo "Deploying Firestore indexes to: $DATABASE"
+          echo "=========================================="
+          echo ""
+
+          # Parse and create each index from firestore.indexes.json
+          cat firestore.indexes.json | jq -c '.indexes[]' | while IFS= read -r index; do
+            COLLECTION=$(echo "$index" | jq -r '.collectionGroup')
+            echo "📦 Collection: $COLLECTION"
+
+            # Build gcloud command
+            CMD="gcloud firestore indexes composite create \
+              --project=${{ env.PROJECT_ID }} \
+              --database=$DATABASE \
+              --collection-group=$COLLECTION \
+              --query-scope=COLLECTION"
+
+            # Add each field configuration
+            echo "$index" | jq -c '.fields[]' | while IFS= read -r field; do
+              FIELD_PATH=$(echo "$field" | jq -r '.fieldPath')
+              ORDER=$(echo "$field" | jq -r '.order // empty')
+
+              if [ ! -z "$ORDER" ]; then
+                ORDER_LOWER=$(echo "$ORDER" | tr '[:upper:]' '[:lower:]')
+                echo "   • $FIELD_PATH ($ORDER_LOWER)"
+                CMD="$CMD --field-config field-path=$FIELD_PATH,order=$ORDER_LOWER"
+              fi
+            done
+
+            # Execute the command
+            eval "$CMD --quiet" 2>&1 | grep -v "ALREADY_EXISTS\|already exists" || echo "   ✓ Index created or already exists"
+            echo ""
+          done
+
+          echo "=========================================="
+          echo "Index deployment complete!"
+          echo "=========================================="
+
+      - name: List all indexes
+        run: |
+          DATABASE="${{ steps.database.outputs.database }}"
+          echo ""
+          echo "Current indexes in $DATABASE:"
+          echo "=========================================="
           gcloud firestore indexes composite list \
             --project=${{ env.PROJECT_ID }} \
-            --database=${{ env.PORTFOLIO_DATABASE }} \
-            --filter="collectionGroup:job-queue"
+            --database=$DATABASE \
+            --format="table(name.basename(),collectionGroup,state,fields)" \
+            | grep -E "job-queue|job-matches|job-sources|generator|NAME" || echo "No indexes found"

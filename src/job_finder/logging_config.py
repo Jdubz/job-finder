@@ -54,11 +54,14 @@ def setup_logging(
 
             # Create Cloud Logging handler
             cloud_handler = CloudLoggingHandler(client, name="job-finder")
+            # Set handler level to match root logger level (not just ERROR)
+            cloud_handler.setLevel(getattr(logging, log_level))
             handlers.append(cloud_handler)
 
             print(f"✅ Google Cloud Logging enabled - logs will appear in Google Cloud Console")
             print(f"   Project: {client.project}")
             print(f"   Log name: job-finder")
+            print(f"   Log level: {log_level}")
 
         except ImportError:
             print(
