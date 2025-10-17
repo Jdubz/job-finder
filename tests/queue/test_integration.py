@@ -64,7 +64,7 @@ class TestQueueWorkflow:
             }
         ]
 
-        count = scraper_intake.submit_jobs(jobs, source="test_scraper")
+        count = scraper_intake.submit_jobs(jobs, source="scraper")
 
         assert count == 1
 
@@ -130,14 +130,14 @@ class TestQueueWorkflow:
 
         jobs = [{"title": "Job 1", "url": "https://example.com/job/1", "company": "Test"}]
 
-        count1 = scraper_intake.submit_jobs(jobs, source="test")
+        count1 = scraper_intake.submit_jobs(jobs, source="scraper")
         assert count1 == 1
 
         # Second submission - duplicate found
         mock_duplicate = MagicMock()
         limit_stream.return_value = [mock_duplicate]
 
-        count2 = scraper_intake.submit_jobs(jobs, source="test")
+        count2 = scraper_intake.submit_jobs(jobs, source="scraper")
         assert count2 == 0  # Should skip duplicate
 
     def test_queue_status_updates(self, queue_manager, mock_firestore):
@@ -347,7 +347,7 @@ class TestErrorHandling:
         # Mock Firestore error on add
         mock_firestore.collection.return_value.add.side_effect = Exception("Firestore error")
 
-        item = JobQueueItem(type=QueueItemType.JOB, url="https://example.com/job", source="test")
+        item = JobQueueItem(type=QueueItemType.JOB, url="https://example.com/job", source="scraper")
 
         # Should raise exception
         with pytest.raises(Exception):
@@ -384,6 +384,6 @@ class TestErrorHandling:
         ]
 
         # Should add 2 jobs (skip the error)
-        count = scraper_intake.submit_jobs(jobs, source="test")
+        count = scraper_intake.submit_jobs(jobs, source="scraper")
 
         assert count == 2

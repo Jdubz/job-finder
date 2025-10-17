@@ -13,6 +13,7 @@ AI-powered Python web scraper that finds and analyzes job postings matching your
 
 **Key Integration Points:**
 - **Shared Database:** Both projects use the same Firestore instance (`portfolio` database)
+- **Shared Types:** Both projects reference `@jdubz/shared-types` for type definitions
 - **Profile Source:** Reads profile data from portfolio's `experience-entries` and `experience-blurbs` collections
 - **Job Queue:** Processes jobs submitted via portfolio's web interface
 - **Job Storage:** Writes analyzed matches to `job-matches` collection for portfolio UI display
@@ -21,7 +22,26 @@ AI-powered Python web scraper that finds and analyzes job postings matching your
 **Data Flow:**
 ```
 portfolio (profile data) → job-finder (scrape + analyze) → portfolio (display results)
+                    ↓                                           ↓
+           shared-types (TypeScript definitions - source of truth)
 ```
+
+### Shared Types
+**Location:** `/home/jdubz/Development/shared-types`
+**Purpose:** Single source of truth for TypeScript type definitions shared across projects
+**Language:** TypeScript
+**Version:** 0.1.0
+
+**Why Shared Types Matter:**
+- **Type Safety:** Ensures Python models match TypeScript interfaces exactly
+- **Documentation:** TypeScript types serve as authoritative schema reference
+- **Change Management:** Single place to update types that affect both projects
+- **Cross-Language Consistency:** Python models must mirror TypeScript definitions
+
+**Integration in Job-finder:**
+- Python models in `src/job_finder/queue/models.py` are **derived from** TypeScript types in `shared-types`
+- When modifying queue schemas, **update TypeScript first**, then update Python to match
+- TypeScript types are the **source of truth** - Python follows TypeScript
 
 ## Shared Firestore Collections
 
@@ -37,19 +57,47 @@ portfolio (profile data) → job-finder (scrape + analyze) → portfolio (displa
 - `companies`: Company info and metadata
 - `job-sources`: Job board source prioritization data
 
-## Common Types
+## Type System Architecture
 
-### Queue Types (shared with Portfolio)
-Python models in `src/job_finder/queue/models.py` correspond to TypeScript types in:
-- Portfolio: `functions/src/types/job-queue.types.ts` (backend)
-- Portfolio: `web/src/types/job-queue.ts` (frontend)
+### Source of Truth: @jdubz/shared-types
+All queue-related types are defined in the `shared-types` repository and must be kept in sync between TypeScript and Python.
 
-**Core Types:**
-- `JobQueueItem`: Queue entries with status tracking (maps to TS `QueueItem`)
-- `QueueStatus`: Enum with `PENDING`, `PROCESSING`, `SUCCESS`, `FAILED`, `SKIPPED`
-- `QueueItemType`: Enum with `JOB`, `COMPANY`
+**TypeScript (Authoritative):**
+- Location: `/home/jdubz/Development/shared-types/src/queue.types.ts`
+- Used by: Portfolio (TypeScript imports directly)
+- Purpose: Single source of truth for all type definitions
 
-**Important:** Keep Python and TypeScript types in sync when modifying queue schema.
+**Python (Derived):**
+- Location: `/home/jdubz/Development/job-finder/src/job_finder/queue/models.py`
+- Used by: Job-finder (Python models mirror TypeScript types)
+- Purpose: Runtime validation and Firestore serialization
+
+### Type Mapping Reference
+
+| TypeScript Type | Python Equivalent | Notes |
+|-----------------|-------------------|-------|
+| `QueueStatus` | `QueueStatus` | String enum with identical values |
+| `QueueItemType` | `QueueItemType` | String enum: "job", "company" |
+| `QueueSource` | `str` | Literal type in Python (see shared-types for valid values) |
+| `QueueItem` | `JobQueueItem` | Pydantic model matching TS interface exactly |
+| `Date \| any` | `Optional[datetime]` | Firestore timestamps converted automatically |
+
+### Keeping Types in Sync
+
+**When modifying queue schema:**
+1. **Update TypeScript first** in `shared-types/src/queue.types.ts`
+2. **Build shared-types**: `cd ../shared-types && npm run build`
+3. **Update Python** in `src/job_finder/queue/models.py` to match
+4. **Test both projects** to verify compatibility
+5. **Document changes** in both repositories
+
+**Common Sync Issues:**
+- Missing fields in Python model
+- Enum values don't match
+- Optional vs required fields differ
+- Timestamp handling inconsistencies
+
+**See:** `/home/jdubz/Development/shared-types/README.md` for complete type mapping guide
 
 ### Profile Types
 Python models in `src/job_finder/profile/schema.py`:
@@ -118,10 +166,12 @@ profile:
 ## Development Tips
 
 ### When Modifying Queue System
-- Update Python models in `src/job_finder/queue/models.py`
-- Check corresponding TypeScript types in portfolio repo
+- **ALWAYS update shared-types TypeScript definitions first**
+- Update Python models in `src/job_finder/queue/models.py` to match TypeScript
+- Rebuild shared-types: `cd ../shared-types && npm run build`
 - Test with portfolio UI to verify status updates display correctly
 - Check timestamp handling (Python datetime vs Firebase Timestamp)
+- Verify enum values match exactly between TypeScript and Python
 
 ### When Modifying Profile Schema
 - Update `src/job_finder/profile/schema.py`
@@ -164,8 +214,13 @@ python -m job_finder.main
 
 ### Portfolio Docs
 - Main: `/home/jdubz/Development/portfolio/CLAUDE.md`
+- Context: `/home/jdubz/Development/portfolio/.claude/context.md`
 - Integration Guide: `/home/jdubz/Development/portfolio/PORTFOLIO_INTEGRATION_GUIDE.md`
 - API Docs: `/home/jdubz/Development/portfolio/docs/development/ARCHITECTURE.md`
+
+### Shared Types Docs
+- README: `/home/jdubz/Development/shared-types/README.md`
+- Queue Types: `/home/jdubz/Development/shared-types/src/queue.types.ts`
 
 ### Integration Docs
 - Portfolio Integration: `/home/jdubz/Development/job-finder/docs/integrations/portfolio.md`
