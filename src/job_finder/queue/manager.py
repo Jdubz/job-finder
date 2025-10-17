@@ -370,3 +370,27 @@ class QueueManager:
         except Exception as e:
             logger.error(f"Error deleting queue item {item_id}: {e}")
             return False
+
+    def has_pending_scrape(self) -> bool:
+        """
+        Check if there is already a pending SCRAPE request in the queue.
+
+        Returns:
+            True if a pending SCRAPE exists, False otherwise
+        """
+        try:
+            from job_finder.queue.models import QueueItemType
+
+            query = (
+                self.db.collection(self.collection_name)
+                .where("type", "==", QueueItemType.SCRAPE.value)
+                .where("status", "==", QueueStatus.PENDING.value)
+                .limit(1)
+            )
+
+            docs = list(query.stream())
+            return len(docs) > 0
+
+        except Exception as e:
+            logger.error(f"Error checking for pending scrape: {e}")
+            return False

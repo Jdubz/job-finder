@@ -322,6 +322,7 @@ Comprehensive documentation is available in the [`docs/`](docs/) directory:
 - **[Queue System](docs/queue-system.md)** - Queue-based pipeline architecture and processing
 
 ### Deployment & Operations
+- **[Hourly Scraping](docs/hourly-scraping.md)** - Automated hourly job scraping with source rotation
 - **[Deployment Guide](docs/deployment.md)** - Docker deployment with Portainer
 - **[Environment Configuration](docs/guides/environments.md)** - Multi-environment setup (staging/production)
 - **[Local Testing](docs/guides/local-testing.md)** - Docker local testing guide

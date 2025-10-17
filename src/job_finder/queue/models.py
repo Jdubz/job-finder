@@ -13,7 +13,7 @@ IMPORTANT: TypeScript types are the source of truth. When modifying queue schema
 
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, Literal, Optional
+from typing import Any, Dict, List, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -23,11 +23,12 @@ class QueueItemType(str, Enum):
     Type of queue item.
 
     TypeScript equivalent: QueueItemType in queue.types.ts
-    Values must match exactly: "job" | "company"
+    Values must match exactly: "job" | "company" | "scrape"
     """
 
     JOB = "job"
     COMPANY = "company"
+    SCRAPE = "scrape"
 
 
 class QueueStatus(str, Enum):
@@ -58,6 +59,40 @@ class QueueStatus(str, Enum):
 QueueSource = Literal["user_submission", "automated_scan", "scraper", "webhook", "email"]
 
 
+class ScrapeConfig(BaseModel):
+    """
+    Configuration for a scrape request.
+
+    Used when QueueItemType is SCRAPE to specify custom scraping parameters.
+
+    Behavior:
+    - source_ids=None → scrape all available sources (with rotation)
+    - source_ids=[...] → scrape only specific sources
+    - target_matches=None → no early exit, scrape all allowed sources
+    - target_matches=N → stop after finding N potential matches
+    - max_sources=None → unlimited sources (until target_matches or all sources done)
+    - max_sources=N → stop after scraping N sources
+    """
+
+    target_matches: Optional[int] = Field(
+        default=5,
+        description="Stop after finding this many potential matches (None = no limit)",
+    )
+    max_sources: Optional[int] = Field(
+        default=20,
+        description="Maximum number of sources to scrape (None = unlimited)",
+    )
+    source_ids: Optional[List[str]] = Field(
+        default=None,
+        description="Specific source IDs to scrape (None = all sources with rotation)",
+    )
+    min_match_score: Optional[int] = Field(
+        default=None, description="Override minimum match score threshold"
+    )
+
+    model_config = ConfigDict(use_enum_values=True)
+
+
 class JobQueueItem(BaseModel):
     """
     Queue item representing a job or company to be processed.
@@ -86,8 +121,10 @@ class JobQueueItem(BaseModel):
     )
 
     # Input data
-    url: str = Field(description="URL to scrape (job posting or company page)")
-    company_name: str = Field(description="Company name")
+    url: str = Field(
+        default="", description="URL to scrape (job posting or company page, empty for SCRAPE type)"
+    )
+    company_name: str = Field(default="", description="Company name (empty for SCRAPE type)")
     company_id: Optional[str] = Field(default=None, description="Firestore company document ID")
     source: QueueSource = Field(
         default="scraper",
@@ -112,6 +149,11 @@ class JobQueueItem(BaseModel):
     # Optional scraped data (populated by scrapers or API submissions)
     scraped_data: Optional[Dict[str, Any]] = Field(
         default=None, description="Pre-scraped job or company data"
+    )
+
+    # Scrape configuration (only used when type is SCRAPE)
+    scrape_config: Optional[ScrapeConfig] = Field(
+        default=None, description="Configuration for scrape requests"
     )
 
     model_config = ConfigDict(use_enum_values=True)

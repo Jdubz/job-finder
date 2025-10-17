@@ -19,6 +19,7 @@ def mock_managers():
         "sources_manager": MagicMock(),
         "company_info_fetcher": MagicMock(),
         "ai_matcher": MagicMock(),
+        "profile": MagicMock(),  # Added profile parameter
     }
 
 
