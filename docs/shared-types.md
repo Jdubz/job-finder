@@ -2,21 +2,24 @@
 
 ## Overview
 
-The job-finder and portfolio projects share type definitions through the `@jdubz/shared-types` package. This document explains how the type system works and how to keep Python and TypeScript in sync.
+The job-finder and portfolio projects share type definitions through the `@jdubz/job-finder-shared-types` npm package. This document explains how the type system works and how to keep Python and TypeScript in sync.
 
 ## Architecture
 
 ### Single Source of Truth
 
-**TypeScript types in `@jdubz/shared-types` are the authoritative definitions.**
+**TypeScript types in `@jdubz/job-finder-shared-types` are the authoritative definitions.**
+
+**Repository:** https://github.com/Jdubz/job-finder-shared-types
 
 ```
-@jdubz/shared-types (TypeScript - Source of Truth)
+@jdubz/job-finder-shared-types (TypeScript - Source of Truth)
+    Repository: https://github.com/Jdubz/job-finder-shared-types
     ├── src/queue.types.ts          # Queue-related types
     └── dist/                        # Compiled JavaScript + TypeScript definitions
 
 Portfolio (TypeScript)
-    └── imports @jdubz/shared-types directly via npm
+    └── imports @jdubz/job-finder-shared-types directly via npm
 
 Job-finder (Python)
     └── mirrors TypeScript types with Python equivalents
@@ -88,7 +91,7 @@ QueueSource = Literal["user_submission", "automated_scan", "scraper", "webhook",
 
 TypeScript interfaces map to Pydantic BaseModel classes:
 
-**TypeScript (shared-types/src/queue.types.ts):**
+**TypeScript (https://github.com/Jdubz/job-finder-shared-types/blob/main/src/queue.types.ts):**
 ```typescript
 export interface QueueItem {
   id?: string
@@ -154,35 +157,47 @@ class JobQueueItem(BaseModel):
 
 **ALWAYS follow this order:**
 
-1. **Update TypeScript first** in `shared-types/src/queue.types.ts`
+1. **Update TypeScript first** in the shared-types repository
    ```bash
-   cd /home/jdubz/Development/shared-types
+   # Clone the repo if you haven't already
+   git clone https://github.com/Jdubz/job-finder-shared-types.git
+   cd job-finder-shared-types
+
+   # Create feature branch and edit types
+   git checkout -b feature/update-queue-types
    # Edit src/queue.types.ts
    ```
 
-2. **Build shared-types**
+2. **Create PR and merge to main**
    ```bash
-   npm run build
+   git add src/queue.types.ts
+   git commit -m "feat: update queue types"
+   git push origin feature/update-queue-types
+   # Create PR on GitHub and merge
    ```
 
-3. **Update Python models** in `src/job_finder/queue/models.py`
+3. **Publish new version to npm**
+   - GitHub Actions will automatically publish when PR is merged to main
+   - Or manually: `npm version patch && npm publish`
+
+4. **Update Python models** in `src/job_finder/queue/models.py`
    ```bash
    cd /home/jdubz/Development/job-finder
-   # Edit src/job_finder/queue/models.py to match TypeScript
+   # Edit src/job_finder/queue/models.py to match TypeScript changes
    ```
 
-4. **Test both projects**
+5. **Test both projects**
    ```bash
    # Test job-finder
    cd /home/jdubz/Development/job-finder
    pytest tests/queue/
 
-   # Test portfolio (if types are imported)
+   # Test portfolio (after updating @jdubz/job-finder-shared-types version)
    cd /home/jdubz/Development/portfolio
    npm test
    ```
 
-5. **Verify integration**
+6. **Verify integration**
    - Run queue processor and check Firestore data structure
    - Verify portfolio UI displays queue data correctly
    - Check that status updates work in both directions
@@ -268,7 +283,7 @@ item = JobQueueItem.from_firestore(doc.id, data)
 ### Reading from Firestore (Firestore → TypeScript)
 
 ```typescript
-import { QueueItem } from '@jdubz/shared-types'
+import { QueueItem } from '@jdubz/job-finder-shared-types'
 
 // Get document from Firestore
 const doc = await db.collection('job-queue').doc(docId).get()
@@ -279,7 +294,7 @@ const item = doc.data() as QueueItem
 
 ### Queue Types (queue.types.ts)
 
-All queue-related types from `@jdubz/shared-types`:
+All queue-related types from `@jdubz/job-finder-shared-types`:
 
 - **`QueueStatus`** - Status enum for queue processing
 - **`QueueItemType`** - Type of queue item (job or company)
@@ -292,7 +307,7 @@ All queue-related types from `@jdubz/shared-types`:
 - **`QueueStats`** - Queue statistics
 - **`SubmitJobRequest`** / **`SubmitJobResponse`** - API types
 
-See `/home/jdubz/Development/shared-types/src/queue.types.ts` for complete definitions.
+See https://github.com/Jdubz/job-finder-shared-types/blob/main/src/queue.types.ts for complete definitions.
 
 ## Testing Type Compatibility
 
@@ -375,12 +390,13 @@ data = item.to_firestore()  # Handles datetime conversion
 
 ## Related Documentation
 
-- **Shared Types README:** `/home/jdubz/Development/shared-types/README.md`
-- **Queue Types (TypeScript):** `/home/jdubz/Development/shared-types/src/queue.types.ts`
+- **Shared Types Repository:** https://github.com/Jdubz/job-finder-shared-types
+- **Shared Types README:** https://github.com/Jdubz/job-finder-shared-types#readme
+- **Queue Types (TypeScript):** https://github.com/Jdubz/job-finder-shared-types/blob/main/src/queue.types.ts
 - **Python Models:** `/home/jdubz/Development/job-finder/src/job_finder/queue/models.py`
 - **Context Document:** `/home/jdubz/Development/job-finder/.claude/context.md`
 - **Portfolio Integration:** `/home/jdubz/Development/job-finder/docs/integrations/portfolio.md`
 
 ---
 
-**Last Updated:** 2025-10-16
+**Last Updated:** 2025-10-17

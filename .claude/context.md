@@ -27,10 +27,10 @@ portfolio (profile data) → job-finder (scrape + analyze) → portfolio (displa
 ```
 
 ### Shared Types
-**Location:** `/home/jdubz/Development/shared-types`
+**Repository:** https://github.com/Jdubz/job-finder-shared-types
 **Purpose:** Single source of truth for TypeScript type definitions shared across projects
 **Language:** TypeScript
-**Version:** 0.1.0
+**Package:** `@jdubz/job-finder-shared-types`
 
 **Why Shared Types Matter:**
 - **Type Safety:** Ensures Python models match TypeScript interfaces exactly
@@ -39,8 +39,8 @@ portfolio (profile data) → job-finder (scrape + analyze) → portfolio (displa
 - **Cross-Language Consistency:** Python models must mirror TypeScript definitions
 
 **Integration in Job-finder:**
-- Python models in `src/job_finder/queue/models.py` are **derived from** TypeScript types in `shared-types`
-- When modifying queue schemas, **update TypeScript first**, then update Python to match
+- Python models in `src/job_finder/queue/models.py` are **derived from** TypeScript types in `@jdubz/job-finder-shared-types`
+- When modifying queue schemas, **update TypeScript first** in the shared-types repo, then update Python to match
 - TypeScript types are the **source of truth** - Python follows TypeScript
 
 ## Shared Firestore Collections
@@ -59,12 +59,13 @@ portfolio (profile data) → job-finder (scrape + analyze) → portfolio (displa
 
 ## Type System Architecture
 
-### Source of Truth: @jdubz/shared-types
-All queue-related types are defined in the `shared-types` repository and must be kept in sync between TypeScript and Python.
+### Source of Truth: @jdubz/job-finder-shared-types
+All queue-related types are defined in the shared-types GitHub repository and must be kept in sync between TypeScript and Python.
 
 **TypeScript (Authoritative):**
-- Location: `/home/jdubz/Development/shared-types/src/queue.types.ts`
-- Used by: Portfolio (TypeScript imports directly)
+- Repository: https://github.com/Jdubz/job-finder-shared-types
+- Package: `@jdubz/job-finder-shared-types`
+- Used by: Portfolio (TypeScript imports directly from npm package)
 - Purpose: Single source of truth for all type definitions
 
 **Python (Derived):**
@@ -85,11 +86,12 @@ All queue-related types are defined in the `shared-types` repository and must be
 ### Keeping Types in Sync
 
 **When modifying queue schema:**
-1. **Update TypeScript first** in `shared-types/src/queue.types.ts`
-2. **Build shared-types**: `cd ../shared-types && npm run build`
-3. **Update Python** in `src/job_finder/queue/models.py` to match
-4. **Test both projects** to verify compatibility
-5. **Document changes** in both repositories
+1. **Update TypeScript first** in https://github.com/Jdubz/job-finder-shared-types
+2. **Create PR and merge** changes to shared-types repo
+3. **Publish new version** to npm (automated via GitHub Actions)
+4. **Update Python** in `src/job_finder/queue/models.py` to match the TypeScript changes
+5. **Test both projects** to verify compatibility
+6. **Document changes** in both repositories
 
 **Common Sync Issues:**
 - Missing fields in Python model
@@ -97,7 +99,7 @@ All queue-related types are defined in the `shared-types` repository and must be
 - Optional vs required fields differ
 - Timestamp handling inconsistencies
 
-**See:** `/home/jdubz/Development/shared-types/README.md` for complete type mapping guide
+**See:** https://github.com/Jdubz/job-finder-shared-types for complete type mapping guide
 
 ### Profile Types
 Python models in `src/job_finder/profile/schema.py`:
@@ -219,8 +221,9 @@ python -m job_finder.main
 - API Docs: `/home/jdubz/Development/portfolio/docs/development/ARCHITECTURE.md`
 
 ### Shared Types Docs
-- README: `/home/jdubz/Development/shared-types/README.md`
-- Queue Types: `/home/jdubz/Development/shared-types/src/queue.types.ts`
+- Repository: https://github.com/Jdubz/job-finder-shared-types
+- README: https://github.com/Jdubz/job-finder-shared-types#readme
+- Queue Types: https://github.com/Jdubz/job-finder-shared-types/blob/main/src/queue.types.ts
 
 ### Integration Docs
 - Portfolio Integration: `/home/jdubz/Development/job-finder/docs/integrations/portfolio.md`
