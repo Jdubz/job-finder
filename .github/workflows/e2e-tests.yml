@@ -1,0 +1,158 @@
+name: E2E Tests
+
+on:
+  # Run on pull requests to staging/main
+  pull_request:
+    branches:
+      - staging
+      - main
+
+  # Run on push to staging
+  push:
+    branches:
+      - staging
+
+  # Allow manual trigger
+  workflow_dispatch:
+    inputs:
+      database:
+        description: 'Firestore database name'
+        required: false
+        default: 'portfolio-staging'
+      scenarios:
+        description: 'Specific scenarios to run (space-separated, leave empty for all)'
+        required: false
+        default: ''
+
+  # Run nightly
+  schedule:
+    - cron: '0 6 * * *'  # 6 AM UTC daily
+
+jobs:
+  e2e-tests:
+    name: Run E2E Test Suite
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    env:
+      GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/gcp-key.json
+      DATABASE_NAME: ${{ github.event.inputs.database || 'portfolio-staging' }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install job-finder dependencies
+        run: |
+          # Clone job-finder repo (or use workspace if already checked out)
+          if [ ! -d "../job-finder" ]; then
+            git clone https://github.com/Jdubz/job-finder.git ../job-finder
+          fi
+
+          cd ../job-finder
+          pip install -r requirements.txt
+          pip install -e .
+
+      - name: Install test dependencies
+        run: |
+          pip install -r requirements-test.txt || echo "No test requirements file"
+
+      - name: Configure GCP credentials
+        env:
+          GCP_SA_KEY: ${{ secrets.GCP_SA_KEY_STAGING }}
+        run: |
+          echo "$GCP_SA_KEY" > gcp-key.json
+          chmod 600 gcp-key.json
+
+      - name: Run E2E tests
+        id: tests
+        run: |
+          cd tests/e2e
+
+          # Build command with optional scenarios
+          CMD="python run_all_scenarios.py --database $DATABASE_NAME --verbose"
+
+          if [ -n "${{ github.event.inputs.scenarios }}" ]; then
+            CMD="$CMD --scenarios ${{ github.event.inputs.scenarios }}"
+          fi
+
+          echo "Running: $CMD"
+          $CMD
+        continue-on-error: true
+
+      - name: Clean up test data
+        if: always()
+        run: |
+          cd tests/e2e
+          python cleanup.py --database $DATABASE_NAME --max-age 1 --verbose
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-test-results
+          path: tests/e2e/results/
+          retention-days: 30
+
+      - name: Clean up credentials
+        if: always()
+        run: |
+          rm -f gcp-key.json
+
+      - name: Report status
+        if: steps.tests.outcome == 'failure'
+        run: |
+          echo "::error::E2E tests failed"
+          exit 1
+
+  cleanup:
+    name: Cleanup Old Test Data
+    runs-on: ubuntu-latest
+    # Run cleanup weekly or on manual trigger
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+
+    env:
+      GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/gcp-key.json
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          if [ ! -d "../job-finder" ]; then
+            git clone https://github.com/Jdubz/job-finder.git ../job-finder
+          fi
+
+          cd ../job-finder
+          pip install -r requirements.txt
+          pip install -e .
+
+      - name: Configure GCP credentials
+        env:
+          GCP_SA_KEY: ${{ secrets.GCP_SA_KEY_STAGING }}
+        run: |
+          echo "$GCP_SA_KEY" > gcp-key.json
+          chmod 600 gcp-key.json
+
+      - name: Clean up old test data
+        run: |
+          cd tests/e2e
+          python cleanup.py --database portfolio-staging --max-age 24 --verbose
+
+      - name: Clean up credentials
+        if: always()
+        run: |
+          rm -f gcp-key.json
