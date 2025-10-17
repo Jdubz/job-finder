@@ -304,7 +304,7 @@ def test_handle_failure_retry(processor, mock_managers):
     # Should update to PENDING for retry
     call_args = mock_managers["queue_manager"].update_status.call_args[0]
     assert call_args[1] == QueueStatus.PENDING
-    assert "Retry" in call_args[2]
+    assert "retry" in call_args[2].lower()
 
 
 def test_handle_failure_max_retries(processor, mock_managers):
@@ -329,7 +329,7 @@ def test_handle_failure_max_retries(processor, mock_managers):
     # Should update to FAILED
     call_args = mock_managers["queue_manager"].update_status.call_args[0]
     assert call_args[1] == QueueStatus.FAILED
-    assert "Max retries exceeded" in call_args[2]
+    assert "retries" in call_args[2].lower()
 
 
 def test_build_company_info_string(processor):

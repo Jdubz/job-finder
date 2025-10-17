@@ -134,3 +134,153 @@ def test_url_exists_in_queue(queue_manager):
     exists = queue_manager.url_exists_in_queue("https://example.com/job/999")
 
     assert exists is False
+
+
+def test_retry_item_success(queue_manager):
+    """Test successfully retrying a failed item."""
+    # Mock get_item to return a failed item
+    failed_item = JobQueueItem(
+        id="test-doc-id",
+        type=QueueItemType.JOB,
+        url="https://example.com/job/123",
+        company_name="Test Company",
+        source="scraper",
+        status=QueueStatus.FAILED,
+    )
+
+    with patch.object(queue_manager, "get_item", return_value=failed_item):
+        mock_doc = MagicMock()
+        queue_manager.db.collection.return_value.document.return_value = mock_doc
+
+        # Retry the item
+        result = queue_manager.retry_item("test-doc-id")
+
+        # Assertions
+        assert result is True
+        queue_manager.db.collection.assert_called_with("job-queue")
+        queue_manager.db.collection.return_value.document.assert_called_with("test-doc-id")
+        mock_doc.update.assert_called_once()
+
+        # Check update data
+        call_args = mock_doc.update.call_args[0][0]
+        assert call_args["status"] == "pending"
+        assert "updated_at" in call_args
+        # Verify fields are deleted
+        from google.cloud import firestore as gcloud_firestore
+
+        assert call_args["processed_at"] == gcloud_firestore.DELETE_FIELD
+        assert call_args["completed_at"] == gcloud_firestore.DELETE_FIELD
+        assert call_args["error_details"] == gcloud_firestore.DELETE_FIELD
+
+
+def test_retry_item_not_found(queue_manager):
+    """Test retrying an item that doesn't exist."""
+    # Mock get_item to return None
+    with patch.object(queue_manager, "get_item", return_value=None):
+        result = queue_manager.retry_item("nonexistent-id")
+
+        # Should return False when item not found
+        assert result is False
+
+
+def test_retry_item_not_failed(queue_manager):
+    """Test retrying an item that is not in failed status."""
+    # Mock get_item to return a pending item
+    pending_item = JobQueueItem(
+        id="test-doc-id",
+        type=QueueItemType.JOB,
+        url="https://example.com/job/123",
+        company_name="Test Company",
+        source="scraper",
+        status=QueueStatus.PENDING,
+    )
+
+    with patch.object(queue_manager, "get_item", return_value=pending_item):
+        result = queue_manager.retry_item("test-doc-id")
+
+        # Should return False when item is not failed
+        assert result is False
+
+
+def test_retry_item_exception(queue_manager):
+    """Test retry_item handles exceptions gracefully."""
+    # Mock get_item to return a failed item
+    failed_item = JobQueueItem(
+        id="test-doc-id",
+        type=QueueItemType.JOB,
+        url="https://example.com/job/123",
+        company_name="Test Company",
+        source="scraper",
+        status=QueueStatus.FAILED,
+    )
+
+    with patch.object(queue_manager, "get_item", return_value=failed_item):
+        # Mock update to raise exception
+        mock_doc = MagicMock()
+        mock_doc.update.side_effect = Exception("Firestore error")
+        queue_manager.db.collection.return_value.document.return_value = mock_doc
+
+        result = queue_manager.retry_item("test-doc-id")
+
+        # Should return False on exception
+        assert result is False
+
+
+def test_delete_item_success(queue_manager):
+    """Test successfully deleting an item."""
+    # Mock get_item to return an item
+    item = JobQueueItem(
+        id="test-doc-id",
+        type=QueueItemType.JOB,
+        url="https://example.com/job/123",
+        company_name="Test Company",
+        source="scraper",
+        status=QueueStatus.SUCCESS,
+    )
+
+    with patch.object(queue_manager, "get_item", return_value=item):
+        mock_doc = MagicMock()
+        queue_manager.db.collection.return_value.document.return_value = mock_doc
+
+        # Delete the item
+        result = queue_manager.delete_item("test-doc-id")
+
+        # Assertions
+        assert result is True
+        queue_manager.db.collection.assert_called_with("job-queue")
+        queue_manager.db.collection.return_value.document.assert_called_with("test-doc-id")
+        mock_doc.delete.assert_called_once()
+
+
+def test_delete_item_not_found(queue_manager):
+    """Test deleting an item that doesn't exist."""
+    # Mock get_item to return None
+    with patch.object(queue_manager, "get_item", return_value=None):
+        result = queue_manager.delete_item("nonexistent-id")
+
+        # Should return False when item not found
+        assert result is False
+
+
+def test_delete_item_exception(queue_manager):
+    """Test delete_item handles exceptions gracefully."""
+    # Mock get_item to return an item
+    item = JobQueueItem(
+        id="test-doc-id",
+        type=QueueItemType.JOB,
+        url="https://example.com/job/123",
+        company_name="Test Company",
+        source="scraper",
+        status=QueueStatus.FAILED,
+    )
+
+    with patch.object(queue_manager, "get_item", return_value=item):
+        # Mock delete to raise exception
+        mock_doc = MagicMock()
+        mock_doc.delete.side_effect = Exception("Firestore error")
+        queue_manager.db.collection.return_value.document.return_value = mock_doc
+
+        result = queue_manager.delete_item("test-doc-id")
+
+        # Should return False on exception
+        assert result is False
