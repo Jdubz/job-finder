@@ -25,7 +25,7 @@ class FirestoreHelper:
         self,
         url: str,
         company_name: str = "Test Company",
-        source: str = "e2e_test",
+        source: str = "automated_scan",
         **kwargs,
     ) -> str:
         """
@@ -34,14 +34,15 @@ class FirestoreHelper:
         Args:
             url: Job URL
             company_name: Company name
-            source: Source of submission
+            source: Source of submission (must be valid QueueSource value)
             **kwargs: Additional queue item fields
 
         Returns:
             Document ID of created item
         """
         data = {
-            "type": "job_scrape",
+            "type": "job",
+            "sub_task": "scrape",
             "url": url,
             "company_name": company_name,
             "source": source,

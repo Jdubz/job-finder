@@ -43,15 +43,16 @@ class CleanupHelper:
 
         cutoff_time = datetime.now(timezone.utc) - timedelta(hours=max_age_hours)
 
-        # Query test items
-        query = (
-            self.db.collection("job-queue")
-            .where("source", "==", source_filter)
-            .where("created_at", "<", cutoff_time)
-        )
+        # Query test items - filter by source only to avoid composite index requirement
+        query = self.db.collection("job-queue").where("source", "==", source_filter)
 
         docs = query.stream()
-        doc_ids = [doc.id for doc in docs]
+        # Filter by created_at in memory to avoid needing composite index
+        doc_ids = [
+            doc.id
+            for doc in docs
+            if doc.to_dict().get("created_at") and doc.to_dict()["created_at"] < cutoff_time
+        ]
 
         if not doc_ids:
             logger.info("No queue items to clean up")
@@ -85,15 +86,16 @@ class CleanupHelper:
 
         cutoff_time = datetime.now(timezone.utc) - timedelta(hours=max_age_hours)
 
-        # Query test matches
-        query = (
-            self.db.collection("job-matches")
-            .where("company_name", "==", company_name_filter)
-            .where("created_at", "<", cutoff_time)
-        )
+        # Query test matches - filter by company_name only to avoid composite index
+        query = self.db.collection("job-matches").where("company_name", "==", company_name_filter)
 
         docs = query.stream()
-        doc_ids = [doc.id for doc in docs]
+        # Filter by created_at in memory
+        doc_ids = [
+            doc.id
+            for doc in docs
+            if doc.to_dict().get("created_at") and doc.to_dict()["created_at"] < cutoff_time
+        ]
 
         if not doc_ids:
             logger.info("No matches to clean up")
@@ -161,14 +163,16 @@ class CleanupHelper:
 
         cutoff_time = datetime.now(timezone.utc) - timedelta(hours=max_age_hours)
 
-        query = (
-            self.db.collection("job-queue")
-            .where("status", "==", "failed")
-            .where("created_at", "<", cutoff_time)
-        )
+        # Filter by status only to avoid composite index
+        query = self.db.collection("job-queue").where("status", "==", "failed")
 
         docs = query.stream()
-        doc_ids = [doc.id for doc in docs]
+        # Filter by created_at in memory
+        doc_ids = [
+            doc.id
+            for doc in docs
+            if doc.to_dict().get("created_at") and doc.to_dict()["created_at"] < cutoff_time
+        ]
 
         if not doc_ids:
             logger.info("No failed items to clean up")

@@ -69,9 +69,9 @@ class FilteredJobScenario(BaseE2EScenario):
         self.queue_item_id = self.firestore.create_queue_item(
             url=self.test_job_url,
             company_name=self.test_company,
-            source="e2e_test",
+            source="automated_scan",
             test_run_id=self.test_run_id,
-            type="job_filter",  # Skip scraping, go straight to filter
+            sub_task="filter",  # Skip scraping, go straight to filter
             pipeline_state={"job_data": self.custom_job_data},
         )
 

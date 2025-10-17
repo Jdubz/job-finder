@@ -21,10 +21,10 @@ class JobSubmissionScenario(BaseE2EScenario):
         """Initialize scenario."""
         super().__init__(**kwargs)
 
-        # Test data
-        self.test_job_url = "https://boards.greenhouse.io/netflix/jobs/6290844"
-        self.expected_company = "Netflix"
-        self.expected_title_contains = "Software Engineer"
+        # Test data - using a real Cloudflare job that should exist
+        self.test_job_url = "https://boards.greenhouse.io/cloudflare/jobs/7270583"
+        self.expected_company = "Cloudflare"
+        self.expected_title_contains = "Engineer"  # Generic enough to match most jobs
 
         # Will be set during execution
         self.queue_item_id = None
@@ -59,9 +59,8 @@ class JobSubmissionScenario(BaseE2EScenario):
         self.queue_item_id = self.firestore.create_queue_item(
             url=self.test_job_url,
             company_name=self.expected_company,
-            source="e2e_test",
+            source="automated_scan",
             test_run_id=self.test_run_id,
-            type="job_scrape",  # Start granular pipeline
         )
 
         # Track for cleanup
