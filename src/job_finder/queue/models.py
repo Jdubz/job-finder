@@ -31,6 +31,29 @@ class QueueItemType(str, Enum):
     SCRAPE = "scrape"
 
 
+class JobSubTask(str, Enum):
+    """
+    Granular sub-tasks for job processing pipeline.
+
+    When a JOB queue item has a sub_task, it represents one step in the
+    multi-stage processing pipeline. Items without sub_task (legacy) are
+    processed monolithically through all stages.
+
+    Pipeline flow:
+    1. JOB_SCRAPE: Fetch HTML and extract basic job data (Claude Haiku)
+    2. JOB_FILTER: Apply strike-based filtering (no AI)
+    3. JOB_ANALYZE: AI matching and resume intake generation (Claude Sonnet)
+    4. JOB_SAVE: Save results to job-matches (no AI)
+
+    TypeScript equivalent: JobSubTask in queue.types.ts
+    """
+
+    SCRAPE = "scrape"
+    FILTER = "filter"
+    ANALYZE = "analyze"
+    SAVE = "save"
+
+
 class QueueStatus(str, Enum):
     """
     Status of queue item processing.
@@ -154,6 +177,19 @@ class JobQueueItem(BaseModel):
     # Scrape configuration (only used when type is SCRAPE)
     scrape_config: Optional[ScrapeConfig] = Field(
         default=None, description="Configuration for scrape requests"
+    )
+
+    # Granular pipeline fields (only used when type is JOB with sub_task)
+    sub_task: Optional[JobSubTask] = Field(
+        default=None,
+        description="Granular pipeline step (scrape/filter/analyze/save). None = legacy monolithic processing",
+    )
+    pipeline_state: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="State passed between pipeline steps (scraped data, filter results, etc.)",
+    )
+    parent_item_id: Optional[str] = Field(
+        default=None, description="Document ID of parent item that spawned this sub-task"
     )
 
     model_config = ConfigDict(use_enum_values=True)

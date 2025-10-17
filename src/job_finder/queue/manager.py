@@ -2,11 +2,17 @@
 
 import logging
 from datetime import datetime, timezone
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 from google.cloud import firestore as gcloud_firestore
 
-from job_finder.queue.models import JobQueueItem, QueueStatus
+from job_finder.queue.models import (
+    JobQueueItem,
+    JobSubTask,
+    QueueItemType,
+    QueueSource,
+    QueueStatus,
+)
 from job_finder.storage.firestore_client import FirestoreClient
 
 logger = logging.getLogger(__name__)
@@ -394,3 +400,139 @@ class QueueManager:
         except Exception as e:
             logger.error(f"Error checking for pending scrape: {e}")
             return False
+
+    # ========================================================================
+    # Granular Pipeline Helper Methods
+    # ========================================================================
+
+    def create_pipeline_item(
+        self,
+        url: str,
+        sub_task: JobSubTask,
+        pipeline_state: Dict[str, Any],
+        parent_item_id: Optional[str] = None,
+        company_name: str = "",
+        company_id: Optional[str] = None,
+        source: QueueSource = "scraper",
+    ) -> str:
+        """
+        Create a granular pipeline queue item.
+
+        Args:
+            url: Job URL
+            sub_task: Pipeline step (scrape/filter/analyze/save)
+            pipeline_state: State data from previous step
+            parent_item_id: ID of parent item that spawned this
+            company_name: Company name (optional)
+            company_id: Company document ID (optional)
+            source: Source of submission
+
+        Returns:
+            Document ID of created item
+        """
+        item = JobQueueItem(
+            type=QueueItemType.JOB,
+            url=url,
+            sub_task=sub_task,
+            pipeline_state=pipeline_state,
+            parent_item_id=parent_item_id,
+            company_name=company_name,
+            company_id=company_id,
+            source=source,
+        )
+
+        doc_id = self.add_item(item)
+        logger.info(
+            f"Created pipeline item: {sub_task.value} for {url[:50]}... "
+            f"(parent: {parent_item_id or 'none'})"
+        )
+        return doc_id
+
+    def spawn_next_pipeline_step(
+        self,
+        current_item: JobQueueItem,
+        next_sub_task: JobSubTask,
+        pipeline_state: Dict[str, Any],
+    ) -> str:
+        """
+        Spawn the next step in the pipeline from current item.
+
+        Args:
+            current_item: Current item that just completed
+            next_sub_task: Next pipeline step to create
+            pipeline_state: Updated state to pass to next step
+
+        Returns:
+            Document ID of spawned item
+        """
+        return self.create_pipeline_item(
+            url=current_item.url,
+            sub_task=next_sub_task,
+            pipeline_state=pipeline_state,
+            parent_item_id=current_item.id,
+            company_name=current_item.company_name,
+            company_id=current_item.company_id,
+            source=current_item.source,
+        )
+
+    def update_pipeline_state(
+        self,
+        item_id: str,
+        pipeline_state: Dict[str, Any],
+    ) -> None:
+        """
+        Update pipeline state for an item.
+
+        Args:
+            item_id: Queue item document ID
+            pipeline_state: New pipeline state data
+        """
+        try:
+            self.db.collection(self.collection_name).document(item_id).update(
+                {
+                    "pipeline_state": pipeline_state,
+                    "updated_at": gcloud_firestore.SERVER_TIMESTAMP,
+                }
+            )
+            logger.debug(f"Updated pipeline state for item {item_id}")
+
+        except Exception as e:
+            logger.error(f"Error updating pipeline state for item {item_id}: {e}")
+            raise
+
+    def get_pipeline_items(
+        self,
+        parent_item_id: str,
+        sub_task: Optional[JobSubTask] = None,
+    ) -> List[JobQueueItem]:
+        """
+        Get all pipeline items for a parent item.
+
+        Args:
+            parent_item_id: Parent item document ID
+            sub_task: Optional filter by specific sub-task
+
+        Returns:
+            List of pipeline items
+        """
+        try:
+            query = self.db.collection(self.collection_name).where(
+                "parent_item_id", "==", parent_item_id
+            )
+
+            if sub_task:
+                query = query.where("sub_task", "==", sub_task.value)
+
+            docs = query.stream()
+
+            items = []
+            for doc in docs:
+                data = doc.to_dict()
+                item = JobQueueItem.from_firestore(doc.id, data)
+                items.append(item)
+
+            return items
+
+        except Exception as e:
+            logger.error(f"Error getting pipeline items for parent {parent_item_id}: {e}")
+            return []

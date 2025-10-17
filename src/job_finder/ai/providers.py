@@ -2,10 +2,59 @@
 
 import os
 from abc import ABC, abstractmethod
+from enum import Enum
 from typing import Any, Dict, Optional
 
 from anthropic import Anthropic
 from openai import OpenAI
+
+
+class AITask(str, Enum):
+    """
+    Types of AI tasks with different model requirements.
+
+    Different tasks have different cost/quality tradeoffs:
+    - SCRAPE: Extract structured data from HTML (cheap, fast)
+    - FILTER: Not used (filtering is rule-based)
+    - ANALYZE: Match job to profile (expensive, high quality)
+    - SELECTOR_DISCOVERY: Discover CSS selectors (cheap, one-time)
+    """
+
+    SCRAPE = "scrape"
+    ANALYZE = "analyze"
+    SELECTOR_DISCOVERY = "selector_discovery"
+
+
+class ModelTier(str, Enum):
+    """
+    Model performance tiers.
+
+    - FAST: Cheap, fast models for simple extraction (Haiku, GPT-4o-mini)
+    - SMART: Expensive, capable models for complex analysis (Sonnet, GPT-4)
+    """
+
+    FAST = "fast"
+    SMART = "smart"
+
+
+# Model mappings by provider and tier
+MODEL_SELECTION = {
+    "claude": {
+        ModelTier.FAST: "claude-3-5-haiku-20241022",  # $0.001/1K tokens
+        ModelTier.SMART: "claude-3-5-sonnet-20241022",  # $0.015-0.075/1K tokens
+    },
+    "openai": {
+        ModelTier.FAST: "gpt-4o-mini",  # $0.00015-0.0006/1K tokens
+        ModelTier.SMART: "gpt-4o",  # $0.0025-0.01/1K tokens
+    },
+}
+
+# Task to tier mapping
+TASK_MODEL_TIERS = {
+    AITask.SCRAPE: ModelTier.FAST,
+    AITask.ANALYZE: ModelTier.SMART,
+    AITask.SELECTOR_DISCOVERY: ModelTier.FAST,
+}
 
 
 class AIProvider(ABC):
@@ -95,8 +144,46 @@ class OpenAIProvider(AIProvider):
             raise RuntimeError(f"OpenAI API error: {str(e)}") from e
 
 
+def get_model_for_task(provider_type: str, task: AITask) -> str:
+    """
+    Get the appropriate model for a specific task.
+
+    Uses cost-optimized model selection:
+    - Fast/cheap models (Haiku, GPT-4o-mini) for scraping and discovery
+    - Smart/expensive models (Sonnet, GPT-4) for job analysis
+
+    Args:
+        provider_type: Type of provider ('claude', 'openai')
+        task: The AI task to perform
+
+    Returns:
+        Model identifier string
+
+    Raises:
+        ValueError: If provider_type is not supported
+
+    Example:
+        >>> get_model_for_task("claude", AITask.SCRAPE)
+        'claude-3-5-haiku-20241022'
+        >>> get_model_for_task("claude", AITask.ANALYZE)
+        'claude-3-5-sonnet-20241022'
+    """
+    provider_type = provider_type.lower()
+
+    if provider_type not in MODEL_SELECTION:
+        raise ValueError(
+            f"Unsupported AI provider: {provider_type}. Supported providers: {list(MODEL_SELECTION.keys())}"
+        )
+
+    tier = TASK_MODEL_TIERS[task]
+    return MODEL_SELECTION[provider_type][tier]
+
+
 def create_provider(
-    provider_type: str, api_key: Optional[str] = None, model: Optional[str] = None
+    provider_type: str,
+    api_key: Optional[str] = None,
+    model: Optional[str] = None,
+    task: Optional[AITask] = None,
 ) -> AIProvider:
     """
     Factory function to create AI provider instances.
@@ -104,26 +191,48 @@ def create_provider(
     Args:
         provider_type: Type of provider ('claude', 'openai').
         api_key: Optional API key (otherwise uses environment variable).
-        model: Optional model name (uses default if not specified).
+        model: Optional explicit model name (overrides task-based selection).
+        task: Optional task type for automatic model selection (ignored if model is provided).
 
     Returns:
         AIProvider instance.
 
     Raises:
         ValueError: If provider_type is not supported.
+
+    Example:
+        # Automatic model selection for scraping (uses Haiku)
+        provider = create_provider("claude", task=AITask.SCRAPE)
+
+        # Automatic model selection for analysis (uses Sonnet)
+        provider = create_provider("claude", task=AITask.ANALYZE)
+
+        # Explicit model override
+        provider = create_provider("claude", model="claude-opus-4-20250514")
     """
     provider_type = provider_type.lower()
 
+    # Determine model
+    if model:
+        # Explicit model provided, use it
+        selected_model = model
+    elif task:
+        # Task provided, select appropriate model
+        selected_model = get_model_for_task(provider_type, task)
+    else:
+        # No model or task provided, use None to trigger provider default
+        selected_model = None
+
     if provider_type == "claude":
         kwargs = {"api_key": api_key} if api_key else {}
-        if model:
-            kwargs["model"] = model
+        if selected_model:
+            kwargs["model"] = selected_model
         return ClaudeProvider(**kwargs)
 
     elif provider_type == "openai":
         kwargs = {"api_key": api_key} if api_key else {}
-        if model:
-            kwargs["model"] = model
+        if selected_model:
+            kwargs["model"] = selected_model
         return OpenAIProvider(**kwargs)
 
     else:
