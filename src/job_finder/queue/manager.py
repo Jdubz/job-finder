@@ -138,8 +138,13 @@ class QueueManager:
         if status == QueueStatus.PROCESSING:
             update_data["processed_at"] = gcloud_firestore.SERVER_TIMESTAMP
 
-        # Set completed_at when finishing (success/failed/skipped)
-        if status in [QueueStatus.SUCCESS, QueueStatus.FAILED, QueueStatus.SKIPPED]:
+        # Set completed_at when finishing (success/failed/skipped/filtered)
+        if status in [
+            QueueStatus.SUCCESS,
+            QueueStatus.FAILED,
+            QueueStatus.SKIPPED,
+            QueueStatus.FILTERED,
+        ]:
             update_data["completed_at"] = gcloud_firestore.SERVER_TIMESTAMP
 
         try:
@@ -227,6 +232,7 @@ class QueueManager:
             "success": 0,
             "failed": 0,
             "skipped": 0,
+            "filtered": 0,
             "total": 0,
         }
 
@@ -272,6 +278,7 @@ class QueueManager:
                     [
                         QueueStatus.SUCCESS.value,
                         QueueStatus.SKIPPED.value,
+                        QueueStatus.FILTERED.value,
                     ],
                 )
                 .where("completed_at", "<", cutoff_date)

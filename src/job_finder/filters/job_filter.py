@@ -1,10 +1,15 @@
-"""Job filtering logic based on user requirements."""
+"""
+Legacy job filtering logic based on user requirements.
+
+NOTE: This is the old filtering system used by main.py (legacy batch processing).
+For queue-based processing, use JobFilterEngine instead.
+"""
 
 from typing import Any, Dict, List
 
 
 class JobFilter:
-    """Filter jobs based on user-defined criteria."""
+    """Filter jobs based on user-defined criteria (legacy system)."""
 
     def __init__(self, config: Dict[str, Any]):
         """Initialize filter with configuration."""

@@ -6,6 +6,7 @@ from typing import Any, Dict, Optional
 
 from job_finder.ai import AIJobMatcher
 from job_finder.company_info_fetcher import CompanyInfoFetcher
+from job_finder.filters import StrikeFilterEngine
 from job_finder.queue.config_loader import ConfigLoader
 from job_finder.queue.manager import QueueManager
 from job_finder.queue.models import JobQueueItem, QueueItemType, QueueStatus
@@ -38,7 +39,7 @@ class QueueItemProcessor:
 
         Args:
             queue_manager: Queue manager for updating item status
-            config_loader: Configuration loader for stop lists
+            config_loader: Configuration loader for stop lists and filters
             job_storage: Firestore job storage
             companies_manager: Company data manager
             sources_manager: Job sources manager
@@ -52,6 +53,11 @@ class QueueItemProcessor:
         self.sources_manager = sources_manager
         self.company_info_fetcher = company_info_fetcher
         self.ai_matcher = ai_matcher
+
+        # Initialize strike-based filter engine
+        filter_config = config_loader.get_job_filters()
+        tech_ranks = config_loader.get_technology_ranks()
+        self.filter_engine = StrikeFilterEngine(filter_config, tech_ranks)
 
     def process_item(self, item: JobQueueItem) -> None:
         """
@@ -206,9 +212,10 @@ class QueueItemProcessor:
 
         Steps:
         1. Scrape job details from URL
-        2. Ensure company exists and is analyzed
-        3. Run AI matching
-        4. Save to job-matches if score meets threshold
+        2. Run advanced filters (before AI to reduce costs)
+        3. Ensure company exists and is analyzed
+        4. Run AI matching
+        5. Save to job-matches if score meets threshold
 
         Args:
             item: Job queue item
@@ -230,6 +237,27 @@ class QueueItemProcessor:
                 )
                 self.queue_manager.update_status(
                     item.id, QueueStatus.FAILED, error_msg, error_details=error_details
+                )
+            return
+
+        # Run advanced filters BEFORE AI analysis (cost optimization)
+        filter_result = self.filter_engine.evaluate_job(job_data)
+        if not filter_result.passed:
+            # Job rejected by filters
+            rejection_summary = filter_result.get_rejection_summary()
+            rejection_data = filter_result.to_dict()
+
+            logger.info(
+                f"Job filtered out: {job_data.get('title')} at {job_data.get('company')} - "
+                f"{rejection_summary}"
+            )
+
+            if item.id:
+                self.queue_manager.update_status(
+                    item.id,
+                    QueueStatus.FILTERED,
+                    f"Rejected by filters: {rejection_summary}",
+                    scraped_data={"job_data": job_data, "filter_result": rejection_data},
                 )
             return
 
