@@ -138,6 +138,8 @@ class FilterResult:
             "rejection_summary": self.get_rejection_summary(),
             "total_strikes": self.total_strikes,
             "strike_threshold": self.strike_threshold,
-            "hard_rejections": [r.to_dict() for r in self.rejections if r.severity == "hard_reject"],
+            "hard_rejections": [
+                r.to_dict() for r in self.rejections if r.severity == "hard_reject"
+            ],
             "strikes": [r.to_dict() for r in self.rejections if r.severity == "strike"],
         }

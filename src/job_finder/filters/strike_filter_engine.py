@@ -188,19 +188,70 @@ class StrikeFilterEngine:
 
     def _is_excluded_job_type(self, title: str, description: str, result: FilterResult) -> bool:
         """Check if job is excluded type (sales, HR, etc.)."""
-        combined = f"{title} {description}".lower()
+        title_lower = title.lower()
+        description_lower = description.lower()
 
         for job_type in self.excluded_job_types:
-            if job_type in combined:
+            # Use word boundary regex to match whole words only
+            pattern = r"\b" + re.escape(job_type) + r"\b"
+
+            # Check title first (strong signal of job type)
+            if re.search(pattern, title_lower):
                 result.add_rejection(
                     filter_category="hard_reject",
                     filter_name="excluded_job_type",
                     reason=f"Excluded job type: {job_type}",
-                    detail=f"Job appears to be a {job_type} role",
+                    detail=f"Title contains '{job_type}'",
                     severity="hard_reject",
                     points=0,
                 )
                 return True
+
+            # For very short job types (2-3 chars), ONLY match in title to avoid false positives
+            # Examples: "hr" matches in "hr@company.com" or "finance, hr, legal" lists
+            if len(job_type) <= 3:
+                continue  # Skip description check for short keywords
+
+            # For longer job types, use stricter context matching to avoid false positives
+            # Look for job type near role-indicating keywords
+            role_indicators = [
+                r"(^|\s)(looking for|seeking|hiring|role|position|job)",  # Job context
+                r"(responsibilities|duties|will be|you will)",  # Responsibilities
+                r"(team|department|division)",  # Organizational
+            ]
+
+            # Check if job_type appears near role indicators (within ~50 chars)
+            for indicator_pattern in role_indicators:
+                # Build combined pattern: indicator followed by job_type within 50 chars
+                combined_pattern = (
+                    indicator_pattern + r".{0,50}?" + r"\b" + re.escape(job_type) + r"\b"
+                )
+                if re.search(combined_pattern, description_lower, re.IGNORECASE):
+                    result.add_rejection(
+                        filter_category="hard_reject",
+                        filter_name="excluded_job_type",
+                        reason=f"Excluded job type: {job_type}",
+                        detail=f"Job appears to be a {job_type} role based on description context",
+                        severity="hard_reject",
+                        points=0,
+                    )
+                    return True
+
+                # Also check reverse: job_type followed by indicator
+                reverse_pattern = (
+                    r"\b" + re.escape(job_type) + r"\b" + r".{0,50}?" + indicator_pattern
+                )
+                if re.search(reverse_pattern, description_lower, re.IGNORECASE):
+                    result.add_rejection(
+                        filter_category="hard_reject",
+                        filter_name="excluded_job_type",
+                        reason=f"Excluded job type: {job_type}",
+                        detail=f"Job appears to be a {job_type} role based on description context",
+                        severity="hard_reject",
+                        points=0,
+                    )
+                    return True
+
         return False
 
     def _is_excluded_seniority(self, title: str, result: FilterResult) -> bool:
@@ -208,7 +259,9 @@ class StrikeFilterEngine:
         title_lower = title.lower()
 
         for seniority in self.excluded_seniority:
-            if seniority in title_lower:
+            # Use word boundary regex to match whole words only
+            pattern = r"\b" + re.escape(seniority) + r"\b"
+            if re.search(pattern, title_lower):
                 result.add_rejection(
                     filter_category="hard_reject",
                     filter_name="excluded_seniority",
@@ -242,16 +295,33 @@ class StrikeFilterEngine:
         description_lower = description.lower()
 
         for keyword in self.excluded_keywords:
-            if keyword in description_lower:
-                result.add_rejection(
-                    filter_category="hard_reject",
-                    filter_name="excluded_keyword",
-                    reason=f"Deal-breaker keyword: {keyword}",
-                    detail=f"Description contains '{keyword}'",
-                    severity="hard_reject",
-                    points=0,
-                )
-                return True
+            # For multi-word phrases, use phrase matching
+            # For single words, use word boundary matching
+            if " " in keyword:
+                # Multi-word phrase - simple substring match is appropriate
+                if keyword in description_lower:
+                    result.add_rejection(
+                        filter_category="hard_reject",
+                        filter_name="excluded_keyword",
+                        reason=f"Deal-breaker keyword: {keyword}",
+                        detail=f"Description contains '{keyword}'",
+                        severity="hard_reject",
+                        points=0,
+                    )
+                    return True
+            else:
+                # Single word - use word boundary to avoid false positives
+                pattern = r"\b" + re.escape(keyword) + r"\b"
+                if re.search(pattern, description_lower):
+                    result.add_rejection(
+                        filter_category="hard_reject",
+                        filter_name="excluded_keyword",
+                        reason=f"Deal-breaker keyword: {keyword}",
+                        detail=f"Description contains '{keyword}'",
+                        severity="hard_reject",
+                        points=0,
+                    )
+                    return True
         return False
 
     def _below_salary_floor(self, salary: str, result: FilterResult) -> bool:
@@ -322,8 +392,7 @@ class StrikeFilterEngine:
         )
 
         is_hybrid = any(
-            ind in combined
-            for ind in ["hybrid", "flexible work", "days in office", "days remote"]
+            ind in combined for ind in ["hybrid", "flexible work", "days in office", "days remote"]
         )
 
         is_portland = "portland" in combined and ("or" in combined or "oregon" in combined)
@@ -456,9 +525,7 @@ class StrikeFilterEngine:
                 )
                 return  # Only count first match
 
-    def _check_technology_strikes(
-        self, title: str, description: str, result: FilterResult
-    ) -> None:
+    def _check_technology_strikes(self, title: str, description: str, result: FilterResult) -> None:
         """Check technology stack and add strikes."""
         combined = f"{title} {description}".lower()
 
