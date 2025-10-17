@@ -383,8 +383,6 @@ class FirestoreHelper:
 
         matches = value == expected_value
         if not matches:
-            logger.warning(
-                f"Field mismatch: {field} = {value} (expected {expected_value})"
-            )
+            logger.warning(f"Field mismatch: {field} = {value} (expected {expected_value})")
 
         return matches

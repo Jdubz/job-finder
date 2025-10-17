@@ -174,9 +174,7 @@ class JobSubmissionScenario(BaseE2EScenario):
 
         # If filtered, verify it didn't create a match
         if not filter_result.get("passed"):
-            assert (
-                self.match_id is None
-            ), "Match created for filtered job (should not happen)"
+            assert self.match_id is None, "Match created for filtered job (should not happen)"
             self._log("✓ Filtered job correctly skipped")
             self._print("Job was filtered (expected for some test jobs)")
             return
@@ -197,17 +195,13 @@ class JobSubmissionScenario(BaseE2EScenario):
 
             # Verify match fields
             assert match_doc.get("url") == self.test_job_url, "Match URL mismatch"
-            assert (
-                match_doc.get("company_name") == self.expected_company
-            ), "Match company mismatch"
+            assert match_doc.get("company_name") == self.expected_company, "Match company mismatch"
             assert match_doc.get("match_score") == match_score, "Match score mismatch"
             self._log("✓ Match document fields correct")
 
             self._print(f"Match verified: {match_score} score, saved to Firestore")
         else:
-            assert (
-                self.match_id is None
-            ), "Match created despite score below threshold"
+            assert self.match_id is None, "Match created despite score below threshold"
             self._log("✓ Low score job correctly skipped")
             self._print(f"Job skipped with score {match_score} (below threshold)")
 

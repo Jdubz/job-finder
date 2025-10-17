@@ -128,17 +128,13 @@ class CleanupHelper:
         results = {}
 
         for collection in collections:
-            query = self.db.collection(collection).where(
-                "test_run_id", "==", test_run_id
-            )
+            query = self.db.collection(collection).where("test_run_id", "==", test_run_id)
 
             docs = query.stream()
             doc_ids = [doc.id for doc in docs]
 
             if doc_ids:
-                logger.info(
-                    f"Deleting {len(doc_ids)} documents from {collection}..."
-                )
+                logger.info(f"Deleting {len(doc_ids)} documents from {collection}...")
                 self._batch_delete(collection, doc_ids)
 
             results[collection] = len(doc_ids)
@@ -199,9 +195,7 @@ class CleanupHelper:
         logger.info("Running comprehensive test data cleanup...")
 
         results = {
-            "queue_items": self.cleanup_test_queue_items(
-                max_age_hours=max_age_hours
-            ),
+            "queue_items": self.cleanup_test_queue_items(max_age_hours=max_age_hours),
             "matches": self.cleanup_test_matches(max_age_hours=max_age_hours),
             "failed_items": self.cleanup_failed_items(max_age_hours=max_age_hours),
         }
@@ -304,9 +298,6 @@ class CleanupHelper:
             batch.commit()
             deleted += len(batch_ids)
 
-            logger.debug(
-                f"Deleted batch {i // batch_size + 1}: "
-                f"{deleted}/{total} documents"
-            )
+            logger.debug(f"Deleted batch {i // batch_size + 1}: " f"{deleted}/{total} documents")
 
         logger.info(f"Batch delete complete: {deleted} documents from {collection}")

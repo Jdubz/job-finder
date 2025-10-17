@@ -23,9 +23,7 @@ class FilteredJobScenario(BaseE2EScenario):
 
         # Test data - This job should be filtered out
         # (Using a job that's likely on-site or has excluded keywords)
-        self.test_job_url = (
-            "https://www.linkedin.com/jobs/view/test-job"  # Placeholder
-        )
+        self.test_job_url = "https://www.linkedin.com/jobs/view/test-job"  # Placeholder
         self.test_company = "Test Filter Company"
 
         # Custom job data that will trigger filter rejection
@@ -139,9 +137,7 @@ class FilteredJobScenario(BaseE2EScenario):
         strike_categories = [s.get("category") for s in strikes]
 
         # Should have location strike (on-site in non-Portland location)
-        assert (
-            "work_location" in strike_categories
-        ), "Expected work_location strike for on-site job"
+        assert "work_location" in strike_categories, "Expected work_location strike for on-site job"
         self._log("✓ Work location strike present")
 
         # Verify pipeline stopped (no match_result)

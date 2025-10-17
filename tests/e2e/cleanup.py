@@ -122,9 +122,7 @@ Examples:
         if args.dry_run:
             # Just show what would be deleted
             for collection in ["job-queue", "job-matches"]:
-                query = db.collection(collection).where(
-                    "test_run_id", "==", args.test_run_id
-                )
+                query = db.collection(collection).where("test_run_id", "==", args.test_run_id)
                 docs = list(query.stream())
                 print(f"  {collection}: {len(docs)} documents")
         else:
@@ -136,9 +134,7 @@ Examples:
         print(f"\nCleaning up failed items older than {args.max_age} hours")
 
         if args.dry_run:
-            candidates = cleanup.get_cleanup_candidates(
-                "job-queue", max_age_hours=args.max_age
-            )
+            candidates = cleanup.get_cleanup_candidates("job-queue", max_age_hours=args.max_age)
             failed = [c for c in candidates if c.get("status") == "failed"]
             print(f"  job-queue: {len(failed)} failed items")
         else:
@@ -153,18 +149,12 @@ Examples:
             queue_candidates = cleanup.get_cleanup_candidates(
                 "job-queue", max_age_hours=args.max_age
             )
-            test_queue = [
-                c for c in queue_candidates if c.get("source") == "e2e_test"
-            ]
+            test_queue = [c for c in queue_candidates if c.get("source") == "e2e_test"]
 
             match_candidates = cleanup.get_cleanup_candidates(
                 "job-matches", max_age_hours=args.max_age
             )
-            test_matches = [
-                c
-                for c in match_candidates
-                if c.get("company_name") == "Test Company"
-            ]
+            test_matches = [c for c in match_candidates if c.get("company_name") == "Test Company"]
 
             print(f"  job-queue (e2e_test): {len(test_queue)} items")
             print(f"  job-matches (test): {len(test_matches)} items")

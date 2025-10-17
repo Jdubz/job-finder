@@ -58,8 +58,7 @@ class QueueMonitor:
         end_time = start_time + timeout
 
         logger.info(
-            f"Waiting for {doc_id} to reach status: {expected_status} "
-            f"(timeout: {timeout}s)"
+            f"Waiting for {doc_id} to reach status: {expected_status} " f"(timeout: {timeout}s)"
         )
 
         while time.time() < end_time:
@@ -78,17 +77,13 @@ class QueueMonitor:
 
             if current_status == expected_status:
                 elapsed = time.time() - start_time
-                logger.info(
-                    f"✓ Reached status '{expected_status}' after {elapsed:.1f}s"
-                )
+                logger.info(f"✓ Reached status '{expected_status}' after {elapsed:.1f}s")
                 return data
 
             # Check for error states
             if current_status in ["failed", "rejected", "error"]:
                 error_msg = data.get("error", "Unknown error")
-                logger.warning(
-                    f"Item reached error state: {current_status} - {error_msg}"
-                )
+                logger.warning(f"Item reached error state: {current_status} - {error_msg}")
                 return data
 
             time.sleep(self.poll_interval)
@@ -126,9 +121,7 @@ class QueueMonitor:
 
         completion_statuses = ["completed", "failed", "rejected"]
 
-        logger.info(
-            f"Waiting for {doc_id} to complete (timeout: {timeout}s)"
-        )
+        logger.info(f"Waiting for {doc_id} to complete (timeout: {timeout}s)")
 
         while time.time() < end_time:
             doc_ref = self.db.collection(self.collection).document(doc_id)
@@ -142,9 +135,7 @@ class QueueMonitor:
 
             if current_status in completion_statuses:
                 elapsed = time.time() - start_time
-                logger.info(
-                    f"✓ Completed with status '{current_status}' after {elapsed:.1f}s"
-                )
+                logger.info(f"✓ Completed with status '{current_status}' after {elapsed:.1f}s")
                 return data
 
             logger.debug(
@@ -238,9 +229,7 @@ class QueueMonitor:
         start_time = time.time()
         end_time = start_time + timeout
 
-        logger.info(
-            f"Waiting for {doc_id} to reach stage: {stage} (timeout: {timeout}s)"
-        )
+        logger.info(f"Waiting for {doc_id} to reach stage: {stage} (timeout: {timeout}s)")
 
         while time.time() < end_time:
             data = self.get_document(doc_id)
