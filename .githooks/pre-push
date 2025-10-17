@@ -1,0 +1,31 @@
+#!/bin/bash
+# Pre-push hook to run slower code quality checks and tests
+# Install: cp .githooks/pre-push .git/hooks/pre-push && chmod +x .git/hooks/pre-push
+#
+# Note: Fast checks like Black formatting run in pre-commit hook
+
+echo "Running pre-push checks..."
+
+# Activate virtual environment if it exists
+if [ -f "venv/bin/activate" ]; then
+    source venv/bin/activate
+fi
+
+# Run mypy type checking
+echo "Running mypy type checking..."
+mypy src/
+if [ $? -ne 0 ]; then
+    echo "❌ Mypy type checking failed. Please fix type errors before pushing."
+    exit 1
+fi
+
+# Run tests
+echo "Running tests..."
+pytest tests/ -q
+if [ $? -ne 0 ]; then
+    echo "❌ Tests failed. Please fix failing tests before pushing."
+    exit 1
+fi
+
+echo "✅ All pre-push checks passed!"
+exit 0

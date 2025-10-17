@@ -1,0 +1,22 @@
+#!/bin/bash
+# Pre-commit hook to run fast code quality checks
+# Install: cp .githooks/pre-commit .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit
+
+echo "Running pre-commit checks..."
+
+# Activate virtual environment if it exists
+if [ -f "venv/bin/activate" ]; then
+    source venv/bin/activate
+fi
+
+# Check code formatting with black
+echo "Checking code formatting with black..."
+black --check src/ tests/
+if [ $? -ne 0 ]; then
+    echo "❌ Code formatting check failed."
+    echo "   Run 'black src/ tests/' to fix formatting, then commit again."
+    exit 1
+fi
+
+echo "✅ Pre-commit checks passed!"
+exit 0
