@@ -197,7 +197,8 @@ class QueueManager:
 
             if doc.exists:
                 data = doc.to_dict()
-                return JobQueueItem.from_firestore(doc.id, data)
+                if data:
+                    return JobQueueItem.from_firestore(doc.id, data)
             else:
                 logger.warning(f"Queue item {item_id} not found")
                 return None
@@ -417,6 +418,8 @@ class QueueManager:
         source: QueueSource = "scraper",
     ) -> str:
         """
+        DEPRECATED: Use spawn_item_safely() instead for loop prevention.
+
         Create a granular pipeline queue item.
 
         Args:
@@ -431,23 +434,10 @@ class QueueManager:
         Returns:
             Document ID of created item
         """
-        item = JobQueueItem(
-            type=QueueItemType.JOB,
-            url=url,
-            sub_task=sub_task,
-            pipeline_state=pipeline_state,
-            parent_item_id=parent_item_id,
-            company_name=company_name,
-            company_id=company_id,
-            source=source,
+        raise DeprecationWarning(
+            "create_pipeline_item() is deprecated. Use spawn_item_safely() instead "
+            "to ensure loop prevention with tracking_id, ancestry_chain, and spawn_depth."
         )
-
-        doc_id = self.add_item(item)
-        logger.info(
-            f"Created pipeline item: {sub_task.value} for {url[:50]}... "
-            f"(parent: {parent_item_id or 'none'})"
-        )
-        return doc_id
 
     def spawn_next_pipeline_step(
         self,
@@ -455,10 +445,11 @@ class QueueManager:
         next_sub_task: Optional[JobSubTask] = None,
         pipeline_state: Optional[Dict[str, Any]] = None,
         is_company: bool = False,
-    ) -> str:
+    ) -> Optional[str]:
         """
         Spawn the next step in the pipeline from current item.
 
+        Uses spawn_item_safely() for loop prevention.
         Supports both job and company pipelines.
 
         Args:
@@ -468,41 +459,47 @@ class QueueManager:
             is_company: If True, treat as company pipeline
 
         Returns:
-            Document ID of spawned item
+            Document ID of spawned item, or None if blocked
         """
         if is_company:
             # Company pipeline
             if not isinstance(next_sub_task, CompanySubTask):
                 raise ValueError("next_sub_task must be CompanySubTask for company pipelines")
 
-            item = JobQueueItem(
-                type=QueueItemType.COMPANY,
-                url=current_item.url,
-                company_name=current_item.company_name,
-                company_id=current_item.company_id,
-                source=current_item.source,
-                company_sub_task=next_sub_task,
-                pipeline_state=pipeline_state,
-                parent_item_id=current_item.id,
-            )
+            new_item_data = {
+                "type": QueueItemType.COMPANY,
+                "url": current_item.url,
+                "company_name": current_item.company_name,
+                "company_id": current_item.company_id,
+                "source": current_item.source,
+                "company_sub_task": next_sub_task,
+                "pipeline_state": pipeline_state,
+            }
 
-            doc_id = self.add_item(item)
-            logger.info(
-                f"Created company pipeline item: {next_sub_task.value} for {current_item.company_name} "
-                f"(parent: {current_item.id or 'none'})"
-            )
+            doc_id = self.spawn_item_safely(current_item, new_item_data)
+            if doc_id:
+                logger.info(
+                    f"Created company pipeline item: {next_sub_task.value} for {current_item.company_name}"
+                )
             return doc_id
         else:
-            # Job pipeline (existing logic)
-            return self.create_pipeline_item(
-                url=current_item.url,
-                sub_task=next_sub_task,
-                pipeline_state=pipeline_state,
-                parent_item_id=current_item.id,
-                company_name=current_item.company_name,
-                company_id=current_item.company_id,
-                source=current_item.source,
-            )
+            # Job pipeline
+            new_item_data = {
+                "type": QueueItemType.JOB,
+                "url": current_item.url,
+                "company_name": current_item.company_name,
+                "company_id": current_item.company_id,
+                "source": current_item.source,
+                "sub_task": next_sub_task,
+                "pipeline_state": pipeline_state,
+            }
+
+            doc_id = self.spawn_item_safely(current_item, new_item_data)
+            if doc_id:
+                logger.info(
+                    f"Created job pipeline item: {next_sub_task.value if next_sub_task else 'next'} for {current_item.url[:50]}..."
+                )
+            return doc_id
 
     def update_pipeline_state(
         self,
@@ -565,3 +562,200 @@ class QueueManager:
         except Exception as e:
             logger.error(f"Error getting pipeline items for parent {parent_item_id}: {e}")
             return []
+
+    def get_items_by_tracking_id(
+        self,
+        tracking_id: str,
+        status_filter: Optional[List[QueueStatus]] = None,
+    ) -> List[JobQueueItem]:
+        """
+        Get all items in the same tracking lineage.
+
+        Used for loop detection and duplicate work prevention.
+
+        Args:
+            tracking_id: Tracking ID to query
+            status_filter: Optional list of statuses to filter by
+
+        Returns:
+            List of queue items with matching tracking_id
+        """
+        try:
+            query = self.db.collection(self.collection_name).where("tracking_id", "==", tracking_id)
+
+            docs = query.stream()
+            items = []
+
+            for doc in docs:
+                data = doc.to_dict()
+                item = JobQueueItem.from_firestore(doc.id, data)
+
+                # Filter by status if specified
+                if status_filter is None or item.status in status_filter:
+                    items.append(item)
+
+            return items
+
+        except Exception as e:
+            logger.error(f"Error getting items by tracking_id {tracking_id}: {e}")
+            return []
+
+    def has_pending_work_for_url(
+        self,
+        url: str,
+        item_type: QueueItemType,
+        tracking_id: str,
+    ) -> bool:
+        """
+        Check if URL is already queued for processing in this tracking lineage.
+
+        Args:
+            url: URL to check
+            item_type: Type of work (job, company, etc.)
+            tracking_id: Tracking ID to scope the check
+
+        Returns:
+            True if work is pending or processing, False otherwise
+        """
+        try:
+            # Note: Firestore compound queries require indexes
+            # For now, get all items by tracking_id and filter in-memory
+            items = self.get_items_by_tracking_id(
+                tracking_id,
+                status_filter=[QueueStatus.PENDING, QueueStatus.PROCESSING],
+            )
+
+            for item in items:
+                if item.url == url and item.type == item_type:
+                    return True
+
+            return False
+
+        except Exception as e:
+            logger.error(f"Error checking pending work for {url}: {e}")
+            return False
+
+    def can_spawn_item(
+        self,
+        current_item: JobQueueItem,
+        target_url: str,
+        target_type: QueueItemType,
+    ) -> tuple[bool, str]:
+        """
+        Check if spawning a new item would create a loop.
+
+        Performs 4 checks:
+        1. Spawn depth limit
+        2. Circular dependency (URL already in ancestry)
+        3. Duplicate pending work
+        4. Already completed successfully
+
+        Args:
+            current_item: Current queue item attempting to spawn
+            target_url: URL of item to spawn
+            target_type: Type of item to spawn
+
+        Returns:
+            Tuple of (can_spawn, reason)
+        """
+        # Check 1: Depth limit
+        if current_item.spawn_depth >= current_item.max_spawn_depth:
+            return (
+                False,
+                f"Max spawn depth ({current_item.max_spawn_depth}) reached",
+            )
+
+        # Check 2: Circular dependency - get all URLs in ancestry
+        try:
+            ancestor_items = self.get_items_by_tracking_id(current_item.tracking_id)
+            ancestor_urls = {
+                item.url for item in ancestor_items if item.id in current_item.ancestry_chain
+            }
+
+            if target_url in ancestor_urls:
+                return (
+                    False,
+                    f"Circular dependency detected: {target_url} already in ancestry chain",
+                )
+        except Exception as e:
+            logger.warning(f"Error checking ancestry chain: {e}")
+
+        # Check 3: Duplicate pending work
+        if self.has_pending_work_for_url(target_url, target_type, current_item.tracking_id):
+            return (
+                False,
+                f"Duplicate work: {target_type.value} for {target_url} already queued",
+            )
+
+        # Check 4: Already completed successfully
+        completed_items = self.get_items_by_tracking_id(
+            current_item.tracking_id,
+            status_filter=[QueueStatus.SUCCESS],
+        )
+
+        for item in completed_items:
+            if item.url == target_url and item.type == target_type:
+                return (
+                    False,
+                    f"Already completed: {target_type.value} for {target_url}",
+                )
+
+        # All checks passed
+        return (True, "OK")
+
+    def spawn_item_safely(
+        self,
+        current_item: JobQueueItem,
+        new_item_data: dict,
+    ) -> Optional[str]:
+        """
+        Spawn a new queue item with loop prevention.
+
+        Automatically inherits tracking_id, ancestry_chain, and spawn_depth from parent.
+        Performs loop prevention checks before spawning.
+
+        Args:
+            current_item: Current item spawning the new one
+            new_item_data: Data for new item (must include 'type' and 'url')
+
+        Returns:
+            Document ID of spawned item, or None if blocked
+        """
+        target_url = new_item_data.get("url", "")
+        target_type = new_item_data.get("type")
+
+        if not target_type:
+            logger.error("Cannot spawn item without 'type' field")
+            return None
+
+        if not isinstance(target_type, QueueItemType):
+            target_type = QueueItemType(target_type)
+
+        # Check if spawning is allowed
+        can_spawn, reason = self.can_spawn_item(current_item, target_url, target_type)
+
+        if not can_spawn:
+            logger.warning(
+                f"Blocked spawn to prevent loop: {reason}. "
+                f"Current item: {current_item.id}, tracking_id: {current_item.tracking_id}"
+            )
+            return None
+
+        # Create new item with inherited tracking data
+        new_item_data["tracking_id"] = current_item.tracking_id
+        new_item_data["ancestry_chain"] = current_item.ancestry_chain + [current_item.id]
+        new_item_data["spawn_depth"] = current_item.spawn_depth + 1
+        new_item_data["parent_item_id"] = current_item.id
+
+        new_item = JobQueueItem(**new_item_data)
+
+        # Add to queue
+        item_id = self.add_item(new_item)
+
+        logger.info(
+            f"Spawned item {item_id} (depth: {new_item.spawn_depth}, "
+            f"tracking_id: {new_item.tracking_id}, "
+            f"chain length: {len(new_item.ancestry_chain)})"
+        )
+
+        return item_id

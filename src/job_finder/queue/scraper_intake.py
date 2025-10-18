@@ -1,6 +1,7 @@
 """Helper for scrapers to submit jobs to the queue."""
 
 import logging
+import uuid
 from typing import Any, Dict, List, Optional
 
 from job_finder.queue.manager import QueueManager
@@ -81,6 +82,9 @@ class ScraperIntake:
                     continue
 
                 # Create queue item with normalized URL and JOB_SCRAPE sub-task
+                # Generate tracking_id for this root job (all spawned items will inherit it)
+                tracking_id = str(uuid.uuid4())
+
                 # Note: Full job data will be re-scraped during processing if not provided
                 queue_item = JobQueueItem(
                     type=QueueItemType.JOB,
@@ -92,10 +96,18 @@ class ScraperIntake:
                     scraped_data=(
                         job if len(job) > 2 else None
                     ),  # Include full job data if available
+                    tracking_id=tracking_id,  # Root tracking ID
+                    ancestry_chain=[],  # Root has no ancestors
+                    spawn_depth=0,  # Root starts at depth 0
                 )
 
                 # Add to queue
-                self.queue_manager.add_item(queue_item)
+                doc_id = self.queue_manager.add_item(queue_item)
+                # Set tracking_id as first item in ancestry chain
+                queue_item.ancestry_chain = [doc_id]
+                self.queue_manager.db.collection("job-queue").document(doc_id).update(
+                    {"ancestry_chain": [doc_id]}
+                )
                 added_count += 1
 
             except Exception as e:
@@ -154,6 +166,9 @@ class ScraperIntake:
             # Import CompanySubTask
             from job_finder.queue.models import CompanySubTask
 
+            # Generate tracking_id for this root company (all spawned items will inherit it)
+            tracking_id = str(uuid.uuid4())
+
             # Create granular pipeline item starting with FETCH
             queue_item = JobQueueItem(
                 type=QueueItemType.COMPANY,
@@ -161,11 +176,20 @@ class ScraperIntake:
                 company_name=company_name,
                 source=source,
                 company_sub_task=CompanySubTask.FETCH,
+                tracking_id=tracking_id,  # Root tracking ID
+                ancestry_chain=[],  # Root has no ancestors
+                spawn_depth=0,  # Root starts at depth 0
             )
 
             # Add to queue
             doc_id = self.queue_manager.add_item(queue_item)
-            logger.info(f"Submitted company to granular pipeline: {company_name} (ID: {doc_id})")
+            # Set doc_id as first item in ancestry chain
+            self.queue_manager.db.collection("job-queue").document(doc_id).update(
+                {"ancestry_chain": [doc_id]}
+            )
+            logger.info(
+                f"Submitted company to granular pipeline: {company_name} (ID: {doc_id}, tracking_id: {tracking_id})"
+            )
             return doc_id
 
         except Exception as e:
