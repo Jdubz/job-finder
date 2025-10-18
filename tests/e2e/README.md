@@ -2,9 +2,11 @@
 
 End-to-end tests for the Portfolio + Job-Finder integration in the staging environment.
 
+**⚠️ IMPORTANT: These tests are for MANUAL execution only. They are NOT part of CI/CD pipelines.**
+
 ## Overview
 
-This test suite validates the complete job processing pipeline from submission through AI analysis to match creation. Tests run against the `portfolio-staging` Firestore database.
+This test suite validates the complete job processing pipeline from submission through AI analysis to match creation. Tests run against the `portfolio-staging` Firestore database and must be executed manually from the local repository.
 
 ## Test Scenarios
 
@@ -266,16 +268,17 @@ class MyTestScenario(BaseE2EScenario):
         # Assert expected results
 ```
 
-## CI/CD Integration
+## Manual Execution Only
 
-Tests can be run automatically via GitHub Actions:
+**These tests are NOT automated.** They must be run manually from the local repository when needed.
 
-```yaml
-- name: Run E2E Tests
-  run: |
-    cd job-finder-e2e-tests
-    python tests/e2e/run_all_scenarios.py --database portfolio-staging
-```
+E2E tests are excluded from CI/CD because they:
+- Require a live staging environment with running queue workers
+- Take significant time to complete (minutes per scenario)
+- Consume AI API credits
+- May interfere with actual staging data if not properly isolated
+
+To run tests, execute the scripts directly from your local environment with proper credentials configured.
 
 ## Environment Variables
 
