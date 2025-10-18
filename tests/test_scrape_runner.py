@@ -412,7 +412,9 @@ class TestScrapeSourceMethod:
 
             # Mock filter to pass
             with patch("job_finder.scrape_runner.filter_job") as mock_filter:
-                mock_filter.return_value = MagicMock(passed=True)
+                from job_finder.utils.job_type_filter import FilterDecision
+
+                mock_filter.return_value = (FilterDecision.ACCEPT, "Passed")
 
                 # Mock job doesn't exist
                 scrape_runner.job_storage.job_exists.return_value = False
