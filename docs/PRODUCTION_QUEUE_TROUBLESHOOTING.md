@@ -1,5 +1,27 @@
 # Production Queue Troubleshooting Guide
 
+## Quick Links
+
+### Google Cloud Logging
+
+View container logs directly in Google Cloud Console (no SSH required):
+
+**Production Container Logs:**
+- [All Logs](https://console.cloud.google.com/logs/query;query=logName%3D%22projects%2Fstatic-sites-257923%2Flogs%2Fjob-finder%22%0Aresource.labels.container_name%3D%22job-finder-production%22;timeRange=PT1H?project=static-sites-257923) (last hour)
+- [Errors Only](https://console.cloud.google.com/logs/query;query=logName%3D%22projects%2Fstatic-sites-257923%2Flogs%2Fjob-finder%22%0Aresource.labels.container_name%3D%22job-finder-production%22%0Aseverity%3E%3DERROR;timeRange=PT1H?project=static-sites-257923)
+- [Queue Processing](https://console.cloud.google.com/logs/query;query=logName%3D%22projects%2Fstatic-sites-257923%2Flogs%2Fjob-finder%22%0Aresource.labels.container_name%3D%22job-finder-production%22%0AtextPayload%3D~%22Found%20.%2B%20pending%20items%22;timeRange=PT1H?project=static-sites-257923)
+
+**Staging Container Logs:**
+- [All Logs](https://console.cloud.google.com/logs/query;query=logName%3D%22projects%2Fstatic-sites-257923%2Flogs%2Fjob-finder%22%0Aresource.labels.container_name%3D%22job-finder-staging%22;timeRange=PT1H?project=static-sites-257923) (last hour)
+- [Errors Only](https://console.cloud.google.com/logs/query;query=logName%3D%22projects%2Fstatic-sites-257923%2Flogs%2Fjob-finder%22%0Aresource.labels.container_name%3D%22job-finder-staging%22%0Aseverity%3E%3DERROR;timeRange=PT1H?project=static-sites-257923)
+- [Queue Processing](https://console.cloud.google.com/logs/query;query=logName%3D%22projects%2Fstatic-sites-257923%2Flogs%2Fjob-finder%22%0Aresource.labels.container_name%3D%22job-finder-staging%22%0AtextPayload%3D~%22Found%20.%2B%20pending%20items%22;timeRange=PT1H?project=static-sites-257923)
+
+> **Note:** If resource labels don't filter correctly, use these alternative queries:
+> - Production: `logName="projects/static-sites-257923/logs/job-finder" AND textPayload=~"portfolio" AND NOT textPayload=~"staging"`
+> - Staging: `logName="projects/static-sites-257923/logs/job-finder" AND textPayload=~"portfolio-staging"`
+
+---
+
 ## Issue: Document Generation Requests Not Appearing in Job Queue
 
 ### Symptoms
