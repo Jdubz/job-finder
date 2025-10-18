@@ -320,6 +320,8 @@ Comprehensive documentation is available in the [`docs/`](docs/) directory:
 ### Architecture & Design
 - **[System Architecture](docs/architecture.md)** - Complete system design, components, and data flow
 - **[Queue System](docs/queue-system.md)** - Queue-based pipeline architecture and processing
+- **[State-Driven Pipeline](docs/STATE_DRIVEN_PIPELINE_SUMMARY.md)** - 🆕 Intelligent, self-healing pipeline design
+- **[Loop Prevention](docs/LOOP_PREVENTION_SUMMARY.md)** - 🆕 Protection against infinite loops and circular dependencies
 
 ### Deployment & Operations
 - **[Hourly Scraping](docs/hourly-scraping.md)** - Automated hourly job scraping with source rotation
