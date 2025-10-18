@@ -272,46 +272,14 @@ class FirestoreBackupRestore:
 class TestJobSubmitter:
     """Submits test jobs with known values for validation."""
 
-    # Known test data - simple jobs for basic testing
-    # URLs include timestamp to ensure uniqueness across test runs
-    TEST_JOBS_TEMPLATE = [
-        {
-            "company_name": "MongoDB",
-            "job_title": "Senior Backend Engineer",
-            "job_url_template": "https://test.example.com/mongodb/{timestamp}",
-            "description": "Build scalable backend systems",
-            "expected_behavior": "should_create",
-        },
-        {
-            "company_name": "Netflix",
-            "job_title": "Machine Learning Engineer",
-            "job_url_template": "https://test.example.com/netflix/{timestamp}",
-            "description": "Work on recommendation systems",
-            "expected_behavior": "should_create",
-        },
-        {
-            "company_name": "Shopify",
-            "job_title": "Full Stack Engineer",
-            "job_url_template": "https://test.example.com/shopify/{timestamp}",
-            "description": "Build customer-facing features",
-            "expected_behavior": "should_create",
-        },
-        {
-            "company_name": "Stripe",
-            "job_title": "Platform Engineer",
-            "job_url_template": "https://test.example.com/stripe/{timestamp}",
-            "description": "Build platform infrastructure",
-            "expected_behavior": "should_create",
-        },
-    ]
-
-    def __init__(self, database_name: str, test_count: int = 4):
+    def __init__(self, database_name: str, test_count: int = 4, source_database: str = "portfolio"):
         """
         Initialize job submitter.
 
         Args:
-            database_name: Name of database to use
+            database_name: Name of database to use (test database)
             test_count: Number of test jobs to submit (1-4, default: 4)
+            source_database: Database to fetch real job URLs from (default: portfolio)
         """
         from job_finder.queue import QueueManager
         from job_finder.queue.scraper_intake import ScraperIntake
@@ -320,13 +288,55 @@ class TestJobSubmitter:
         self.queue_manager = QueueManager(database_name)
         self.intake = ScraperIntake(self.queue_manager)
 
-        # Generate unique test jobs with timestamp
-        self.timestamp = int(datetime.now().timestamp())
-        self.test_count = min(test_count, len(self.TEST_JOBS_TEMPLATE))
-        self.TEST_JOBS = [
-            {**job, "job_url": job["job_url_template"].format(timestamp=self.timestamp)}
-            for job in self.TEST_JOBS_TEMPLATE[: self.test_count]
-        ]
+        # Fetch real job URLs from production database
+        self.source_db = FirestoreClient.get_client(source_database)
+        self.test_count = test_count
+        self.TEST_JOBS = self._get_real_test_jobs()
+
+    def _get_real_test_jobs(self) -> List[Dict[str, Any]]:
+        """
+        Fetch real job URLs from production database.
+
+        Returns:
+            List of test jobs with real URLs
+        """
+        logger.info(f"Fetching {self.test_count} real job URLs from production...")
+
+        jobs = []
+
+        # Get recent successful jobs from job-matches
+        query = (
+            self.source_db.collection("job-matches")
+            .order_by("created_at", direction="DESCENDING")
+            .limit(self.test_count * 2)  # Get extra in case some are duplicates
+        )
+
+        for doc in query.stream():
+            if len(jobs) >= self.test_count:
+                break
+
+            data = doc.to_dict()
+            if not data:
+                continue
+
+            url = data.get("url")
+            company = data.get("company")
+            title = data.get("title")
+            description = data.get("description", "")
+
+            if url and company and title:
+                jobs.append(
+                    {
+                        "company_name": company,
+                        "job_title": title,
+                        "job_url": url,
+                        "description": description,
+                        "expected_behavior": "should_reprocess",
+                    }
+                )
+
+        logger.info(f"Found {len(jobs)} real job URLs for testing")
+        return jobs
 
     def submit_test_job(self, test_job: Dict[str, Any], test_run_id: str) -> TestJobSubmission:
         """
@@ -576,7 +586,9 @@ class E2ETestDataCollector:
 
         # Initialize components for TEST database (staging)
         self.backup_restore = FirestoreBackupRestore(database_name)
-        self.job_submitter = TestJobSubmitter(database_name, test_count=test_count)
+        self.job_submitter = TestJobSubmitter(
+            database_name, test_count=test_count, source_database=source_database
+        )
         self.results_collector = TestResultsCollector(database_name, self.output_dir)
 
         # Initialize separate client for SOURCE database (production) - READ ONLY
