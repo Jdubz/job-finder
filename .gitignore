@@ -38,6 +38,7 @@ ENV/
 .coverage
 htmlcov/
 .tox/
+test_results/
 
 # Data and Logs
 data/*.json

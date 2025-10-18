@@ -265,37 +265,70 @@ if __name__ == "__main__":
     parser.add_argument(
         "--database",
         default="portfolio-staging",
-        help="Firestore database name",
+        help="Firestore database name (default: portfolio-staging)",
+    )
+    parser.add_argument(
+        "--output",
+        default=None,
+        help="Output file for test results (optional)",
     )
     parser.add_argument(
         "--verbose",
         action="store_true",
-        help="Enable verbose output",
+        help="Enable verbose output (default: False)",
+    )
+    parser.add_argument(
+        "--stream-logs",
+        action="store_true",
+        default=True,
+        help="Enable log streaming from Google Cloud Logs (default: True)",
     )
     parser.add_argument(
         "--no-logs",
         action="store_true",
-        help="Disable log streaming",
+        help="Disable log streaming (overrides --stream-logs)",
+    )
+    parser.add_argument(
+        "--monitor-quality",
+        action="store_true",
+        default=True,
+        help="Enable data quality monitoring (default: True)",
     )
     parser.add_argument(
         "--no-quality",
         action="store_true",
-        help="Disable data quality monitoring",
+        help="Disable data quality monitoring (overrides --monitor-quality)",
     )
     parser.add_argument(
         "--scenarios",
         nargs="+",
-        help="Specific scenarios to run",
+        help="Specific scenarios to run (optional)",
     )
 
     args = parser.parse_args()
 
-    exit_code = run_e2e_with_streaming(
-        database_name=args.database,
-        verbose=args.verbose,
-        stream_logs=not args.no_logs,
-        monitor_quality=not args.no_quality,
-        scenarios=args.scenarios,
-    )
+    # Handle logging preference
+    stream_logs = not args.no_logs and (args.stream_logs or not args.no_logs)
+    monitor_quality = not args.no_quality and (args.monitor_quality or not args.no_quality)
+
+    output_file = None
+    if args.output:
+        import sys
+
+        output_file = open(args.output, "w")
+        sys.stdout = output_file
+        sys.stderr = output_file
+
+    try:
+        exit_code = run_e2e_with_streaming(
+            database_name=args.database,
+            verbose=args.verbose,
+            stream_logs=stream_logs,
+            monitor_quality=monitor_quality,
+            scenarios=args.scenarios,
+        )
+    finally:
+        if output_file:
+            output_file.close()
 
     exit(exit_code)

@@ -543,14 +543,20 @@ def main():
     parser.add_argument(
         "--output-dir",
         default="./analysis_reports",
-        help="Output directory for analysis",
+        help="Output directory for analysis (default: ./analysis_reports)",
+    )
+    parser.add_argument(
+        "--verbose",
+        action="store_true",
+        help="Enable verbose logging (default: False)",
     )
 
     args = parser.parse_args()
 
     # Setup logging
+    log_level = logging.DEBUG if args.verbose else logging.INFO
     logging.basicConfig(
-        level=logging.INFO,
+        level=log_level,
         format="%(asctime)s - %(levelname)s - %(message)s",
     )
 

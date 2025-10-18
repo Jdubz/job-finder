@@ -523,6 +523,8 @@ class E2ETestDataCollector:
         database_name: str,
         output_dir: Path,
         verbose: bool = False,
+        backup_dir: Optional[Path] = None,
+        clean_before: bool = False,
     ):
         """
         Initialize test data collector.
@@ -531,10 +533,21 @@ class E2ETestDataCollector:
             database_name: Firestore database name
             output_dir: Output directory for results
             verbose: Enable verbose logging
+            backup_dir: Directory to save backups (defaults to output_dir/backup)
+            clean_before: Whether to clean collections before testing
         """
         self.database_name = database_name
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
+
+        # Set backup directory
+        if backup_dir:
+            self.backup_dir = Path(backup_dir)
+        else:
+            self.backup_dir = self.output_dir / "backup"
+        self.backup_dir.mkdir(parents=True, exist_ok=True)
+
+        self.clean_before = clean_before
 
         # Setup logging
         self._setup_logging(verbose)
@@ -741,17 +754,27 @@ def main():
     parser.add_argument(
         "--database",
         default="portfolio-staging",
-        help="Firestore database name",
+        help="Firestore database name (default: portfolio-staging)",
     )
     parser.add_argument(
         "--output-dir",
         default="./test_results",
-        help="Output directory for results",
+        help="Output directory for results (default: ./test_results)",
+    )
+    parser.add_argument(
+        "--backup-dir",
+        default=None,
+        help="Directory to save backups (default: {output-dir}/backup)",
+    )
+    parser.add_argument(
+        "--clean-before",
+        action="store_true",
+        help="Clean collections before testing (default: False)",
     )
     parser.add_argument(
         "--verbose",
         action="store_true",
-        help="Enable verbose logging",
+        help="Enable verbose logging (default: False)",
     )
 
     args = parser.parse_args()
@@ -760,6 +783,8 @@ def main():
         database_name=args.database,
         output_dir=args.output_dir,
         verbose=args.verbose,
+        backup_dir=args.backup_dir,
+        clean_before=args.clean_before,
     )
 
     result = collector.run_collection()
