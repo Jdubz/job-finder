@@ -4,7 +4,7 @@ import logging
 from typing import Any, Dict, List, Optional
 
 from job_finder.queue.manager import QueueManager
-from job_finder.queue.models import JobQueueItem, QueueItemType, QueueSource
+from job_finder.queue.models import JobQueueItem, JobSubTask, QueueItemType, QueueSource
 from job_finder.utils.url_utils import normalize_url
 
 logger = logging.getLogger(__name__)
@@ -80,7 +80,7 @@ class ScraperIntake:
                     logger.debug(f"Job already exists in job-matches: {normalized_url}")
                     continue
 
-                # Create queue item with normalized URL
+                # Create queue item with normalized URL and JOB_SCRAPE sub-task
                 # Note: Full job data will be re-scraped during processing if not provided
                 queue_item = JobQueueItem(
                     type=QueueItemType.JOB,
@@ -88,6 +88,7 @@ class ScraperIntake:
                     company_name=job.get("company", ""),
                     company_id=company_id,
                     source=source,
+                    sub_task=JobSubTask.SCRAPE,  # Required: Start at JOB_SCRAPE stage
                     scraped_data=(
                         job if len(job) > 2 else None
                     ),  # Include full job data if available
