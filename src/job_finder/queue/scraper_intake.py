@@ -5,6 +5,7 @@ from typing import Any, Dict, List, Optional
 
 from job_finder.queue.manager import QueueManager
 from job_finder.queue.models import JobQueueItem, QueueItemType, QueueSource
+from job_finder.utils.url_utils import normalize_url
 
 logger = logging.getLogger(__name__)
 
@@ -64,23 +65,26 @@ class ScraperIntake:
                     logger.debug("Skipping job with missing or empty URL")
                     continue
 
+                # Normalize URL for consistent comparison
+                normalized_url = normalize_url(url)
+
                 # Check if URL already in queue
-                if self.queue_manager.url_exists_in_queue(url):
+                if self.queue_manager.url_exists_in_queue(normalized_url):
                     skipped_count += 1
-                    logger.debug(f"Job already in queue: {url}")
+                    logger.debug(f"Job already in queue: {normalized_url}")
                     continue
 
                 # Check if job already exists in job-matches
-                if self.job_storage and self.job_storage.job_exists(url):
+                if self.job_storage and self.job_storage.job_exists(normalized_url):
                     skipped_count += 1
-                    logger.debug(f"Job already exists in job-matches: {url}")
+                    logger.debug(f"Job already exists in job-matches: {normalized_url}")
                     continue
 
-                # Create queue item
+                # Create queue item with normalized URL
                 # Note: Full job data will be re-scraped during processing if not provided
                 queue_item = JobQueueItem(
                     type=QueueItemType.JOB,
-                    url=url,
+                    url=normalized_url,
                     company_name=job.get("company", ""),
                     company_id=company_id,
                     source=source,
@@ -129,9 +133,12 @@ class ScraperIntake:
                 logger.debug(f"Skipping company {company_name} with missing or empty URL")
                 return None
 
+            # Normalize URL for consistent comparison
+            normalized_url = normalize_url(url)
+
             # Check if URL already in queue
-            if self.queue_manager.url_exists_in_queue(url):
-                logger.debug(f"Company already in queue: {url}")
+            if self.queue_manager.url_exists_in_queue(normalized_url):
+                logger.debug(f"Company already in queue: {normalized_url}")
                 return None
 
             # Check if company already exists in companies collection
@@ -149,7 +156,7 @@ class ScraperIntake:
             # Create granular pipeline item starting with FETCH
             queue_item = JobQueueItem(
                 type=QueueItemType.COMPANY,
-                url=url,
+                url=normalized_url,
                 company_name=company_name,
                 source=source,
                 company_sub_task=CompanySubTask.FETCH,

@@ -1,0 +1,207 @@
+2025-10-18 10:55:46,466 - tests.e2e.scenarios.base_scenario - INFO - [JobSubmissionScenario] Setting up scenario...
+2025-10-18 10:55:46,673 - job_finder.storage.firestore_client - INFO - Initialized Firebase Admin SDK
+2025-10-18 10:55:46,702 - google.auth._default - DEBUG - Checking ./credentials/serviceAccountKey.json for explicit credentials as part of auth process...
+2025-10-18 10:55:46,732 - job_finder.storage.firestore_client - INFO - Connected to Firestore database: portfolio-staging in project static-sites-257923
+2025-10-18 10:55:46,732 - job_finder.storage.firestore_client - INFO - Created new Firestore client for database: portfolio-staging
+2025-10-18 10:55:46,732 - tests.e2e.scenarios.base_scenario - INFO - [JobSubmissionScenario] Test dependencies initialized
+2025-10-18 10:55:46,732 - tests.e2e.helpers.firestore_helper - DEBUG - Creating queue item: https://boards.greenhouse.io/cloudflare/jobs/7270583
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+E0000 00:00:1760810146.739614 1067741 alts_credentials.cc:93] ALTS creds ignored. Not running on GCP and untrusted ALTS is not enabled.
+2025-10-18 10:55:46,793 - urllib3.connectionpool - DEBUG - Starting new HTTPS connection (1): oauth2.googleapis.com:443
+2025-10-18 10:55:46,888 - urllib3.connectionpool - DEBUG - https://oauth2.googleapis.com:443 "POST /token HTTP/1.1" 200 None
+2025-10-18 10:55:47,011 - tests.e2e.helpers.firestore_helper - INFO - Created queue item: WMmnzhdkHcnfKZBWgtvn
+2025-10-18 10:55:47,011 - tests.e2e.scenarios.base_scenario - INFO - [JobSubmissionScenario] Created queue item: WMmnzhdkHcnfKZBWgtvn
+2025-10-18 10:55:47,011 - tests.e2e.helpers.queue_monitor - INFO - Waiting for WMmnzhdkHcnfKZBWgtvn to reach stage: scrape (timeout: 60.0s)
+2025-10-18 10:55:47,224 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 0.2s)
+2025-10-18 10:55:49,311 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 2.3s)
+2025-10-18 10:55:51,400 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: failed (elapsed: 4.4s)
+2025-10-18 10:55:51,400 - tests.e2e.helpers.queue_monitor - WARNING - Item completed before reaching stage 'scrape' (final stage: None, status: failed)
+2025-10-18 10:55:51,400 - tests.e2e.scenarios.base_scenario - INFO - [JobSubmissionScenario] Scraping complete, status: failed
+2025-10-18 10:55:51,400 - tests.e2e.helpers.queue_monitor - INFO - Waiting for WMmnzhdkHcnfKZBWgtvn to reach stage: filter (timeout: 30.0s)
+2025-10-18 10:55:51,625 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: failed (elapsed: 0.2s)
+2025-10-18 10:55:51,626 - tests.e2e.helpers.queue_monitor - WARNING - Item completed before reaching stage 'filter' (final stage: None, status: failed)
+2025-10-18 10:55:51,626 - tests.e2e.scenarios.base_scenario - INFO - [JobSubmissionScenario] Filtering complete, passed: None
+2025-10-18 10:55:51,626 - tests.e2e.helpers.queue_monitor - INFO - Waiting for WMmnzhdkHcnfKZBWgtvn to reach stage: analyze (timeout: 120.0s)
+2025-10-18 10:55:51,714 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: failed (elapsed: 0.1s)
+2025-10-18 10:55:51,714 - tests.e2e.helpers.queue_monitor - WARNING - Item completed before reaching stage 'analyze' (final stage: None, status: failed)
+2025-10-18 10:55:51,714 - tests.e2e.scenarios.base_scenario - INFO - [JobSubmissionScenario] Analysis complete, score: 0
+2025-10-18 10:55:51,714 - tests.e2e.helpers.queue_monitor - INFO - Waiting for WMmnzhdkHcnfKZBWgtvn to reach status: skipped (timeout: 30.0s)
+2025-10-18 10:55:51,918 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: failed (elapsed: 0.2s)
+2025-10-18 10:55:51,918 - tests.e2e.helpers.queue_monitor - WARNING - Item reached error state: failed - Unknown error
+2025-10-18 10:55:52,039 - tests.e2e.scenarios.base_scenario - INFO - [JobSubmissionScenario] ✓ Queue item exists
+2025-10-18 10:55:52,039 - tests.e2e.scenarios.base_scenario - WARNING - [JobSubmissionScenario] Cleanup failed: 'CleanupHelper' object is not callable
+2025-10-18 10:55:52,040 - tests.e2e.scenarios.base_scenario - INFO - [FilteredJobScenario] Setting up scenario...
+2025-10-18 10:55:52,040 - job_finder.storage.firestore_client - DEBUG - Reusing existing Firestore client for: portfolio-staging
+2025-10-18 10:55:52,040 - tests.e2e.scenarios.base_scenario - INFO - [FilteredJobScenario] Test dependencies initialized
+2025-10-18 10:55:52,040 - tests.e2e.helpers.firestore_helper - DEBUG - Creating queue item: https://www.linkedin.com/jobs/view/test-job
+2025-10-18 10:55:52,274 - tests.e2e.helpers.firestore_helper - INFO - Created queue item: QocVEVgcVHuCESDEYlEY
+2025-10-18 10:55:52,274 - tests.e2e.scenarios.base_scenario - INFO - [FilteredJobScenario] Created queue item: QocVEVgcVHuCESDEYlEY
+2025-10-18 10:55:52,274 - tests.e2e.helpers.queue_monitor - INFO - Waiting for QocVEVgcVHuCESDEYlEY to reach status: filtered (timeout: 30.0s)
+2025-10-18 10:55:52,374 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: pending (elapsed: 0.1s)
+2025-10-18 10:55:54,472 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: pending (elapsed: 2.2s)
+2025-10-18 10:55:56,561 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: pending (elapsed: 4.3s)
+2025-10-18 10:55:58,645 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: pending (elapsed: 6.4s)
+2025-10-18 10:56:00,738 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: pending (elapsed: 8.5s)
+2025-10-18 10:56:02,827 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: pending (elapsed: 10.6s)
+2025-10-18 10:56:04,913 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: pending (elapsed: 12.6s)
+2025-10-18 10:56:06,996 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: pending (elapsed: 14.7s)
+2025-10-18 10:56:09,096 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: pending (elapsed: 16.8s)
+2025-10-18 10:56:11,269 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: pending (elapsed: 19.0s)
+2025-10-18 10:56:13,356 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: pending (elapsed: 21.1s)
+2025-10-18 10:56:15,442 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: pending (elapsed: 23.2s)
+2025-10-18 10:56:17,520 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: pending (elapsed: 25.2s)
+2025-10-18 10:56:19,607 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: pending (elapsed: 27.3s)
+2025-10-18 10:56:21,698 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: pending (elapsed: 29.4s)
+2025-10-18 10:56:23,698 - tests.e2e.scenarios.base_scenario - ERROR - [FilteredJobScenario] Error in scenario: Timeout waiting for QocVEVgcVHuCESDEYlEY to reach 'filtered' (waited 31.4s, last status: pending)
+2025-10-18 10:56:23,699 - tests.e2e.scenarios.base_scenario - WARNING - [FilteredJobScenario] Cleanup failed: 'CleanupHelper' object is not callable
+2025-10-18 10:56:23,699 - tests.e2e.scenarios.base_scenario - INFO - [CompanySourceDiscoveryScenario] Setting up scenario...
+2025-10-18 10:56:23,699 - job_finder.storage.firestore_client - DEBUG - Reusing existing Firestore client for: portfolio-staging
+2025-10-18 10:56:23,699 - tests.e2e.scenarios.base_scenario - INFO - [CompanySourceDiscoveryScenario] Test dependencies initialized
+2025-10-18 10:56:23,803 - tests.e2e.helpers.queue_monitor - INFO - Waiting for AfRzebYblZ1DFCImEypI to reach status: success (timeout: 240.0s)
+2025-10-18 10:56:24,020 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: pending (elapsed: 0.2s)
+2025-10-18 10:56:26,103 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: pending (elapsed: 2.3s)
+2025-10-18 10:56:28,199 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: pending (elapsed: 4.4s)
+2025-10-18 10:56:30,285 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: pending (elapsed: 6.5s)
+2025-10-18 10:56:32,377 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: pending (elapsed: 8.6s)
+2025-10-18 10:56:34,460 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: pending (elapsed: 10.7s)
+2025-10-18 10:56:36,550 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: pending (elapsed: 12.7s)
+2025-10-18 10:56:38,632 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: pending (elapsed: 14.8s)
+2025-10-18 10:56:40,731 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: pending (elapsed: 16.9s)
+2025-10-18 10:56:42,838 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: pending (elapsed: 19.0s)
+2025-10-18 10:56:44,942 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: processing (elapsed: 21.1s)
+2025-10-18 10:56:47,133 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: processing (elapsed: 23.3s)
+2025-10-18 10:56:49,239 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: success (elapsed: 25.4s)
+2025-10-18 10:56:49,240 - tests.e2e.helpers.queue_monitor - INFO - ✓ Reached status 'success' after 25.4s
+2025-10-18 10:56:49,240 - tests.e2e.scenarios.base_scenario - INFO - [CompanySourceDiscoveryScenario] Company processing complete: success
+/home/jdubz/Development/job-finder-app/job-finder/venv/lib/python3.12/site-packages/google/cloud/firestore_v1/base_collection.py:304: UserWarning: Detected filter using positional arguments. Prefer using the 'filter' keyword argument instead.
+  return query.where(field_path, op_string, value)
+/home/jdubz/Development/job-finder-app/job-finder/tests/e2e/helpers/firestore_helper.py:143: UserWarning: Detected filter using positional arguments. Prefer using the 'filter' keyword argument instead.
+  query = query.where(field, operator, value)
+2025-10-18 10:56:51,351 - tests.e2e.helpers.firestore_helper - DEBUG - Query job-queue returned 5 documents
+2025-10-18 10:56:51,351 - tests.e2e.helpers.queue_monitor - INFO - Waiting for None to reach status: success (timeout: 120.0s)
+2025-10-18 10:56:51,558 - tests.e2e.scenarios.base_scenario - ERROR - [CompanySourceDiscoveryScenario] Error in scenario: Document None not found in job-queue
+2025-10-18 10:56:51,558 - tests.e2e.scenarios.base_scenario - WARNING - [CompanySourceDiscoveryScenario] Cleanup failed: 'CleanupHelper' object is not callable
+2025-10-18 10:56:51,558 - tests.e2e.scenarios.base_scenario - INFO - [ScrapeRotationScenario] Setting up scenario...
+2025-10-18 10:56:51,558 - job_finder.storage.firestore_client - DEBUG - Reusing existing Firestore client for: portfolio-staging
+2025-10-18 10:56:51,558 - tests.e2e.scenarios.base_scenario - INFO - [ScrapeRotationScenario] Test dependencies initialized
+2025-10-18 10:56:51,674 - tests.e2e.helpers.firestore_helper - DEBUG - Query job-sources returned 15 documents
+2025-10-18 10:56:51,674 - tests.e2e.scenarios.base_scenario - INFO - [ScrapeRotationScenario] Found 0 active sources before scrape
+2025-10-18 10:56:51,890 - tests.e2e.helpers.queue_monitor - INFO - Waiting for QPcSyM3QTGPpQEGnz6rU to reach status: success (timeout: 480.0s)
+2025-10-18 10:56:51,977 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: pending (elapsed: 0.1s)
+2025-10-18 10:56:54,110 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: pending (elapsed: 2.2s)
+2025-10-18 10:56:56,372 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: pending (elapsed: 4.5s)
+2025-10-18 10:56:58,458 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: pending (elapsed: 6.6s)
+2025-10-18 10:57:00,542 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: pending (elapsed: 8.7s)
+2025-10-18 10:57:02,628 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: pending (elapsed: 10.7s)
+2025-10-18 10:57:04,717 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: pending (elapsed: 12.8s)
+2025-10-18 10:57:06,801 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: pending (elapsed: 14.9s)
+2025-10-18 10:57:08,880 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: pending (elapsed: 17.0s)
+2025-10-18 10:57:10,962 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: pending (elapsed: 19.1s)
+2025-10-18 10:57:13,053 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: pending (elapsed: 21.2s)
+2025-10-18 10:57:15,133 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: pending (elapsed: 23.2s)
+2025-10-18 10:57:17,218 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: pending (elapsed: 25.3s)
+2025-10-18 10:57:19,298 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: pending (elapsed: 27.4s)
+2025-10-18 10:57:21,369 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: pending (elapsed: 29.5s)
+2025-10-18 10:57:23,462 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: pending (elapsed: 31.6s)
+2025-10-18 10:57:25,554 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: pending (elapsed: 33.7s)
+2025-10-18 10:57:27,645 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: pending (elapsed: 35.8s)
+2025-10-18 10:57:29,728 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: pending (elapsed: 37.8s)
+2025-10-18 10:57:31,813 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: pending (elapsed: 39.9s)
+2025-10-18 10:57:33,902 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: pending (elapsed: 42.0s)
+2025-10-18 10:57:35,987 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: pending (elapsed: 44.1s)
+2025-10-18 10:57:38,126 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: pending (elapsed: 46.2s)
+2025-10-18 10:57:40,216 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: pending (elapsed: 48.3s)
+2025-10-18 10:57:42,299 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: pending (elapsed: 50.4s)
+2025-10-18 10:57:44,386 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: pending (elapsed: 52.5s)
+2025-10-18 10:57:46,478 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: pending (elapsed: 54.6s)
+2025-10-18 10:57:48,569 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: processing (elapsed: 56.7s)
+2025-10-18 10:57:50,656 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: processing (elapsed: 58.8s)
+2025-10-18 10:57:52,748 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: processing (elapsed: 60.9s)
+2025-10-18 10:57:54,829 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: processing (elapsed: 62.9s)
+2025-10-18 10:57:56,913 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: processing (elapsed: 65.0s)
+2025-10-18 10:57:58,999 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: processing (elapsed: 67.1s)
+2025-10-18 10:58:01,191 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: processing (elapsed: 69.3s)
+2025-10-18 10:58:03,276 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: processing (elapsed: 71.4s)
+2025-10-18 10:58:05,368 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: processing (elapsed: 73.5s)
+2025-10-18 10:58:07,457 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: processing (elapsed: 75.6s)
+2025-10-18 10:58:09,533 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: processing (elapsed: 77.6s)
+2025-10-18 10:58:11,617 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: processing (elapsed: 79.7s)
+2025-10-18 10:58:13,687 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: processing (elapsed: 81.8s)
+2025-10-18 10:58:15,756 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: processing (elapsed: 83.9s)
+2025-10-18 10:58:17,823 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: processing (elapsed: 85.9s)
+2025-10-18 10:58:19,914 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: processing (elapsed: 88.0s)
+2025-10-18 10:58:22,083 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: processing (elapsed: 90.2s)
+2025-10-18 10:58:24,153 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: processing (elapsed: 92.3s)
+2025-10-18 10:58:26,255 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: processing (elapsed: 94.4s)
+2025-10-18 10:58:28,342 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: processing (elapsed: 96.5s)
+2025-10-18 10:58:30,426 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: processing (elapsed: 98.5s)
+2025-10-18 10:58:32,500 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: processing (elapsed: 100.6s)
+2025-10-18 10:58:34,568 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: processing (elapsed: 102.7s)
+2025-10-18 10:58:36,656 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: processing (elapsed: 104.8s)
+2025-10-18 10:58:38,727 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: processing (elapsed: 106.8s)
+2025-10-18 10:58:40,799 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: processing (elapsed: 108.9s)
+2025-10-18 10:58:42,880 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: processing (elapsed: 111.0s)
+2025-10-18 10:58:44,957 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: processing (elapsed: 113.1s)
+2025-10-18 10:58:47,030 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: processing (elapsed: 115.1s)
+2025-10-18 10:58:49,100 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: processing (elapsed: 117.2s)
+2025-10-18 10:58:51,174 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: processing (elapsed: 119.3s)
+2025-10-18 10:58:53,263 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: processing (elapsed: 121.4s)
+2025-10-18 10:58:55,332 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: processing (elapsed: 123.4s)
+2025-10-18 10:58:57,396 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: processing (elapsed: 125.5s)
+2025-10-18 10:58:59,467 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: processing (elapsed: 127.6s)
+2025-10-18 10:59:01,544 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: processing (elapsed: 129.7s)
+2025-10-18 10:59:03,624 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: processing (elapsed: 131.7s)
+2025-10-18 10:59:05,690 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: processing (elapsed: 133.8s)
+2025-10-18 10:59:07,771 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: processing (elapsed: 135.9s)
+2025-10-18 10:59:09,838 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: processing (elapsed: 137.9s)
+2025-10-18 10:59:11,904 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: processing (elapsed: 140.0s)
+2025-10-18 10:59:13,987 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: processing (elapsed: 142.1s)
+2025-10-18 10:59:16,062 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: processing (elapsed: 144.2s)
+2025-10-18 10:59:18,125 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: processing (elapsed: 146.2s)
+2025-10-18 10:59:20,195 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: processing (elapsed: 148.3s)
+2025-10-18 10:59:22,279 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: processing (elapsed: 150.4s)
+2025-10-18 10:59:24,357 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: processing (elapsed: 152.5s)
+2025-10-18 10:59:26,433 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: processing (elapsed: 154.5s)
+2025-10-18 10:59:28,500 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: processing (elapsed: 156.6s)
+2025-10-18 10:59:30,571 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: processing (elapsed: 158.7s)
+2025-10-18 10:59:32,643 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: processing (elapsed: 160.8s)
+2025-10-18 10:59:34,710 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: processing (elapsed: 162.8s)
+2025-10-18 10:59:36,779 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: processing (elapsed: 164.9s)
+2025-10-18 10:59:38,852 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: processing (elapsed: 167.0s)
+2025-10-18 10:59:40,919 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: processing (elapsed: 169.0s)
+2025-10-18 10:59:42,992 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: processing (elapsed: 171.1s)
+2025-10-18 10:59:45,066 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: processing (elapsed: 173.2s)
+2025-10-18 10:59:47,140 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: processing (elapsed: 175.2s)
+2025-10-18 10:59:49,210 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: processing (elapsed: 177.3s)
+2025-10-18 10:59:51,278 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: processing (elapsed: 179.4s)
+2025-10-18 10:59:53,355 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: processing (elapsed: 181.5s)
+2025-10-18 10:59:55,424 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: processing (elapsed: 183.5s)
+2025-10-18 10:59:57,503 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: processing (elapsed: 185.6s)
+2025-10-18 10:59:59,582 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: processing (elapsed: 187.7s)
+2025-10-18 11:00:01,668 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: processing (elapsed: 189.8s)
+2025-10-18 11:00:03,743 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: processing (elapsed: 191.9s)
+2025-10-18 11:00:05,811 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: processing (elapsed: 193.9s)
+2025-10-18 11:00:07,876 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: processing (elapsed: 196.0s)
+2025-10-18 11:00:09,949 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: processing (elapsed: 198.1s)
+2025-10-18 11:00:12,014 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: processing (elapsed: 200.1s)
+2025-10-18 11:00:14,078 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: processing (elapsed: 202.2s)
+2025-10-18 11:00:16,151 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: processing (elapsed: 204.3s)
+2025-10-18 11:00:18,216 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: processing (elapsed: 206.3s)
+2025-10-18 11:00:20,285 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: processing (elapsed: 208.4s)
+2025-10-18 11:00:22,363 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: processing (elapsed: 210.5s)
+2025-10-18 11:00:24,427 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: processing (elapsed: 212.5s)
+2025-10-18 11:00:26,502 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: processing (elapsed: 214.6s)
+2025-10-18 11:00:28,567 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: processing (elapsed: 216.7s)
+2025-10-18 11:00:30,636 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: processing (elapsed: 218.7s)
+2025-10-18 11:00:32,711 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: processing (elapsed: 220.8s)
+2025-10-18 11:00:34,787 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: processing (elapsed: 222.9s)
+2025-10-18 11:00:36,872 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: processing (elapsed: 225.0s)
+2025-10-18 11:00:38,940 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: processing (elapsed: 227.0s)
+2025-10-18 11:00:41,022 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: processing (elapsed: 229.1s)
+2025-10-18 11:00:43,089 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: processing (elapsed: 231.2s)
+2025-10-18 11:00:45,164 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: processing (elapsed: 233.3s)
+2025-10-18 11:00:47,232 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: processing (elapsed: 235.3s)
+2025-10-18 11:00:49,305 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: processing (elapsed: 237.4s)
+2025-10-18 11:00:51,371 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: processing (elapsed: 239.5s)
+2025-10-18 11:00:53,438 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: processing (elapsed: 241.5s)
+2025-10-18 11:00:55,512 - tests.e2e.helpers.queue_monitor - DEBUG - Current status: processing (elapsed: 243.6s)

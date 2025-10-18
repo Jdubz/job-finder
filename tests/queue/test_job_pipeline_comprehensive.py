@@ -189,9 +189,7 @@ class TestJobScrapeFailures:
         processor.sources_manager.get_source_for_url.return_value = None
 
         # Mock scraping exception
-        with patch.object(
-            processor, "_scrape_job", side_effect=Exception("Network timeout")
-        ):
+        with patch.object(processor, "_scrape_job", side_effect=Exception("Network timeout")):
             # The exception will be caught and re-raised by the processor
             try:
                 processor._process_job_scrape(item)
@@ -844,9 +842,7 @@ class TestJobSaveFailures:
         )
 
         # Mock Firestore error
-        processor.job_storage.save_job_match.side_effect = Exception(
-            "Firestore connection error"
-        )
+        processor.job_storage.save_job_match.side_effect = Exception("Firestore connection error")
 
         # The exception will be caught and re-raised
         try:
