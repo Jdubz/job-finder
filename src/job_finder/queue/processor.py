@@ -252,15 +252,20 @@ class QueueItemProcessor:
             response.raise_for_status()
             soup = BeautifulSoup(response.content, "html.parser")
 
-            # Extract job details
-            title_elem = soup.find("h1", class_="app-title")
-            company_elem = soup.find("span", class_="company-name")
-            location_elem = soup.find("div", class_="location")
-            description_elem = soup.find("div", id="content")
+            # Extract company from URL (boards.greenhouse.io/{company}/jobs/...)
+            company_match = re.search(r"boards\.greenhouse\.io/([^/]+)", url)
+            company_name = (
+                company_match.group(1).replace("-", " ").title() if company_match else "Unknown"
+            )
+
+            # Extract job details using updated selectors (Greenhouse HTML structure changed)
+            title_elem = soup.find("h1", class_="section-header")
+            location_elem = soup.find("div", class_="job__location")
+            description_elem = soup.find("div", class_="job__description")
 
             return {
                 "title": title_elem.text.strip() if title_elem else "Unknown",
-                "company": company_elem.text.strip() if company_elem else "Unknown",
+                "company": company_name,
                 "location": location_elem.text.strip() if location_elem else "Unknown",
                 "description": (
                     description_elem.get_text(separator="\n", strip=True)
