@@ -1,0 +1,63 @@
+version: '3.8'
+
+services:
+  job-finder-staging:
+    image: job-finder:staging
+    container_name: job-finder-staging-local
+    restart: unless-stopped
+
+    environment:
+      # API Keys
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/credentials/serviceAccountKey.json
+
+      # Environment Configuration
+      - ENVIRONMENT=staging
+
+      # Queue Mode - Enable dual-process mode (cron + queue worker)
+      - ENABLE_QUEUE_MODE=true
+
+      # Database Overrides - USE STAGING DATABASES
+      - PROFILE_DATABASE_NAME=portfolio-staging
+      - STORAGE_DATABASE_NAME=portfolio-staging
+
+      # Logging Configuration
+      - ENABLE_CLOUD_LOGGING=false  # Disable cloud logging for local testing
+      - LOG_LEVEL=INFO
+      - CONFIG_PATH=/app/config/config.yaml
+      - LOG_FILE=/app/logs/scheduler.log
+      - QUEUE_WORKER_LOG_FILE=/app/logs/queue_worker.log
+
+      # Timezone for cron
+      - TZ=America/Los_Angeles
+
+    volumes:
+      # Mount credentials (REQUIRED)
+      - ./credentials:/app/credentials:ro
+
+      # Mount config (optional - use if you want to edit config externally)
+      - ./config:/app/config:ro
+
+      # Mount logs for persistence
+      - ./logs:/app/logs
+
+      # Mount data for any local file outputs
+      - ./data:/app/data
+
+    networks:
+      - job-finder-network
+
+    # Resource limits (adjust as needed)
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+networks:
+  job-finder-network:
+    driver: bridge

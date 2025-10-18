@@ -18,7 +18,7 @@ from job_finder.scrapers.rss_scraper import RSSJobScraper
 from job_finder.storage import FirestoreJobStorage
 from job_finder.storage.companies_manager import CompaniesManager
 from job_finder.storage.job_sources_manager import JobSourcesManager
-from job_finder.utils.job_type_filter import filter_job
+from job_finder.utils.job_type_filter import filter_job, FilterDecision
 
 logger = logging.getLogger(__name__)
 
@@ -287,10 +287,21 @@ class ScrapeRunner:
 
         # Process each job
         for job in jobs:
-            # Step 1: Remote filter
-            filter_result = filter_job(job, self.profile.preferences)
-            if not filter_result.passed:
-                logger.debug(f"  ✗ Filtered: {job.get('title')} - {filter_result.reason}")
+            # Step 1: Job type and seniority filter
+            title = job.get("title", "")
+            description = job.get("description", "")
+            strict_role_filter = self.profile.preferences.get("strict_role_filter", True)
+            min_seniority = self.profile.preferences.get("min_seniority")
+
+            filter_decision, filter_reason = filter_job(
+                title=title,
+                description=description,
+                strict_role_filter=strict_role_filter,
+                min_seniority=min_seniority,
+            )
+
+            if filter_decision == FilterDecision.REJECT:
+                logger.debug(f"  ✗ Filtered: {job.get('title')} - {filter_reason}")
                 stats["jobs_filtered_by_role"] += 1
                 continue
 

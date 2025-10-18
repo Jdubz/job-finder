@@ -14,10 +14,10 @@ class TestModelSelection:
         model = get_model_for_task("claude", AITask.SCRAPE)
         assert model == "claude-3-5-haiku-20241022"
 
-    def test_analyze_uses_smart_claude(self):
-        """ANALYZE task should use expensive/smart Claude model."""
+    def test_analyze_uses_fast_claude(self):
+        """ANALYZE task should use cheap/fast Claude model (cost optimization)."""
         model = get_model_for_task("claude", AITask.ANALYZE)
-        assert model == "claude-3-5-sonnet-20241022"
+        assert model == "claude-3-5-haiku-20241022"
 
     def test_discovery_uses_fast_claude(self):
         """SELECTOR_DISCOVERY task should use cheap/fast model."""
@@ -29,10 +29,10 @@ class TestModelSelection:
         model = get_model_for_task("openai", AITask.SCRAPE)
         assert model == "gpt-4o-mini"
 
-    def test_analyze_uses_smart_openai(self):
-        """ANALYZE task should use expensive/smart OpenAI model."""
+    def test_analyze_uses_fast_openai(self):
+        """ANALYZE task should use cheap/fast OpenAI model (cost optimization)."""
         model = get_model_for_task("openai", AITask.ANALYZE)
-        assert model == "gpt-4o"
+        assert model == "gpt-4o-mini"
 
     def test_raises_for_unsupported_provider(self):
         """Should raise ValueError for unsupported provider."""
@@ -59,9 +59,9 @@ class TestProviderCreation:
 
     @patch("job_finder.ai.providers.ClaudeProvider")
     def test_creates_with_analyze_task(self, mock_claude):
-        """Should create provider with ANALYZE task model."""
+        """Should create provider with ANALYZE task model (cost optimized to Haiku)."""
         mock_instance = MagicMock()
-        mock_instance.model = "claude-3-5-sonnet-20241022"
+        mock_instance.model = "claude-3-5-haiku-20241022"
         mock_claude.return_value = mock_instance
 
         provider = create_provider("claude", task=AITask.ANALYZE)
@@ -69,7 +69,7 @@ class TestProviderCreation:
         # Verify ClaudeProvider was called with correct model
         mock_claude.assert_called_once()
         call_kwargs = mock_claude.call_args[1]
-        assert call_kwargs["model"] == "claude-3-5-sonnet-20241022"
+        assert call_kwargs["model"] == "claude-3-5-haiku-20241022"
 
     @patch("job_finder.ai.providers.ClaudeProvider")
     def test_explicit_model_overrides_task(self, mock_claude):
@@ -104,19 +104,21 @@ class TestProviderCreation:
 class TestCostOptimization:
     """Test cost optimization strategy."""
 
-    def test_scrape_cheaper_than_analyze(self):
-        """SCRAPE should use cheaper model than ANALYZE."""
+    def test_all_tasks_use_fast_models(self):
+        """All tasks should use cheap/fast models for maximum cost savings."""
         scrape = get_model_for_task("claude", AITask.SCRAPE)
         analyze = get_model_for_task("claude", AITask.ANALYZE)
+        discovery = get_model_for_task("claude", AITask.SELECTOR_DISCOVERY)
 
-        # Haiku is cheaper than Sonnet
+        # All use Haiku for 95% cost savings
         assert "haiku" in scrape.lower()
-        assert "sonnet" in analyze.lower()
+        assert "haiku" in analyze.lower()
+        assert "haiku" in discovery.lower()
 
     def test_task_to_tier_mapping(self):
-        """Tasks should map to correct tiers."""
+        """All tasks should map to FAST tier for cost optimization."""
         from job_finder.ai.providers import TASK_MODEL_TIERS
 
         assert TASK_MODEL_TIERS[AITask.SCRAPE] == ModelTier.FAST
-        assert TASK_MODEL_TIERS[AITask.ANALYZE] == ModelTier.SMART
+        assert TASK_MODEL_TIERS[AITask.ANALYZE] == ModelTier.FAST
         assert TASK_MODEL_TIERS[AITask.SELECTOR_DISCOVERY] == ModelTier.FAST

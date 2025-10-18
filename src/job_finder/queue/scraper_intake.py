@@ -17,14 +17,23 @@ class ScraperIntake:
     worrying about queue implementation details.
     """
 
-    def __init__(self, queue_manager: QueueManager):
+    def __init__(
+        self,
+        queue_manager: QueueManager,
+        job_storage=None,
+        companies_manager=None,
+    ):
         """
         Initialize scraper intake.
 
         Args:
             queue_manager: Queue manager for adding items
+            job_storage: JobStorage for checking job existence (optional)
+            companies_manager: CompaniesManager for checking company existence (optional)
         """
         self.queue_manager = queue_manager
+        self.job_storage = job_storage
+        self.companies_manager = companies_manager
 
     def submit_jobs(
         self,
@@ -59,6 +68,12 @@ class ScraperIntake:
                 if self.queue_manager.url_exists_in_queue(url):
                     skipped_count += 1
                     logger.debug(f"Job already in queue: {url}")
+                    continue
+
+                # Check if job already exists in job-matches
+                if self.job_storage and self.job_storage.job_exists(url):
+                    skipped_count += 1
+                    logger.debug(f"Job already exists in job-matches: {url}")
                     continue
 
                 # Create queue item
@@ -118,6 +133,15 @@ class ScraperIntake:
             if self.queue_manager.url_exists_in_queue(url):
                 logger.debug(f"Company already in queue: {url}")
                 return None
+
+            # Check if company already exists in companies collection
+            if self.companies_manager:
+                existing_company = self.companies_manager.get_company(company_name)
+                if existing_company:
+                    logger.debug(
+                        f"Company already exists: {company_name} (ID: {existing_company.get('id')})"
+                    )
+                    return None
 
             # Import CompanySubTask
             from job_finder.queue.models import CompanySubTask

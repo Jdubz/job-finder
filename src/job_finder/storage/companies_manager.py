@@ -4,6 +4,8 @@ import logging
 from datetime import datetime
 from typing import Any, Dict, Optional
 
+from job_finder.utils.company_name_utils import normalize_company_name
+
 from .firestore_client import FirestoreClient
 
 logger = logging.getLogger(__name__)
@@ -25,7 +27,7 @@ class CompaniesManager:
 
     def get_company(self, company_name: str) -> Optional[Dict[str, Any]]:
         """
-        Get company information by name.
+        Get company information by name (using normalized matching).
 
         Args:
             company_name: Company name
@@ -34,10 +36,12 @@ class CompaniesManager:
             Company data dictionary or None if not found
         """
         try:
-            # Query by name (case-insensitive)
+            # Query by normalized name for better deduplication
+            # This matches "Cloudflare" and "Cloudflare Careers" as the same company
+            normalized_name = normalize_company_name(company_name)
             docs = (
                 self.db.collection(self.collection_name)
-                .where("name_lower", "==", company_name.lower())
+                .where("name_normalized", "==", normalized_name)
                 .limit(1)
                 .stream()
             )
@@ -126,7 +130,8 @@ class CompaniesManager:
             # Prepare data
             save_data = {
                 "name": company_name,
-                "name_lower": company_name.lower(),  # For case-insensitive search
+                "name_lower": company_name.lower(),  # For case-insensitive search (legacy)
+                "name_normalized": normalize_company_name(company_name),  # For deduplication
                 "website": company_data.get("website", ""),
                 "about": company_data.get("about", ""),
                 "culture": company_data.get("culture", ""),
