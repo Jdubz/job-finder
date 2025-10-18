@@ -290,8 +290,15 @@ class ScrapeRunner:
             # Step 1: Job type and seniority filter
             title = job.get("title", "")
             description = job.get("description", "")
-            strict_role_filter = self.profile.preferences.get("strict_role_filter", True)
-            min_seniority = self.profile.preferences.get("min_seniority")
+            # Handle case where profile.preferences may be None
+            strict_role_filter = (
+                self.profile.preferences.get("strict_role_filter", True)
+                if self.profile.preferences
+                else True
+            )
+            min_seniority = (
+                self.profile.preferences.get("min_seniority") if self.profile.preferences else None
+            )
 
             filter_decision, filter_reason = filter_job(
                 title=title,
