@@ -4,6 +4,9 @@
 
 Transform the current rigid, linear pipeline into an **intelligent, state-driven system** where each atomic operation examines the database state, performs its task, and dynamically decides what work needs to happen next.
 
+**Related Documentation:**
+- Loop Prevention: See `LOOP_PREVENTION_DESIGN.md` for details on preventing infinite loops and circular dependencies
+
 ## Current Architecture (Linear & Rigid)
 
 ```
@@ -364,6 +367,38 @@ class JobQueueItem:
     discovered_from: Optional[str]  # Where was this found?
     retry_count: int = 0
     last_error: Optional[str]
+    
+    # Loop Prevention (see LOOP_PREVENTION_DESIGN.md)
+    tracking_id: str  # UUID that follows entire job lineage
+    ancestry_chain: List[str] = []  # Chain of parent IDs (prevents circular dependencies)
+    spawn_depth: int = 0  # Recursion depth (prevents infinite spawning)
+    max_spawn_depth: int = 10  # Maximum allowed depth
+```
+
+**Loop Prevention Example:**
+```python
+# Initial job
+job_1 = JobQueueItem(
+    type="job",
+    url="https://stripe.com/jobs/123",
+    tracking_id="abc-123-def",  # Generated UUID
+    ancestry_chain=["abc-123-def"],
+    spawn_depth=0
+)
+
+# Spawned company scraper inherits tracking_id
+company = JobQueueItem(
+    type="company",
+    url="https://stripe.com",
+    tracking_id="abc-123-def",  # SAME tracking_id
+    ancestry_chain=["abc-123-def", "job-1-id"],  # Adds parent
+    spawn_depth=1  # Incremented
+)
+
+# System blocks circular dependency:
+# - If trying to spawn job for same URL already in ancestry_chain
+# - If spawn_depth >= max_spawn_depth
+# - If same (url, type) already pending in this tracking_id
 ```
 
 ## Migration Path
