@@ -33,7 +33,7 @@ CYAN := \033[36m
 .DEFAULT_GOAL := help
 
 # Mark targets that don't create files
-.PHONY: help setup install dev-install clean test test-coverage test-e2e lint format type-check \
+.PHONY: help setup install dev-install clean test test-coverage test-e2e test-e2e-full lint format type-check \
         run search docker-build docker-push docker-run docker-up docker-down docker-logs \
         db-explore db-cleanup db-merge-companies db-setup-listings worker scheduler \
         deploy-staging deploy-production clean-cache clean-all
@@ -58,6 +58,7 @@ help: ## Show this help message
 	@echo "  $(GREEN)make test$(RESET)               Run all tests"
 	@echo "  $(GREEN)make test-coverage$(RESET)      Run tests with coverage report"
 	@echo "  $(GREEN)make test-e2e$(RESET)           Run end-to-end queue tests"
+	@echo "  $(GREEN)make test-e2e-full$(RESET)      Complete E2E suite: collect, clean, submit, monitor, save"
 	@echo "  $(GREEN)make test-specific$(RESET) TEST=<name>  Run specific test file"
 	@echo ""
 	@echo "$(CYAN)CODE QUALITY$(RESET)"
@@ -149,6 +150,44 @@ test-coverage: ## Run tests with coverage report
 test-e2e: ## Run end-to-end queue tests
 	@echo "$(CYAN)Running end-to-end tests...$(RESET)"
 	@. $(VENV_DIR)/bin/activate && $(PYTHON) $(SCRIPTS_DIR)/testing/test_e2e_queue.py
+
+test-e2e-full: ## Run complete E2E suite: collect data, clean, submit, monitor, save results
+	@echo "$(CYAN)Starting full E2E test suite...$(RESET)"
+	@echo "$(CYAN)This will: store data, clean, submit jobs, monitor, and save results$(RESET)"
+	@mkdir -p test_results
+	@export TEST_RUN_ID="e2e_$$(date +%s)" && \
+	export RESULTS_DIR="test_results/$${TEST_RUN_ID}" && \
+	mkdir -p "$${RESULTS_DIR}" && \
+	echo "$(BLUE)Test Run ID: $${TEST_RUN_ID}$(RESET)" && \
+	echo "$(BLUE)Results Directory: $${RESULTS_DIR}$(RESET)" && \
+	echo "" && \
+	echo "$(CYAN)[1/5] Collecting and cleaning test data...$(RESET)" && \
+	. $(VENV_DIR)/bin/activate && $(PYTHON) tests/e2e/data_collector.py \
+		--database portfolio-staging \
+		--output-dir "$${RESULTS_DIR}" \
+		--backup-dir "$${RESULTS_DIR}/backup" \
+		--clean-before \
+		--verbose && \
+	echo "" && \
+	echo "$(CYAN)[2/5] Running E2E tests with streaming logs...$(RESET)" && \
+	. $(VENV_DIR)/bin/activate && $(PYTHON) tests/e2e/run_with_streaming.py \
+		--database portfolio-staging \
+		--stream-logs \
+		--monitor-quality \
+		--output "$${RESULTS_DIR}/e2e_output.log" && \
+	echo "" && \
+	echo "$(CYAN)[3/5] Analyzing results and quality metrics...$(RESET)" && \
+	. $(VENV_DIR)/bin/activate && $(PYTHON) tests/e2e/results_analyzer.py \
+		--results-dir "$${RESULTS_DIR}" \
+		--output-dir "$${RESULTS_DIR}/analysis" \
+		--verbose && \
+	echo "" && \
+	echo "$(CYAN)[4/5] Saving comprehensive report...$(RESET)" && \
+	. $(VENV_DIR)/bin/activate && $(PYTHON) -c "import json; import sys; sys.path.insert(0, 'tests'); from e2e.data_collector import TestRunResult; print('Report saved')" && \
+	echo "" && \
+	echo "$(GREEN)✓ E2E Test Suite Complete!$(RESET)" && \
+	echo "$(YELLOW)Results saved to: $${RESULTS_DIR}$(RESET)" && \
+	echo "$(YELLOW)View analysis at: $${RESULTS_DIR}/analysis$(RESET)"
 
 test-specific: ## Run specific test file (use TEST=filename)
 	@if [ -z "$(TEST)" ]; then \
