@@ -13,6 +13,62 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+# Standard field name mappings: Python snake_case → Firestore camelCase
+# This mapping ensures consistent field name transformations across the codebase
+FIELD_MAPPING = {
+    # Job basic fields
+    "company_website": "companyWebsite",
+    "company_info": "companyInfo",
+    "company_id": "companyId",
+    "posted_date": "postedDate",
+    # Analysis fields
+    "match_score": "matchScore",
+    "matched_skills": "matchedSkills",
+    "missing_skills": "missingSkills",
+    "experience_match": "experienceMatch",
+    "key_strengths": "keyStrengths",
+    "potential_concerns": "potentialConcerns",
+    "application_priority": "applicationPriority",
+    "customization_recommendations": "customizationRecommendations",
+    "resume_intake_data": "resumeIntakeData",
+    # Status tracking fields
+    "document_generated": "documentGenerated",
+    "document_generated_at": "documentGeneratedAt",
+    "document_url": "documentUrl",
+    "applied_at": "appliedAt",
+    "user_id": "userId",
+    "created_at": "createdAt",
+    "updated_at": "updatedAt",
+}
+
+
+def to_firestore_fields(data: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Convert Python snake_case field names to Firestore camelCase.
+
+    Args:
+        data: Dictionary with Python snake_case field names
+
+    Returns:
+        Dictionary with Firestore camelCase field names
+    """
+    return {FIELD_MAPPING.get(k, k): v for k, v in data.items() if v is not None}
+
+
+def from_firestore_fields(data: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Convert Firestore camelCase field names to Python snake_case.
+
+    Args:
+        data: Dictionary with Firestore camelCase field names
+
+    Returns:
+        Dictionary with Python snake_case field names
+    """
+    reverse_mapping = {v: k for k, v in FIELD_MAPPING.items()}
+    return {reverse_mapping.get(k, k): v for k, v in data.items()}
+
+
 class FirestoreJobStorage:
     """Stores job matches in Firestore with tracking for document generation."""
 
@@ -77,20 +133,18 @@ class FirestoreJobStorage:
         role = self._extract_role_from_title(title)
 
         # Build job match document
+        # Note: Field names use camelCase for Firestore storage
+        # Optional fields (postedDate, salary, companyId) are only included if present
         job_match = {
             # Job Information
             "title": title,
             "role": role,  # Extracted role without seniority level
             "company": job.get("company", ""),
-            "companyId": job.get("companyId"),  # Link to companies collection
             "companyWebsite": job.get("company_website", ""),
             "companyInfo": job.get("company_info", ""),
             "location": job.get("location", ""),
             "description": job.get("description", ""),
             "url": job.get("url", ""),
-            "postedDate": job.get("posted_date"),
-            "salary": job.get("salary"),
-            "keywords": job.get("keywords", []),
             # Match Analysis
             "matchScore": match_result.match_score,
             "matchedSkills": match_result.matched_skills,
@@ -100,7 +154,7 @@ class FirestoreJobStorage:
             "potentialConcerns": match_result.potential_concerns,
             "applicationPriority": match_result.application_priority,
             "customizationRecommendations": match_result.customization_recommendations,
-            # Resume Intake Data
+            # Resume Intake Data (contains atsKeywords)
             "resumeIntakeData": match_result.resume_intake_data,
             # Tracking & Metadata
             "documentGenerated": False,
@@ -114,6 +168,14 @@ class FirestoreJobStorage:
             "createdAt": gcloud_firestore.SERVER_TIMESTAMP,
             "updatedAt": gcloud_firestore.SERVER_TIMESTAMP,
         }
+
+        # Add optional fields only if present
+        if job.get("companyId"):
+            job_match["companyId"] = job["companyId"]
+        if job.get("posted_date"):
+            job_match["postedDate"] = job["posted_date"]
+        if job.get("salary"):
+            job_match["salary"] = job["salary"]
 
         # Add user ID if provided
         if user_id:

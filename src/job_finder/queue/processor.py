@@ -125,12 +125,14 @@ class QueueItemProcessor:
                     )
                 self._process_granular_company(item)
             elif item.type == QueueItemType.JOB:
-                # Check if this is a granular pipeline item
-                if item.sub_task:
-                    self._process_granular_job(item)
-                else:
-                    # Legacy monolithic processing
-                    self._process_job(item)
+                # All job items must use granular pipeline
+                if not item.sub_task:
+                    raise ValueError(
+                        "Job items must have sub_task set. "
+                        "Legacy monolithic pipeline has been removed. "
+                        "Use submit_job() which creates granular pipeline items (JOB_SCRAPE)."
+                    )
+                self._process_granular_job(item)
             elif item.type == QueueItemType.SCRAPE:
                 self._process_scrape(item)
             elif item.type == QueueItemType.SOURCE_DISCOVERY:
@@ -180,107 +182,9 @@ class QueueItemProcessor:
 
         return False
 
-    def _process_job(self, item: JobQueueItem) -> None:
-        """
-        Process a job queue item.
-
-        Steps:
-        1. Scrape job details from URL
-        2. Run advanced filters (before AI to reduce costs)
-        3. Ensure company exists and is analyzed
-        4. Run AI matching
-        5. Save to job-matches if score meets threshold
-
-        Args:
-            item: Job queue item
-        """
-        # Scrape job details
-        job_data = self._scrape_job(item)
-
-        if not job_data:
-            if item.id:
-                error_msg = "Could not scrape job details from URL"
-                error_details = (
-                    f"Failed to scrape job from: {item.url}\n"
-                    f"Company: {item.company_name}\n\n"
-                    f"Possible causes:\n"
-                    f"- Job posting has been removed or expired\n"
-                    f"- Job board URL structure has changed\n"
-                    f"- Job board requires login or is blocking scraping\n"
-                    f"- Network connectivity issues"
-                )
-                self.queue_manager.update_status(
-                    item.id, QueueStatus.FAILED, error_msg, error_details=error_details
-                )
-            return
-
-        # Run advanced filters BEFORE AI analysis (cost optimization)
-        filter_result = self.filter_engine.evaluate_job(job_data)
-        if not filter_result.passed:
-            # Job rejected by filters
-            rejection_summary = filter_result.get_rejection_summary()
-            rejection_data = filter_result.to_dict()
-
-            logger.info(
-                f"Job filtered out: {job_data.get('title')} at {job_data.get('company')} - "
-                f"{rejection_summary}"
-            )
-
-            if item.id:
-                self.queue_manager.update_status(
-                    item.id,
-                    QueueStatus.FILTERED,
-                    f"Rejected by filters: {rejection_summary}",
-                    scraped_data={"job_data": job_data, "filter_result": rejection_data},
-                )
-            return
-
-        # Ensure company exists
-        company_name = job_data.get("company", item.company_name)
-        company_website = job_data.get("company_website", "")
-
-        if company_name and company_website:
-            company = self.companies_manager.get_or_create_company(
-                company_name=company_name,
-                company_website=company_website,
-                fetch_info_func=self.company_info_fetcher.fetch_company_info,
-            )
-            company_id = company.get("id")
-            job_data["companyId"] = company_id
-            job_data["company_info"] = self._build_company_info_string(company)
-
-        # Run AI matching
-        try:
-            result = self.ai_matcher.analyze_job(job_data)
-
-            if not result:
-                # Below match threshold
-                if item.id:
-                    self.queue_manager.update_status(
-                        item.id,
-                        QueueStatus.SKIPPED,
-                        f"Job score below threshold "
-                        f"(likely < {self.ai_matcher.min_match_score})",
-                    )
-                return
-
-            # Save to job-matches
-            doc_id = self.job_storage.save_job_match(job_data, result)
-
-            logger.info(
-                f"Job matched and saved: {job_data.get('title')} at {company_name} "
-                f"(Score: {result.match_score}, ID: {doc_id})"
-            )
-            if item.id:
-                self.queue_manager.update_status(
-                    item.id,
-                    QueueStatus.SUCCESS,
-                    f"Job matched with score {result.match_score} " f"and saved (ID: {doc_id})",
-                )
-
-        except Exception as e:
-            logger.error(f"Error analyzing job: {e}")
-            raise
+    # REMOVED: Legacy _process_job() method
+    # All job processing now uses granular pipeline: _process_granular_job()
+    # with sub-tasks: JOB_SCRAPE → JOB_FILTER → JOB_ANALYZE → JOB_SAVE
 
     def _scrape_job(self, item: JobQueueItem) -> Optional[Dict[str, Any]]:
         """

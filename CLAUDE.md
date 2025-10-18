@@ -273,23 +273,21 @@ doc_id = intake.submit_company(
 # Returns: Document ID of the created queue item, or None if failed/duplicate
 ```
 
-**Backwards Compatibility:**
+**BREAKING CHANGE:** All pipeline processing now uses the granular 4-step system.
 
-Legacy job items (no `sub_task` field) still process monolithically through the original `_process_job()` method. Job granular pipeline is opt-in.
+**Job items REQUIRE `sub_task`** - all job processing uses the granular pipeline exclusively (JOB_SCRAPE → JOB_FILTER → JOB_ANALYZE → JOB_SAVE).
 
-**Company items now REQUIRE `company_sub_task`** - all company processing uses the granular pipeline exclusively.
+**Company items REQUIRE `company_sub_task`** - all company processing uses the granular pipeline exclusively (COMPANY_FETCH → COMPANY_EXTRACT → COMPANY_ANALYZE → COMPANY_SAVE).
 
-### Legacy Pipeline (Still Supported)
+### Legacy Code Removed
 
-The application also supports a traditional five-stage pipeline for backwards compatibility:
+The following legacy components have been **removed** from the codebase:
 
-1. **Profile Loading** - Load user profile data from JSON (src/job_finder/profile/loader.py:32)
-2. **Scrape** - Site-specific scrapers collect job postings
-3. **Basic Filter** - Traditional keyword/location filtering (src/job_finder/filters.py:12)
-4. **AI Matching** - AI-powered job analysis and scoring (src/job_finder/ai/matcher.py:71)
-5. **Store** - Results with AI analysis saved in configured format
+1. **Monolithic job pipeline** - `_process_job()` method removed from processor.py
+2. **JobFilter class** - src/job_finder/filters/job_filter.py removed (use StrikeFilterEngine instead)
+3. **Job-level keywords field** - Removed from job dictionaries (ATS keywords now only in resumeIntakeData.atsKeywords)
 
-This pipeline is orchestrated in `src/job_finder/main.py:main()` and `src/job_finder/queue/processor.py:_process_job()`.
+The `main.py` file is now only used for development/testing purposes. All production job processing happens via the queue system and granular pipeline.
 
 ### Scraper Pattern
 
@@ -300,20 +298,25 @@ All scrapers inherit from `BaseScraper` (src/job_finder/scrapers/base.py:5) whic
 **Standard job dictionary structure:**
 ```python
 {
+    # REQUIRED FIELDS (must be present for all jobs)
     "title": str,              # Job title/role
     "company": str,            # Company name
     "company_website": str,    # Company website URL
-    "company_info": str,       # Company culture/mission statements (optional)
     "location": str,           # Job location
     "description": str,        # Full job description
-    "url": str,                # Job posting URL
-    "posted_date": str,        # When the job was posted (optional)
-    "salary": str,             # Salary range (optional)
-    "keywords": List[str],     # Keywords for emphasis (populated by AI analysis)
+    "url": str,                # Job posting URL (unique identifier)
+
+    # OPTIONAL FIELDS (may be None if not available on job page)
+    "posted_date": str,        # Job posting date (None if not found)
+    "salary": str,             # Salary range (None if not listed)
+
+    # ADDED DURING PROCESSING (not from scraper)
+    "company_info": str,       # Company about/culture (fetched via CompanyInfoFetcher)
+    "companyId": str,          # Firestore company document ID (added during analysis)
 }
 ```
 
-**Note:** The `keywords` field is automatically populated by the AI analysis from the `keywords_to_include` field in the resume intake data. These keywords are extracted from the job description and profile analysis to help with ATS optimization and resume tailoring.
+**REMOVED FIELD:** `keywords` - This field has been removed from the job-level structure. ATS keywords are now **only** stored in `resumeIntakeData.atsKeywords` (AI-generated during job analysis). Scrapers should NOT populate any keywords field.
 
 When adding a new job site scraper:
 1. Create new file in `src/job_finder/scrapers/`
@@ -323,18 +326,24 @@ When adding a new job site scraper:
 
 ### Filtering System
 
-The `JobFilter` class (src/job_finder/filters.py:6) applies multiple filter stages:
-1. **Work location filtering** - Only remote jobs or Portland, OR hybrid jobs are allowed (always applied)
-2. **Keyword matching** (inclusive) - Jobs must contain at least one keyword
-3. **Location filtering** - Jobs must be in preferred locations
-4. **Keyword exclusion** - Jobs cannot contain excluded keywords
+The `StrikeFilterEngine` (src/job_finder/filters/strike_filter_engine.py) uses a **two-tier filtering system**:
 
-The work location filter (src/job_finder/filters.py:42) ensures:
-- Remote jobs are always included
-- Portland, OR hybrid jobs are included
-- All other in-office or hybrid jobs are filtered out
+1. **Hard Rejections** - Immediate disqualification for deal-breakers:
+   - Non-remote jobs (unless Portland, OR hybrid)
+   - Excluded companies or keywords
+   - Job types that don't match preferences (e.g., management roles for IC preference)
 
-Filters are configured in `config/config.yaml` under the `profile` section.
+2. **Strike Accumulation** - Points-based system (threshold: 5 strikes):
+   - Location mismatches (non-Portland, non-remote): 2-3 strikes
+   - Seniority mismatches: 2-3 strikes
+   - Tech stack mismatches: 1-3 strikes per missing skill
+   - Experience level mismatches: 2-3 strikes
+
+Jobs are rejected if they hit a hard rejection OR accumulate 5+ strikes.
+
+**Legacy JobFilter removed** - Use StrikeFilterEngine instead for all filtering.
+
+Filters are configured in `config/config.yaml` under the `filters` section and `config/job-filters.yaml`.
 
 ### Storage System
 
@@ -665,9 +674,8 @@ profile:
 ```
 src/job_finder/
 ├── __init__.py          # Package initialization
-├── main.py              # Entry point and pipeline orchestration
-├── filters.py           # JobFilter class - traditional filtering logic
-├── storage.py           # JobStorage class - output handling
+├── main.py              # Legacy entry point (dev/testing only)
+├── storage.py           # JobStorage class - JSON/CSV output
 ├── profile/
 │   ├── __init__.py
 │   ├── schema.py            # Pydantic models for profile data
@@ -678,6 +686,21 @@ src/job_finder/
 │   ├── providers.py     # AI provider abstraction (Claude, OpenAI)
 │   ├── prompts.py       # Prompt templates for job analysis
 │   └── matcher.py       # AI job matching and intake generation
+├── filters/
+│   ├── __init__.py
+│   ├── strike_filter_engine.py  # Two-tier filtering system
+│   ├── filter_engine.py         # Filter rule engine
+│   └── models.py                # FilterResult, FilterRejection models
+├── queue/
+│   ├── __init__.py
+│   ├── processor.py     # Granular pipeline processor (JOB_*, COMPANY_*)
+│   ├── manager.py       # Queue item management
+│   └── models.py        # JobQueueItem, JobSubTask models
+├── storage/
+│   ├── __init__.py
+│   ├── firestore_storage.py     # Job matches storage
+│   ├── companies_manager.py     # Company data management
+│   └── job_sources_manager.py   # Job source configs
 └── scrapers/
     ├── __init__.py
     ├── base.py          # BaseScraper abstract class

@@ -187,8 +187,8 @@ class TestGreenhouseScraperParseJob:
         assert "Senior Backend Engineer" in job["description"]
         assert job["url"] == "https://boards.greenhouse.io/test/jobs/123"
         assert job["posted_date"].startswith("2025-10-15")
-        assert "Engineering" in job["keywords"]
-        assert "Backend" in job["keywords"]
+        # Note: keywords field removed - ATS keywords now only in resumeIntakeData (AI-generated)
+        assert "keywords" not in job  # Verify field is not populated by scraper
 
     def test_parse_job_minimal_data(self):
         """Test parsing job with minimal required fields."""

@@ -8,7 +8,8 @@ import yaml
 
 from job_finder.ai import AIJobMatcher, JobMatchResult
 from job_finder.ai.providers import create_provider
-from job_finder.filters import JobFilter
+
+# REMOVED: from job_finder.filters import JobFilter (legacy filter - use StrikeFilterEngine)
 from job_finder.logging_config import get_logger, setup_logging
 from job_finder.profile import FirestoreProfileLoader, Profile, ProfileLoader
 from job_finder.storage import JobStorage
@@ -171,7 +172,9 @@ def main() -> None:
     # Load profile if configured
     profile = load_profile(config)
 
-    # TODO: Initialize and run scrapers for each enabled site
+    # Note: Scraper initialization is handled by the granular pipeline system.
+    # Jobs are processed via queue items (JOB_SCRAPE → JOB_FILTER → JOB_ANALYZE → JOB_SAVE).
+    # This main.py file is only used for legacy/development purposes.
     # scrapers = initialize_scrapers(config)
     # all_jobs = []
     # for scraper in scrapers:
@@ -182,11 +185,11 @@ def main() -> None:
 
     logger.info(f"Scraped {len(all_jobs)} total jobs")
 
-    # Apply traditional filtering (if no AI or as pre-filter)
-    job_filter = JobFilter(config)
-    filtered_jobs = job_filter.filter_jobs(all_jobs)
+    # REMOVED: Legacy JobFilter - all filtering now uses StrikeFilterEngine in queue processor
+    # Jobs are filtered in granular pipeline (JOB_FILTER step)
+    filtered_jobs = all_jobs  # Placeholder for legacy code path
 
-    logger.info(f"After basic filtering: {len(filtered_jobs)} jobs")
+    logger.info(f"Jobs to process: {len(filtered_jobs)}")
 
     # Apply AI matching if profile is available
     ai_results = []
