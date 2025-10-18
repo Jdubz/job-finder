@@ -15,6 +15,7 @@ services:
       # Environment Configuration
       - ENVIRONMENT=production
       - ENABLE_QUEUE_MODE=true
+      - ENABLE_CRON=true
       - ENABLE_CLOUD_LOGGING=true
 
       # Database Overrides - USE PRODUCTION DATABASES
