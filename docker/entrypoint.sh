@@ -10,36 +10,45 @@ echo "Environment: $ENVIRONMENT"
 echo "Queue Mode: ${ENABLE_QUEUE_MODE:-false}"
 echo ""
 
-# Save environment variables for cron
-echo "Saving environment variables for cron..."
-printenv > /etc/environment
+# Check if cron should be enabled (default: true for backward compatibility)
+ENABLE_CRON=${ENABLE_CRON:-true}
 
-# Show cron schedule
-echo "Cron schedule:"
-cat /etc/cron.d/job-finder-cron | grep -v '^#' | grep -v '^$'
-echo ""
+if [ "${ENABLE_CRON}" = "true" ]; then
+    # Save environment variables for cron
+    echo "Saving environment variables for cron..."
+    printenv > /etc/environment
 
-# Calculate next run time
-CURRENT_HOUR=$(date +%H)
-CURRENT_MIN=$(date +%M)
-NEXT_RUN_HOUR=$(( (CURRENT_HOUR / 6 + 1) * 6 ))
-if [ $NEXT_RUN_HOUR -ge 24 ]; then
-    NEXT_RUN_HOUR=0
-fi
+    # Show cron schedule
+    echo "Cron schedule:"
+    cat /etc/cron.d/job-finder-cron | grep -v '^#' | grep -v '^$'
+    echo ""
 
-echo "Next scheduled run: $(printf "%02d:00" $NEXT_RUN_HOUR)"
-echo ""
+    # Calculate next run time
+    CURRENT_HOUR=$(date +%H)
+    CURRENT_MIN=$(date +%M)
+    NEXT_RUN_HOUR=$(( (CURRENT_HOUR / 6 + 1) * 6 ))
+    if [ $NEXT_RUN_HOUR -ge 24 ]; then
+        NEXT_RUN_HOUR=0
+    fi
 
-# Start cron
-echo "Starting cron daemon..."
-cron
+    echo "Next scheduled run: $(printf "%02d:00" $NEXT_RUN_HOUR)"
+    echo ""
 
-# Check if cron is running
-if pgrep cron > /dev/null; then
-    echo "✓ Cron daemon started successfully"
+    # Start cron
+    echo "Starting cron daemon..."
+    cron
+
+    # Check if cron is running
+    if pgrep cron > /dev/null; then
+        echo "✓ Cron daemon started successfully"
+    else
+        echo "✗ ERROR: Cron daemon failed to start!"
+        exit 1
+    fi
 else
-    echo "✗ ERROR: Cron daemon failed to start!"
-    exit 1
+    echo "Cron disabled (ENABLE_CRON=false)"
+    echo "Job scraping will only run via manual queue submissions"
+    echo ""
 fi
 
 # Start queue worker if enabled
@@ -68,29 +77,53 @@ if [ "${ENABLE_QUEUE_MODE}" = "true" ]; then
     fi
 
     echo ""
-    echo "Container is running in DUAL-PROCESS mode:"
-    echo "  1. Cron (every 6h) - Scrapes sources and adds to queue"
-    echo "  2. Queue Worker (continuous) - Processes queue items"
+    if [ "${ENABLE_CRON}" = "true" ]; then
+        echo "Container is running in DUAL-PROCESS mode:"
+        echo "  1. Cron (every 6h) - Scrapes sources and adds to queue"
+        echo "  2. Queue Worker (continuous) - Processes queue items"
+    else
+        echo "Container is running in QUEUE-ONLY mode:"
+        echo "  - Cron disabled (manual queue submissions only)"
+        echo "  - Queue Worker (continuous) - Processes queue items"
+    fi
     echo "========================================="
 else
     echo ""
-    echo "Container is running in LEGACY mode (direct processing)"
-    echo "Queue mode disabled. Use ENABLE_QUEUE_MODE=true to enable."
+    if [ "${ENABLE_CRON}" = "true" ]; then
+        echo "Container is running in LEGACY mode (direct processing)"
+        echo "Queue mode disabled. Use ENABLE_QUEUE_MODE=true to enable."
+    else
+        echo "Container is running in IDLE mode:"
+        echo "  - Cron disabled (ENABLE_CRON=false)"
+        echo "  - Queue disabled (ENABLE_QUEUE_MODE=false)"
+        echo "  - No automatic processing will occur"
+    fi
     echo "========================================="
 fi
 
 echo ""
 echo "Monitor logs:"
-echo "  - Cron output: tail -f /var/log/cron.log"
-echo "  - Queue worker: tail -f /app/logs/queue_worker.log"
+if [ "${ENABLE_CRON}" = "true" ]; then
+    echo "  - Cron output: tail -f /var/log/cron.log"
+fi
+if [ "${ENABLE_QUEUE_MODE}" = "true" ]; then
+    echo "  - Queue worker: tail -f /app/logs/queue_worker.log"
+fi
 echo "========================================="
 echo ""
 
-# Tail both logs (this keeps container running and shows output)
-if [ "${ENABLE_QUEUE_MODE}" = "true" ]; then
+# Tail logs (this keeps container running and shows output)
+if [ "${ENABLE_QUEUE_MODE}" = "true" ] && [ "${ENABLE_CRON}" = "true" ]; then
     # Tail both cron and queue worker logs
     exec tail -f /var/log/cron.log /app/logs/queue_worker.log
-else
+elif [ "${ENABLE_QUEUE_MODE}" = "true" ]; then
+    # Tail just queue worker log
+    exec tail -f /app/logs/queue_worker.log
+elif [ "${ENABLE_CRON}" = "true" ]; then
     # Tail just cron log
     exec tail -f /var/log/cron.log
+else
+    # Neither enabled - just keep container alive
+    echo "No active processes to monitor. Container will sleep indefinitely."
+    exec sleep infinity
 fi

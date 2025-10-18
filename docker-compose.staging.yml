@@ -12,6 +12,7 @@ services:
       - GOOGLE_APPLICATION_CREDENTIALS=/app/credentials/serviceAccountKey.json
       - ENVIRONMENT=staging
       - ENABLE_QUEUE_MODE=true
+      - ENABLE_CRON=false
       - ENABLE_CLOUD_LOGGING=true
       - PROFILE_DATABASE_NAME=portfolio-staging
       - STORAGE_DATABASE_NAME=portfolio-staging
