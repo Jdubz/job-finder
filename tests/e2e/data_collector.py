@@ -273,45 +273,60 @@ class TestJobSubmitter:
     """Submits test jobs with known values for validation."""
 
     # Known test data - simple jobs for basic testing
-    TEST_JOBS = [
+    # URLs include timestamp to ensure uniqueness across test runs
+    TEST_JOBS_TEMPLATE = [
         {
             "company_name": "MongoDB",
             "job_title": "Senior Backend Engineer",
-            "job_url": "https://test.example.com/mongodb/12345",
+            "job_url_template": "https://test.example.com/mongodb/{timestamp}",
             "description": "Build scalable backend systems",
             "expected_behavior": "should_create",
         },
         {
             "company_name": "Netflix",
             "job_title": "Machine Learning Engineer",
-            "job_url": "https://test.example.com/netflix/12345",
+            "job_url_template": "https://test.example.com/netflix/{timestamp}",
             "description": "Work on recommendation systems",
             "expected_behavior": "should_create",
         },
         {
             "company_name": "Shopify",
             "job_title": "Full Stack Engineer",
-            "job_url": "https://test.example.com/shopify/12345",
+            "job_url_template": "https://test.example.com/shopify/{timestamp}",
             "description": "Build customer-facing features",
             "expected_behavior": "should_create",
         },
         {
             "company_name": "Stripe",
             "job_title": "Platform Engineer",
-            "job_url": "https://test.example.com/stripe/12345",
+            "job_url_template": "https://test.example.com/stripe/{timestamp}",
             "description": "Build platform infrastructure",
             "expected_behavior": "should_create",
         },
     ]
 
-    def __init__(self, database_name: str):
-        """Initialize job submitter."""
+    def __init__(self, database_name: str, test_count: int = 4):
+        """
+        Initialize job submitter.
+
+        Args:
+            database_name: Name of database to use
+            test_count: Number of test jobs to submit (1-4, default: 4)
+        """
         from job_finder.queue import QueueManager
         from job_finder.queue.scraper_intake import ScraperIntake
 
         self.db = FirestoreClient.get_client(database_name)
         self.queue_manager = QueueManager(database_name)
         self.intake = ScraperIntake(self.queue_manager)
+
+        # Generate unique test jobs with timestamp
+        self.timestamp = int(datetime.now().timestamp())
+        self.test_count = min(test_count, len(self.TEST_JOBS_TEMPLATE))
+        self.TEST_JOBS = [
+            {**job, "job_url": job["job_url_template"].format(timestamp=self.timestamp)}
+            for job in self.TEST_JOBS_TEMPLATE[: self.test_count]
+        ]
 
     def submit_test_job(self, test_job: Dict[str, Any], test_run_id: str) -> TestJobSubmission:
         """
@@ -528,6 +543,7 @@ class E2ETestDataCollector:
         backup_dir: Optional[Path] = None,
         clean_before: bool = False,
         source_database: str = "portfolio",
+        test_count: int = 2,
     ):
         """
         Initialize test data collector.
@@ -539,6 +555,7 @@ class E2ETestDataCollector:
             backup_dir: Directory to save backups (defaults to output_dir/backup)
             clean_before: Whether to clean collections before testing
             source_database: Database to copy initial data from (default: portfolio/production)
+            test_count: Number of test jobs to submit (1-4, default: 2 for quick tests)
         """
         self.database_name = database_name  # Where tests run (staging)
         self.source_database = source_database  # Where to get initial data (production)
@@ -559,7 +576,7 @@ class E2ETestDataCollector:
 
         # Initialize components for TEST database (staging)
         self.backup_restore = FirestoreBackupRestore(database_name)
-        self.job_submitter = TestJobSubmitter(database_name)
+        self.job_submitter = TestJobSubmitter(database_name, test_count=test_count)
         self.results_collector = TestResultsCollector(database_name, self.output_dir)
 
         # Initialize separate client for SOURCE database (production) - READ ONLY
@@ -881,6 +898,13 @@ def main():
         action="store_true",
         help="Allow running on production database (USE WITH EXTREME CAUTION)",
     )
+    parser.add_argument(
+        "--test-count",
+        type=int,
+        default=2,
+        choices=[1, 2, 3, 4],
+        help="Number of test jobs to submit (1-4, default: 2 for quick tests)",
+    )
 
     args = parser.parse_args()
 
@@ -931,6 +955,7 @@ def main():
         backup_dir=args.backup_dir,
         clean_before=args.clean_before,
         source_database=args.source_database,
+        test_count=args.test_count,
     )
 
     result = collector.run_collection()

@@ -175,6 +175,7 @@ test-e2e-full: ## Run complete E2E suite: collect data, clean, submit, monitor, 
 		--output-dir "$${RESULTS_DIR}" \
 		--backup-dir "$${RESULTS_DIR}/backup" \
 		--clean-before \
+		--test-count 1 \
 		--verbose && \
 	echo "" && \
 	echo "$(CYAN)[2/5] Running E2E tests with streaming logs...$(RESET)" && \
