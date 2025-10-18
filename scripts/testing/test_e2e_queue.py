@@ -3,15 +3,27 @@
 """
 End-to-end test for queue-based job processing pipeline.
 
+⚠️ DEPRECATED: This script is deprecated in favor of the new scenario-based e2e tests
+in tests/e2e/. Use those instead for better test coverage and maintainability.
+
+See: tests/e2e/README.md for the new test suite.
+
 This script tests the complete flow:
 1. Scraper finds jobs → adds to queue
-2. Queue processor picks up items
+2. Queue processor picks up items (runs LOCALLY in this script - not realistic)
 3. Company info is fetched
 4. AI matching is performed
 5. Results are stored in Firestore
 
+Note: This script processes items locally instead of relying on the Portainer
+staging worker like the new tests do. This is not representative of production.
+
 Usage:
     python scripts/testing/test_e2e_queue.py
+
+Recommended alternative:
+    cd tests/e2e
+    python run_all_scenarios.py
 """
 import logging
 import sys

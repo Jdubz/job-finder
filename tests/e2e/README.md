@@ -6,7 +6,18 @@ End-to-end tests for the Portfolio + Job-Finder integration in the staging envir
 
 ## Overview
 
-This test suite validates the complete job processing pipeline from submission through AI analysis to match creation. Tests run against the `portfolio-staging` Firestore database and must be executed manually from the local repository.
+This test suite validates the complete job processing pipeline from submission through AI analysis to match creation.
+
+**How it works:**
+- Tests run **locally** from your development machine (no local Docker needed)
+- Tests connect to `portfolio-staging` Firestore database
+- Tests submit queue items and monitor their processing
+- Queue processing happens in the **Portainer staging worker** (remote)
+
+**Prerequisites:**
+- Python environment with job-finder dependencies installed
+- Firebase credentials configured (`GOOGLE_APPLICATION_CREDENTIALS`)
+- Portainer staging worker **must be running and healthy**
 
 ## Test Scenarios
 
@@ -92,13 +103,39 @@ Tests intelligent source rotation and health tracking:
 - Data quality maintained throughout
 - Match scores meet thresholds
 
+## Verifying Worker is Running
+
+Before running tests, **verify the Portainer staging worker is running:**
+
+### Method 1: Portainer UI
+1. Open Portainer → **Stacks** → `job-finder-staging`
+2. Click on the stack → **Containers**
+3. Verify `job-finder-staging` container status is **running** (green)
+4. Click container name → **Logs** → Check for recent activity
+5. Look for queue processing logs: `Processing queue item...`
+
+### Method 2: Firestore Console
+1. Open Firebase Console → Firestore Database
+2. Select `portfolio-staging` database
+3. Navigate to `job-queue` collection
+4. Submit a test item manually and watch for status changes from `pending` → `processing` → `success`/`failed`
+
+### Expected Behavior
+- Worker polls queue every 10-30 seconds (configurable)
+- Items should transition from `pending` to `processing` within 30 seconds
+- If items stay `pending` for > 2 minutes → worker may be stuck/crashed
+
 ## Running Tests
 
 ### Run All Scenarios
 
 ```bash
-cd /home/jdubz/Development/job-finder-e2e-tests
+# From repository root
 python tests/e2e/run_all_scenarios.py
+
+# Or from tests/e2e directory
+cd tests/e2e
+python run_all_scenarios.py
 ```
 
 ### Run Specific Scenarios
@@ -273,12 +310,25 @@ class MyTestScenario(BaseE2EScenario):
 **These tests are NOT automated.** They must be run manually from the local repository when needed.
 
 E2E tests are excluded from CI/CD because they:
-- Require a live staging environment with running queue workers
+- Require a live staging environment with running queue workers **in Portainer**
+- Depend on remote infrastructure availability (Portainer staging worker must be running)
 - Take significant time to complete (minutes per scenario)
-- Consume AI API credits
+- Consume AI API credits (real Claude API calls)
 - May interfere with actual staging data if not properly isolated
 
-To run tests, execute the scripts directly from your local environment with proper credentials configured.
+### Architecture
+```
+┌─────────────────────┐         ┌──────────────────────┐         ┌─────────────────┐
+│  Local Machine      │         │  Firestore           │         │  Portainer      │
+│                     │         │  (portfolio-staging) │         │  Staging Worker │
+│  • Run e2e tests    │────────▶│  • job-queue         │◀────────│  • Polls queue  │
+│  • Submit items     │         │  • job-matches       │         │  • Processes    │
+│  • Monitor status   │────────▶│  • companies         │         │  • Updates DB   │
+│                     │         │  • job-sources       │         │                 │
+└─────────────────────┘         └──────────────────────┘         └─────────────────┘
+```
+
+To run tests, execute the scripts directly from your local environment with proper credentials configured **and ensure the Portainer staging worker is running**.
 
 ## Environment Variables
 
@@ -314,22 +364,32 @@ for item in items:
 
 ### Common Issues
 
-**"Document not found" errors:**
-- Check database name is correct
-- Verify queue item was created
-- Check cleanup isn't running too early
+**"Timeout" errors (most common):**
+- **Worker not running:** Check Portainer staging worker status (see "Verifying Worker is Running" above)
+- **Worker crashed:** Check container logs in Portainer for errors
+- **Worker stuck:** Restart the container in Portainer
+- **Database mismatch:** Verify worker is using `portfolio-staging` database
+- Test timeout default is 300s (5 min) - adjust if needed for slow operations
 
-**"Timeout" errors:**
-- Increase timeout in QueueMonitor
-- Check job-finder worker is running
-- Verify network connectivity
+**"Document not found" errors:**
+- Check database name is correct (`portfolio-staging`)
+- Verify queue item was created in Firestore
+- Check cleanup isn't running too early
+- Verify test is using correct Firestore client instance
 
 **"Permission denied" errors:**
-- Check Firestore credentials
-- Verify service account has proper roles
-- Check Firestore rules allow test writes
+- Check `GOOGLE_APPLICATION_CREDENTIALS` environment variable is set
+- Verify service account has Firestore read/write permissions
+- Check service account has access to `portfolio-staging` database
+- Verify Firestore rules allow writes to `job-queue` collection
+
+**Worker is running but not processing:**
+- Check worker environment variables in Portainer (especially `ENABLE_QUEUE_MODE=true`)
+- Verify `STORAGE_DATABASE_NAME=portfolio-staging` in worker config
+- Check for Python errors in worker logs
+- Verify worker has valid API keys (`ANTHROPIC_API_KEY`)
 
 ## Design Document
 
 For detailed design and implementation specifications, see:
-- `/home/jdubz/Development/E2E_TEST_DESIGN.md`
+- `../../E2E_README.md` (repository root)
