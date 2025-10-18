@@ -151,19 +151,27 @@ test-e2e: ## Run end-to-end queue tests
 	@echo "$(CYAN)Running end-to-end tests...$(RESET)"
 	@. $(VENV_DIR)/bin/activate && $(PYTHON) $(SCRIPTS_DIR)/testing/test_e2e_queue.py
 
-test-e2e-full: ## Run complete E2E suite: collect data, clean, submit, monitor, save results
+test-e2e-full: ## Run complete E2E suite: collect data, clean, submit, monitor, save results (STAGING ONLY)
 	@echo "$(CYAN)Starting full E2E test suite...$(RESET)"
-	@echo "$(CYAN)This will: store data, clean, submit jobs, monitor, and save results$(RESET)"
+	@echo "$(YELLOW)⚠️  WARNING: This will CLEAR collections in portfolio-staging database$(RESET)"
+	@echo "$(GREEN)✓ Safe: Testing on portfolio-staging (not production)$(RESET)"
+	@echo "$(BLUE)ℹ️  Note: Test data will be seeded from production (read-only)$(RESET)"
+	@echo "$(CYAN)This will: copy prod data, clean staging, submit jobs, monitor, save results$(RESET)"
+	@sleep 2
 	@mkdir -p test_results
 	@export TEST_RUN_ID="e2e_$$(date +%s)" && \
 	export RESULTS_DIR="test_results/$${TEST_RUN_ID}" && \
+	export GOOGLE_APPLICATION_CREDENTIALS="$(shell pwd)/credentials/serviceAccountKey.json" && \
 	mkdir -p "$${RESULTS_DIR}" && \
 	echo "$(BLUE)Test Run ID: $${TEST_RUN_ID}$(RESET)" && \
+	echo "$(BLUE)Test Database: portfolio-staging (staging)$(RESET)" && \
+	echo "$(BLUE)Source Database: portfolio (production - read only)$(RESET)" && \
 	echo "$(BLUE)Results Directory: $${RESULTS_DIR}$(RESET)" && \
 	echo "" && \
-	echo "$(CYAN)[1/5] Collecting and cleaning test data...$(RESET)" && \
+	echo "$(CYAN)[1/5] Seeding staging with production data...$(RESET)" && \
 	. $(VENV_DIR)/bin/activate && $(PYTHON) tests/e2e/data_collector.py \
 		--database portfolio-staging \
+		--source-database portfolio \
 		--output-dir "$${RESULTS_DIR}" \
 		--backup-dir "$${RESULTS_DIR}/backup" \
 		--clean-before \

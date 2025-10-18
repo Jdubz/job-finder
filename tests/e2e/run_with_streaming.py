@@ -260,6 +260,7 @@ def run_e2e_with_streaming(
 
 if __name__ == "__main__":
     import argparse
+    import sys
 
     parser = argparse.ArgumentParser(description="Run E2E tests with real-time log streaming")
     parser.add_argument(
@@ -304,8 +305,43 @@ if __name__ == "__main__":
         nargs="+",
         help="Specific scenarios to run (optional)",
     )
+    parser.add_argument(
+        "--allow-production",
+        action="store_true",
+        help="Allow running on production database (USE WITH EXTREME CAUTION)",
+    )
 
     args = parser.parse_args()
+
+    # SAFETY CHECK: Prevent accidental production usage
+    if args.database == "portfolio" and not args.allow_production:
+        print("=" * 80)
+        print("🚨 PRODUCTION DATABASE BLOCKED 🚨")
+        print("=" * 80)
+        print("")
+        print("This test would RUN SCENARIOS on the production database!")
+        print("Database specified: portfolio (PRODUCTION)")
+        print("")
+        print("This test is designed for staging only.")
+        print("Use --database portfolio-staging instead.")
+        print("")
+        print("If you REALLY need to run on production (not recommended):")
+        print("  python tests/e2e/run_with_streaming.py --database portfolio --allow-production")
+        print("")
+        print("=" * 80)
+        sys.exit(1)
+
+    # Warning for production usage
+    if args.database == "portfolio":
+        print("=" * 80)
+        print("⚠️  RUNNING ON PRODUCTION DATABASE ⚠️")
+        print("=" * 80)
+        print("This will RUN TEST SCENARIOS on production!")
+        print("Press Ctrl+C within 10 seconds to abort...")
+        print("=" * 80)
+        import time
+
+        time.sleep(10)
 
     # Handle logging preference
     stream_logs = not args.no_logs and (args.stream_logs or not args.no_logs)

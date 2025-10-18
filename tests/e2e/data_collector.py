@@ -306,11 +306,16 @@ class TestJobSubmitter:
 
     def __init__(self, database_name: str):
         """Initialize job submitter."""
+        from job_finder.queue import QueueManager
+        from job_finder.queue.scraper_intake import ScraperIntake
+
         self.db = FirestoreClient.get_client(database_name)
+        self.queue_manager = QueueManager(database_name)
+        self.intake = ScraperIntake(self.queue_manager)
 
     def submit_test_job(self, test_job: Dict[str, Any], test_run_id: str) -> TestJobSubmission:
         """
-        Submit a test job and record the result.
+        Submit a test job to the queue and record the result.
 
         Args:
             test_job: Test job data
@@ -333,36 +338,33 @@ class TestJobSubmitter:
             company_name=test_job["company_name"],
             job_title=test_job["job_title"],
             job_url=test_job["job_url"],
-            source_type="test",
+            source_type="e2e_test",
             expected_status=test_job["expected_behavior"],
         )
 
         try:
-            # Check if job already exists
-            existing_count = self._count_existing_jobs(test_job)
-
-            if existing_count > 0:
-                record.actual_result = "found_existing"
-                logger.info(f"  → Job already exists in collection")
+            # Check if URL already in queue or processed
+            if self.queue_manager.url_exists_in_queue(test_job["job_url"]):
+                record.actual_result = "already_in_queue"
+                logger.info(f"  → Job already in queue")
             else:
-                # Create new job-matches document directly
-                job_match = {
-                    "title": test_job["job_title"],
+                # Submit job through proper queue intake
+                job_data = {
+                    "url": test_job["job_url"],
                     "company": test_job["company_name"],
-                    "link": test_job["job_url"],
-                    "description": test_job["description"],
-                    "sourceId": "test",
-                    "scrapedAt": datetime.utcnow().isoformat(),
-                    "test_run_id": test_run_id,
-                    "created_at": datetime.utcnow().isoformat(),
+                    "title": test_job["job_title"],
+                    "description": test_job.get("description", ""),
                 }
 
-                # Save directly to Firestore
-                doc_ref = self.db.collection("job-matches").document()
-                doc_ref.set(job_match)
+                # Submit to queue (creates JOB_SCRAPE task for worker to process)
+                submitted_count = self.intake.submit_jobs([job_data], source="automated_scan")
 
-                record.actual_result = "created_new"
-                logger.info(f"  → Job created successfully (ID: {doc_ref.id})")
+                if submitted_count > 0:
+                    record.actual_result = "queued"
+                    logger.info(f"  → Job submitted to queue successfully")
+                else:
+                    record.actual_result = "skipped_duplicate"
+                    logger.info(f"  → Job skipped (duplicate)")
 
         except Exception as e:
             record.actual_result = "failed"
@@ -521,11 +523,47 @@ class E2ETestDataCollector:
     def __init__(
         self,
         database_name: str,
-        output_dir: Path,
+        output_dir: str,
         verbose: bool = False,
         backup_dir: Optional[Path] = None,
         clean_before: bool = False,
+        source_database: str = "portfolio",
     ):
+        """
+        Initialize test data collector.
+
+        Args:
+            database_name: Firestore database name (staging - where tests run)
+            output_dir: Output directory for results
+            verbose: Enable verbose logging
+            backup_dir: Directory to save backups (defaults to output_dir/backup)
+            clean_before: Whether to clean collections before testing
+            source_database: Database to copy initial data from (default: portfolio/production)
+        """
+        self.database_name = database_name  # Where tests run (staging)
+        self.source_database = source_database  # Where to get initial data (production)
+        self.output_dir = Path(output_dir)
+        self.output_dir.mkdir(parents=True, exist_ok=True)
+
+        # Set backup directory
+        if backup_dir:
+            self.backup_dir = Path(backup_dir)
+        else:
+            self.backup_dir = self.output_dir / "backup"
+        self.backup_dir.mkdir(parents=True, exist_ok=True)
+
+        self.clean_before = clean_before
+
+        # Setup logging
+        self._setup_logging(verbose)
+
+        # Initialize components for TEST database (staging)
+        self.backup_restore = FirestoreBackupRestore(database_name)
+        self.job_submitter = TestJobSubmitter(database_name)
+        self.results_collector = TestResultsCollector(database_name, self.output_dir)
+
+        # Initialize separate client for SOURCE database (production) - READ ONLY
+        self.source_backup = FirestoreBackupRestore(source_database)
         """
         Initialize test data collector.
 
@@ -551,11 +589,6 @@ class E2ETestDataCollector:
 
         # Setup logging
         self._setup_logging(verbose)
-
-        # Initialize components
-        self.backup_restore = FirestoreBackupRestore(database_name)
-        self.job_submitter = TestJobSubmitter(database_name)
-        self.results_collector = TestResultsCollector(database_name, output_dir)
 
         # Collections to manage
         self.TEST_COLLECTIONS = [
@@ -609,7 +642,8 @@ class E2ETestDataCollector:
         logger.info("E2E TEST DATA COLLECTION STARTED")
         logger.info("=" * 80)
         logger.info(f"Test Run ID:     {test_run_id}")
-        logger.info(f"Database:        {self.database_name}")
+        logger.info(f"Test Database:   {self.database_name} (where tests run)")
+        logger.info(f"Source Database: {self.source_database} (where seed data comes from)")
         logger.info(f"Output:          {self.output_dir}")
         logger.info("")
 
@@ -619,25 +653,55 @@ class E2ETestDataCollector:
         )
 
         try:
-            # Step 1: Backup existing data
-            logger.info("STEP 1: BACKING UP EXISTING DATA")
+            # Step 1: Copy production data to staging (seed the test)
+            logger.info("STEP 1: COPYING PRODUCTION DATA TO STAGING")
             logger.info("-" * 80)
-            backup_dir = self.output_dir / "backup_original"
+            logger.info(f"Reading from: {self.source_database} (production - READ ONLY)")
+            logger.info(f"Writing to:   {self.database_name} (staging - test environment)")
+            logger.info("")
+
+            # Backup production data (for records)
+            prod_backup_dir = self.output_dir / "production_snapshot"
+            logger.info(f"Saving production snapshot to: {prod_backup_dir}")
+            prod_metadata = self.source_backup.backup_all(
+                self.TEST_COLLECTIONS,
+                prod_backup_dir,
+            )
+            logger.info(f"Production snapshot: {prod_metadata.total_documents} documents")
+            logger.info("")
+
+            # Backup current staging data (in case we need to rollback)
+            logger.info(f"Backing up current staging data...")
+            staging_backup_dir = self.output_dir / "staging_backup_before"
             result.backup_metadata = self.backup_restore.backup_all(
                 self.TEST_COLLECTIONS,
-                backup_dir,
+                staging_backup_dir,
             )
             logger.info("")
 
-            # Step 2: Clear collections
-            logger.info("STEP 2: CLEARING TEST COLLECTIONS")
+            # Step 2: Clear staging collections
+            logger.info("STEP 2: CLEARING STAGING COLLECTIONS")
             logger.info("-" * 80)
+            logger.info(f"Clearing in {self.database_name} only (production untouched)")
             self.backup_restore.clear_collections(self.TEST_COLLECTIONS)
             self.backup_restore.clear_collection("job-queue")
             logger.info("")
 
-            # Step 3: Submit test jobs
-            logger.info("STEP 3: SUBMITTING TEST JOBS")
+            # Step 3: Restore production data to staging
+            logger.info("STEP 3: RESTORING PRODUCTION DATA TO STAGING")
+            logger.info("-" * 80)
+            logger.info("This seeds the test with real production data")
+            restored_count = 0
+            for collection in self.TEST_COLLECTIONS:
+                backup_file = prod_backup_dir / f"{collection}.json"
+                if backup_file.exists():
+                    count = self.backup_restore.restore_collection(collection, backup_file)
+                    restored_count += count
+            logger.info(f"Restored {restored_count} total documents to staging")
+            logger.info("")
+
+            # Step 4: Submit test jobs
+            logger.info("STEP 4: SUBMITTING TEST JOBS")
             logger.info("-" * 80)
             submission_records = self.job_submitter.submit_all_test_jobs(test_run_id)
             result.jobs_submitted = len(submission_records)
@@ -651,13 +715,29 @@ class E2ETestDataCollector:
             result.jobs_failed = failed
             logger.info("")
 
-            # Step 4: Wait for processing and collect results
-            logger.info("STEP 4: COLLECTING RESULTS")
+            # Step 5: Wait for processing and collect results
+            logger.info("STEP 5: WAITING FOR QUEUE PROCESSING")
             logger.info("-" * 80)
             import time
 
-            logger.info("Waiting for job processing (10 seconds)...")
-            time.sleep(10)
+            logger.info("Waiting for queue worker to process jobs...")
+            logger.info("Worker polls every 60 seconds and processes in FIFO order.")
+            logger.info("Each job goes through: SCRAPE → EXTRACT → ANALYZE → SAVE")
+            logger.info("Expected time: ~30-60 seconds per job")
+            logger.info("")
+
+            # Wait long enough for worker to pick up and process all jobs
+            # Worker polls every 60s, so wait at least 2 cycles
+            wait_time = 180  # 3 minutes
+            logger.info(f"Waiting {wait_time} seconds for processing...")
+
+            # Poll every 30 seconds to show progress
+            for i in range(wait_time // 30):
+                time.sleep(30)
+                logger.info(f"  ... {(i + 1) * 30}s elapsed ...")
+
+            logger.info("Processing wait complete. Collecting results...")
+            logger.info("")
 
             # Get final collection counts
             all_collections = self.TEST_COLLECTIONS + self.OPERATIONAL_COLLECTIONS
@@ -670,8 +750,8 @@ class E2ETestDataCollector:
                 logger.info(f"  {collection}: {count} documents")
             logger.info("")
 
-            # Step 5: Validate results
-            logger.info("STEP 5: VALIDATING RESULTS")
+            # Step 6: Validate results
+            logger.info("STEP 6: VALIDATING RESULTS")
             logger.info("-" * 80)
             result.issues_found = self._validate_results(result)
 
@@ -683,8 +763,8 @@ class E2ETestDataCollector:
                 logger.info("✓ No issues found!")
             logger.info("")
 
-            # Step 6: Save all results
-            logger.info("STEP 6: SAVING RESULTS")
+            # Step 7: Save all results
+            logger.info("STEP 7: SAVING RESULTS")
             logger.info("-" * 80)
             result.end_time = datetime.utcnow().isoformat()
             result.duration_seconds = time.time() - start_time
@@ -723,15 +803,30 @@ class E2ETestDataCollector:
         """
         issues = []
 
+        # Check queue status - jobs should be processed or in progress
+        queue_count = result.final_collection_counts.get("job-queue", 0)
+        logger.info(f"Queue items remaining: {queue_count}")
+
+        # If queue still has items, worker may still be processing
+        if queue_count > 0:
+            issues.append(
+                f"Queue still has {queue_count} items - worker may still be processing. "
+                "Consider increasing wait time."
+            )
+
         # Check job-matches were created
+        # Note: Some jobs might already exist from previous runs
         matches_count = result.final_collection_counts.get("job-matches", 0)
         if matches_count < 4:  # At least 4 unique jobs
             issues.append(f"Too few job matches: {matches_count} (expected at least 4)")
 
-        # Check companies were created
+        # Check companies were created (may take longer as worker processes ANALYZE phase)
         companies_count = result.final_collection_counts.get("companies", 0)
-        if companies_count < 3:  # At least 3 unique companies
-            issues.append(f"Too few companies: {companies_count} (expected at least 3)")
+        if companies_count < 1:  # At least 1 company should be created
+            issues.append(
+                f"No companies created: {companies_count} "
+                "(expected at least 1 after worker processes jobs)"
+            )
 
         # Check success rate
         if result.success_rate < 80:
@@ -754,7 +849,12 @@ def main():
     parser.add_argument(
         "--database",
         default="portfolio-staging",
-        help="Firestore database name (default: portfolio-staging)",
+        help="Test database name - where tests run (default: portfolio-staging)",
+    )
+    parser.add_argument(
+        "--source-database",
+        default="portfolio",
+        help="Source database - where to copy seed data from (default: portfolio)",
     )
     parser.add_argument(
         "--output-dir",
@@ -776,8 +876,53 @@ def main():
         action="store_true",
         help="Enable verbose logging (default: False)",
     )
+    parser.add_argument(
+        "--allow-production",
+        action="store_true",
+        help="Allow running on production database (USE WITH EXTREME CAUTION)",
+    )
 
     args = parser.parse_args()
+
+    # SAFETY CHECK: Prevent accidental production usage
+    if args.database == "portfolio" and not args.allow_production:
+        logger.error("=" * 80)
+        logger.error("🚨 PRODUCTION DATABASE BLOCKED 🚨")
+        logger.error("=" * 80)
+        logger.error("")
+        logger.error("This test would CLEAR and MODIFY the production database!")
+        logger.error("Database specified: portfolio (PRODUCTION)")
+        logger.error("")
+        logger.error("This test is designed for staging only.")
+        logger.error("Use --database portfolio-staging instead.")
+        logger.error("")
+        logger.error("If you REALLY need to run on production (not recommended):")
+        logger.error("  python tests/e2e/data_collector.py --database portfolio --allow-production")
+        logger.error("")
+        logger.error("=" * 80)
+        sys.exit(1)
+
+    # Warning for production usage
+    if args.database == "portfolio":
+        logger.warning("=" * 80)
+        logger.warning("⚠️  RUNNING ON PRODUCTION DATABASE ⚠️")
+        logger.warning("=" * 80)
+        logger.warning("This will CLEAR and MODIFY production data!")
+        logger.warning("Press Ctrl+C within 10 seconds to abort...")
+        logger.warning("=" * 80)
+        import time
+
+        time.sleep(10)
+
+    # Safety check: warn if source database is not production
+    if args.source_database != "portfolio":
+        logger.warning("=" * 80)
+        logger.warning(f"⚠️  Using non-production source database: {args.source_database}")
+        logger.warning("=" * 80)
+        logger.warning("Tests will not start with production data!")
+        logger.warning("For best results, use --source-database portfolio")
+        logger.warning("=" * 80)
+        logger.warning("")
 
     collector = E2ETestDataCollector(
         database_name=args.database,
@@ -785,6 +930,7 @@ def main():
         verbose=args.verbose,
         backup_dir=args.backup_dir,
         clean_before=args.clean_before,
+        source_database=args.source_database,
     )
 
     result = collector.run_collection()
