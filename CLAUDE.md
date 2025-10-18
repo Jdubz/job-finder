@@ -100,7 +100,32 @@ mypy src/
 The application uses a **Firestore-backed queue system** for asynchronous job processing. This allows the portfolio project to submit jobs for analysis, and this tool processes them in the background.
 
 **Queue Collection**: `job-queue` in Firestore
-**Processing**: Cloud Run worker polls queue and processes items in FIFO order
+**Processing**: Worker container (running in Portainer on NAS) polls queue and processes items in FIFO order
+
+**Worker Deployment**:
+- **Location**: Portainer stack `job-finder-staging` running on NAS
+- **Container**: `job-finder-staging` (image: `ghcr.io/jdubz/job-finder:staging`)
+- **Database**: `portfolio-staging` Firestore database
+- **Logging**: Google Cloud Logging (log name: `job-finder`)
+
+**Monitoring Worker**:
+```bash
+# Check worker logs in Google Cloud Logging
+gcloud logging read 'logName="projects/static-sites-257923/logs/job-finder"' \
+  --limit 20 \
+  --freshness 1h
+
+# Search for queue processing activity
+gcloud logging read 'job-finder AND ("Processing queue item" OR "Queue worker started")' \
+  --limit 20 \
+  --freshness 1h
+```
+
+**Worker Configuration** (docker-compose.staging.yml):
+- `ENABLE_QUEUE_MODE=true` - Queue worker enabled
+- `ENABLE_CRON=false` - No automatic scraping (manual submissions only)
+- `ENABLE_CLOUD_LOGGING=true` - Logs sent to Google Cloud
+- `STORAGE_DATABASE_NAME=portfolio-staging` - Firestore database
 
 ### Granular Pipeline Architecture (NEW)
 

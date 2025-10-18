@@ -107,14 +107,63 @@ Tests intelligent source rotation and health tracking:
 
 Before running tests, **verify the Portainer staging worker is running:**
 
-### Method 1: Portainer UI
+**Worker Location**: The `job-finder-staging` container runs on a NAS in a Portainer instance. The container sends logs to **Google Cloud Logging**, not local Portainer logs.
+
+### Method 1: Google Cloud Logging
+
+The worker is configured to send logs to Google Cloud Logging (via `ENABLE_CLOUD_LOGGING=true`):
+
+```bash
+# Search for job-finder logs in Cloud Logging
+gcloud logging read 'logName="projects/static-sites-257923/logs/job-finder"' \
+  --limit 20 \
+  --format json \
+  --freshness 1h | python3 -c "
+import sys, json
+for line in sys.stdin:
+    try:
+        entry = json.loads(line)
+        if 'textPayload' in entry:
+            timestamp = entry.get('timestamp', '')
+            text = entry['textPayload']
+            print(f'[{timestamp}] {text}')
+        elif 'jsonPayload' in entry:
+            timestamp = entry.get('timestamp', '')
+            msg = entry['jsonPayload'].get('message', str(entry['jsonPayload']))
+            print(f'[{timestamp}] {msg}')
+    except: pass
+"
+
+# Alternative: Search for any logs containing queue keywords
+gcloud logging read 'job-finder OR queue_worker OR "Processing queue item"' \
+  --limit 20 \
+  --freshness 1h
+```
+
+**What to look for**:
+- `Queue worker started` - Worker initialized successfully
+- `Polling queue for new items...` - Worker actively polling
+- `Processing queue item <id>` - Worker picked up an item
+- `Item <id> processed successfully` - Item completed
+- Recent timestamps (< 5 minutes old) indicate worker is active
+
+**If no logs appear in Cloud Logging**:
+- Worker container may not be running (check Portainer)
+- Cloud Logging integration may have failed to initialize
+- Check Portainer container logs for startup errors
+
+### Method 2: Portainer UI (Container Status Only)
+
+Portainer UI shows container status but **not application logs** (those go to Google Cloud):
+
 1. Open Portainer → **Stacks** → `job-finder-staging`
 2. Click on the stack → **Containers**
 3. Verify `job-finder-staging` container status is **running** (green)
-4. Click container name → **Logs** → Check for recent activity
-5. Look for queue processing logs: `Processing queue item...`
+4. Check uptime and restart count (high restarts = crashing)
 
-### Method 2: Firestore Console
+**Note**: Portainer container logs will only show Docker/Python startup messages. Application logs (queue processing) are in Google Cloud Logging.
+
+### Method 3: Firestore Console (Test Processing)
 1. Open Firebase Console → Firestore Database
 2. Select `portfolio-staging` database
 3. Navigate to `job-queue` collection
@@ -124,6 +173,7 @@ Before running tests, **verify the Portainer staging worker is running:**
 - Worker polls queue every 10-30 seconds (configurable)
 - Items should transition from `pending` to `processing` within 30 seconds
 - If items stay `pending` for > 2 minutes → worker may be stuck/crashed
+- Check Google Cloud Logging for worker activity and errors
 
 ## Running Tests
 
