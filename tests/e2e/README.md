@@ -114,8 +114,9 @@ Before running tests, **verify the Portainer staging worker is running:**
 The worker is configured to send logs to Google Cloud Logging (via `ENABLE_CLOUD_LOGGING=true`):
 
 ```bash
-# Search for job-finder logs in Cloud Logging
-gcloud logging read 'logName="projects/static-sites-257923/logs/job-finder"' \
+# Search for job-finder logs by environment (RECOMMENDED)
+# Staging logs
+gcloud logging read 'logName="projects/static-sites-257923/logs/job-finder" AND labels.environment="staging"' \
   --limit 20 \
   --format json \
   --freshness 1h | python3 -c "
@@ -134,11 +135,45 @@ for line in sys.stdin:
     except: pass
 "
 
-# Alternative: Search for any logs containing queue keywords
-gcloud logging read 'job-finder OR queue_worker OR "Processing queue item"' \
+# Production logs
+gcloud logging read 'logName="projects/static-sites-257923/logs/job-finder" AND labels.environment="production"' \
   --limit 20 \
   --freshness 1h
+
+# Filter by specific operation types (uses structured logging tags)
+gcloud logging read 'logName="projects/static-sites-257923/logs/job-finder" AND labels.environment="staging" AND textPayload:"[WORKER]"' \
+  --limit 10 \
+  --freshness 1h
+
+gcloud logging read 'logName="projects/static-sites-257923/logs/job-finder" AND labels.environment="staging" AND textPayload:"[QUEUE:"' \
+  --limit 10 \
+  --freshness 1h
+
+gcloud logging read 'logName="projects/static-sites-257923/logs/job-finder" AND labels.environment="staging" AND textPayload:"[PIPELINE:"' \
+  --limit 10 \
+  --freshness 1h
 ```
+
+**Log Message Structure** (New structured format):
+```
+[ENVIRONMENT] timestamp - module - level - [CATEGORY] message | key=value details
+
+Examples:
+[STAGING] 2025-10-18 09:15:00 - queue_worker - INFO - [WORKER] STARTED | poll_interval=60, environment=staging
+[STAGING] 2025-10-18 09:15:30 - queue_worker - INFO - [WORKER] PROCESSING_BATCH | iteration=1, items_count=3
+[STAGING] 2025-10-18 09:15:31 - processor - INFO - [QUEUE:JOB] processing - ID:abc123 | url=https://...
+[STAGING] 2025-10-18 09:15:32 - processor - INFO - [PIPELINE:SCRAPE] COMPLETED - ID:abc123 | method=greenhouse
+[STAGING] 2025-10-18 09:15:33 - processor - INFO - [PIPELINE:FILTER] COMPLETED - ID:abc123 | strikes=2
+[STAGING] 2025-10-18 09:15:35 - processor - INFO - [AI:MATCH] completed | model=claude-3-5-sonnet, score=85
+```
+
+**Log Categories**:
+- `[WORKER]` - Worker status (started, idle, processing, stopped)
+- `[QUEUE:type]` - Queue item processing (JOB, COMPANY, SCRAPE, SOURCE_DISCOVERY)
+- `[PIPELINE:stage]` - Pipeline stages (SCRAPE, FILTER, ANALYZE, SAVE)
+- `[SCRAPE]` - Web scraping activity
+- `[AI:operation]` - AI operations (MATCH, ANALYZE, EXTRACT)
+- `[DB:operation]` - Database operations (CREATE, UPDATE, QUERY)
 
 **What to look for**:
 - `Queue worker started` - Worker initialized successfully

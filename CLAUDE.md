@@ -110,21 +110,50 @@ The application uses a **Firestore-backed queue system** for asynchronous job pr
 
 **Monitoring Worker**:
 ```bash
-# Check worker logs in Google Cloud Logging
-gcloud logging read 'logName="projects/static-sites-257923/logs/job-finder"' \
+# Check staging worker logs (with environment labels)
+gcloud logging read 'logName="projects/static-sites-257923/logs/job-finder" AND labels.environment="staging"' \
   --limit 20 \
   --freshness 1h
 
-# Search for queue processing activity
-gcloud logging read 'job-finder AND ("Processing queue item" OR "Queue worker started")' \
+# Check production worker logs
+gcloud logging read 'logName="projects/static-sites-257923/logs/job-finder" AND labels.environment="production"' \
   --limit 20 \
   --freshness 1h
+
+# Filter by specific operation types (structured logging)
+# Worker status
+gcloud logging read 'logName="projects/static-sites-257923/logs/job-finder" AND labels.environment="staging" AND textPayload:"[WORKER]"' \
+  --limit 10
+
+# Queue processing
+gcloud logging read 'logName="projects/static-sites-257923/logs/job-finder" AND labels.environment="staging" AND textPayload:"[QUEUE:"' \
+  --limit 10
+
+# Pipeline stages
+gcloud logging read 'logName="projects/static-sites-257923/logs/job-finder" AND labels.environment="staging" AND textPayload:"[PIPELINE:"' \
+  --limit 10
 ```
+
+**Structured Logging Format**:
+All logs use a structured format with categories for easy filtering:
+- `[WORKER]` - Worker lifecycle events (started, idle, stopped)
+- `[QUEUE:type]` - Queue item processing (JOB, COMPANY, SCRAPE)
+- `[PIPELINE:stage]` - Pipeline stages (SCRAPE, FILTER, ANALYZE, SAVE)
+- `[SCRAPE]` - Web scraping operations
+- `[AI:operation]` - AI model operations (MATCH, ANALYZE, EXTRACT)
+- `[DB:operation]` - Database operations (CREATE, UPDATE, QUERY)
+
+**Environment Labels**:
+All Cloud Logging entries include labels for filtering:
+- `environment`: staging, production, or development
+- `service`: job-finder
+- `version`: 1.0.0
 
 **Worker Configuration** (docker-compose.staging.yml):
 - `ENABLE_QUEUE_MODE=true` - Queue worker enabled
 - `ENABLE_CRON=false` - No automatic scraping (manual submissions only)
-- `ENABLE_CLOUD_LOGGING=true` - Logs sent to Google Cloud
+- `ENABLE_CLOUD_LOGGING=true` - Logs sent to Google Cloud with environment labels
+- `ENVIRONMENT=staging` - Environment identifier (added to all logs)
 - `STORAGE_DATABASE_NAME=portfolio-staging` - Firestore database
 
 ### Granular Pipeline Architecture (NEW)

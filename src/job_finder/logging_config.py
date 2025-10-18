@@ -4,7 +4,7 @@ import logging
 import os
 import sys
 from pathlib import Path
-from typing import Optional
+from typing import Dict, Optional
 
 
 def setup_logging(
@@ -24,6 +24,7 @@ def setup_logging(
         ENABLE_CLOUD_LOGGING: Set to 'true' to enable Cloud Logging.
         LOG_LEVEL: Override log level (DEBUG, INFO, WARNING, ERROR, CRITICAL).
         LOG_FILE: Override log file path.
+        ENVIRONMENT: Environment name (staging, production, development) - added to Cloud Logging labels.
         GOOGLE_APPLICATION_CREDENTIALS: Path to service account JSON (required for Cloud Logging).
     """
     # Check environment variables
@@ -32,6 +33,7 @@ def setup_logging(
 
     log_level = os.getenv("LOG_LEVEL", log_level).upper()
     log_file = os.getenv("LOG_FILE", log_file or "logs/job_finder.log")
+    environment = os.getenv("ENVIRONMENT", "development")
 
     # Create logs directory if it doesn't exist
     log_path = Path(log_file)
@@ -52,16 +54,29 @@ def setup_logging(
             # Initialize Cloud Logging client
             client = google.cloud.logging.Client()
 
-            # Create Cloud Logging handler
-            cloud_handler = CloudLoggingHandler(client, name="job-finder")
+            # Create Cloud Logging handler with environment labels
+            # This ensures all logs have environment context for filtering
+            labels = {
+                "environment": environment,
+                "service": "job-finder",
+                "version": "1.0.0",  # TODO: Get from package version
+            }
+
+            cloud_handler = CloudLoggingHandler(
+                client,
+                name="job-finder",
+                labels=labels,
+            )
             # Set handler level to match root logger level (not just ERROR)
             cloud_handler.setLevel(getattr(logging, log_level))
             handlers.append(cloud_handler)
 
-            print(f"✅ Google Cloud Logging enabled - logs will appear in Google Cloud Console")
+            print(f"✅ Google Cloud Logging enabled")
             print(f"   Project: {client.project}")
             print(f"   Log name: job-finder")
+            print(f"   Environment: {environment}")
             print(f"   Log level: {log_level}")
+            print(f"   Labels: {labels}")
 
         except ImportError:
             print(
@@ -77,19 +92,24 @@ def setup_logging(
             )
             print("   Falling back to file and console logging only.", file=sys.stderr)
 
+    # Improved log format with environment prefix for better readability
+    log_format = f"[{environment.upper()}] %(asctime)s - %(name)s - %(levelname)s - %(message)s"
+
     # Configure root logger
     logging.basicConfig(
         level=getattr(logging, log_level),
-        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        format=log_format,
         handlers=handlers,
         force=True,  # Override any existing configuration
     )
 
     # Log startup info
     logger = logging.getLogger(__name__)
-    logger.info(f"Logging configured: level={log_level}, file={log_file}")
+    logger.info(
+        f"Logging configured: environment={environment}, level={log_level}, file={log_file}"
+    )
     if enable_cloud_logging:
-        logger.info("Google Cloud Logging integration enabled")
+        logger.info(f"Google Cloud Logging enabled with labels: {labels}")
 
 
 def get_logger(name: str) -> logging.Logger:
@@ -103,3 +123,139 @@ def get_logger(name: str) -> logging.Logger:
         Logger instance.
     """
     return logging.getLogger(name)
+
+
+class StructuredLogger:
+    """
+    Helper class for structured logging with consistent formatting.
+
+    Provides methods for logging common operations with context.
+    """
+
+    def __init__(self, logger: logging.Logger):
+        """
+        Initialize structured logger.
+
+        Args:
+            logger: Base logger instance
+        """
+        self.logger = logger
+        self.environment = os.getenv("ENVIRONMENT", "development")
+
+    def queue_item_processing(
+        self, item_id: str, item_type: str, action: str, details: Optional[Dict] = None
+    ) -> None:
+        """
+        Log queue item processing with structured context.
+
+        Args:
+            item_id: Queue item ID
+            item_type: Type of queue item (job, company, scrape, etc.)
+            action: Action being performed (processing, completed, failed, etc.)
+            details: Optional additional details
+        """
+        message = f"[QUEUE:{item_type.upper()}] {action} - ID:{item_id}"
+        if details:
+            detail_str = ", ".join(f"{k}={v}" for k, v in details.items())
+            message += f" | {detail_str}"
+        self.logger.info(message)
+
+    def pipeline_stage(
+        self, item_id: str, stage: str, status: str, details: Optional[Dict] = None
+    ) -> None:
+        """
+        Log pipeline stage transitions.
+
+        Args:
+            item_id: Queue item ID
+            stage: Pipeline stage (SCRAPE, FILTER, ANALYZE, SAVE)
+            status: Stage status (started, completed, failed, skipped)
+            details: Optional additional details
+        """
+        message = f"[PIPELINE:{stage}] {status.upper()} - ID:{item_id}"
+        if details:
+            detail_str = ", ".join(f"{k}={v}" for k, v in details.items())
+            message += f" | {detail_str}"
+
+        if status.lower() in ["failed", "error"]:
+            self.logger.error(message)
+        elif status.lower() == "skipped":
+            self.logger.warning(message)
+        else:
+            self.logger.info(message)
+
+    def scrape_activity(self, source: str, action: str, details: Optional[Dict] = None) -> None:
+        """
+        Log scraping activity.
+
+        Args:
+            source: Source being scraped (company name, URL, etc.)
+            action: Action being performed
+            details: Optional additional details
+        """
+        message = f"[SCRAPE] {action} - Source:{source}"
+        if details:
+            detail_str = ", ".join(f"{k}={v}" for k, v in details.items())
+            message += f" | {detail_str}"
+        self.logger.info(message)
+
+    def ai_activity(self, operation: str, status: str, details: Optional[Dict] = None) -> None:
+        """
+        Log AI operations.
+
+        Args:
+            operation: AI operation (match, analyze, extract, etc.)
+            status: Operation status
+            details: Optional additional details (model, tokens, cost, etc.)
+        """
+        message = f"[AI:{operation.upper()}] {status}"
+        if details:
+            detail_str = ", ".join(f"{k}={v}" for k, v in details.items())
+            message += f" | {detail_str}"
+        self.logger.info(message)
+
+    def database_activity(
+        self, operation: str, collection: str, status: str, details: Optional[Dict] = None
+    ) -> None:
+        """
+        Log database operations.
+
+        Args:
+            operation: Database operation (create, update, delete, query)
+            collection: Firestore collection name
+            status: Operation status
+            details: Optional additional details
+        """
+        message = f"[DB:{operation.upper()}] {collection} - {status}"
+        if details:
+            detail_str = ", ".join(f"{k}={v}" for k, v in details.items())
+            message += f" | {detail_str}"
+        self.logger.info(message)
+
+    def worker_status(self, status: str, details: Optional[Dict] = None) -> None:
+        """
+        Log worker status changes.
+
+        Args:
+            status: Worker status (started, stopping, idle, processing)
+            details: Optional additional details
+        """
+        message = f"[WORKER] {status.upper()}"
+        if details:
+            detail_str = ", ".join(f"{k}={v}" for k, v in details.items())
+            message += f" | {detail_str}"
+        self.logger.info(message)
+
+
+def get_structured_logger(name: str) -> StructuredLogger:
+    """
+    Get a structured logger instance.
+
+    Args:
+        name: Logger name (typically __name__).
+
+    Returns:
+        StructuredLogger instance.
+    """
+    base_logger = logging.getLogger(name)
+    return StructuredLogger(base_logger)
