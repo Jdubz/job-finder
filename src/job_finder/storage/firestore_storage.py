@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional
 from google.cloud import firestore as gcloud_firestore
 
 from job_finder.storage.firestore_client import FirestoreClient
+from job_finder.utils.url_utils import normalize_url
 
 if TYPE_CHECKING:
     from job_finder.ai.matcher import JobMatchResult
@@ -132,6 +133,10 @@ class FirestoreJobStorage:
         title = job.get("title", "")
         role = self._extract_role_from_title(title)
 
+        # Normalize URL for consistent storage and deduplication
+        job_url = job.get("url", "")
+        normalized_url = normalize_url(job_url) if job_url else ""
+
         # Build job match document
         # Note: Field names use camelCase for Firestore storage
         # Optional fields (postedDate, salary, companyId) are only included if present
@@ -144,7 +149,7 @@ class FirestoreJobStorage:
             "companyInfo": job.get("company_info", ""),
             "location": job.get("location", ""),
             "description": job.get("description", ""),
-            "url": job.get("url", ""),
+            "url": normalized_url,  # Store normalized URL
             # Match Analysis
             "matchScore": match_result.match_score,
             "matchedSkills": match_result.matched_skills,
@@ -352,7 +357,10 @@ class FirestoreJobStorage:
             raise RuntimeError("Firestore not initialized")
 
         try:
-            query = self.db.collection("job-matches").where("url", "==", job_url)
+            # Normalize URL for consistent comparison
+            normalized_url = normalize_url(job_url)
+
+            query = self.db.collection("job-matches").where("url", "==", normalized_url)
 
             if user_id:
                 query = query.where("userId", "==", user_id)
@@ -380,23 +388,27 @@ class FirestoreJobStorage:
         """
         Batch check if multiple jobs already exist in the database.
 
+        Normalizes URLs before checking and returns mapping of normalized URLs.
+
         Args:
             job_urls: List of job posting URLs
             user_id: Optional user ID for multi-user support
 
         Returns:
-            Dictionary mapping URL to existence status
+            Dictionary mapping normalized URL to existence status
         """
         if not self.db:
             raise RuntimeError("Firestore not initialized")
 
+        # Normalize all input URLs first
+        normalized_urls = [normalize_url(url) for url in job_urls]
         exists_map = {}
 
         try:
             # Firestore 'in' queries are limited to 10 items, so batch in chunks
             chunk_size = 10
-            for i in range(0, len(job_urls), chunk_size):
-                chunk = job_urls[i : i + chunk_size]
+            for i in range(0, len(normalized_urls), chunk_size):
+                chunk = normalized_urls[i : i + chunk_size]
 
                 query = self.db.collection("job-matches").where("url", "in", chunk)
 
@@ -413,7 +425,7 @@ class FirestoreJobStorage:
                         exists_map[url] = True
 
             # Mark URLs not found as non-existing
-            for url in job_urls:
+            for url in normalized_urls:
                 if url not in exists_map:
                     exists_map[url] = False
 
@@ -422,11 +434,11 @@ class FirestoreJobStorage:
         except (RuntimeError, ValueError) as e:
             # Firestore query errors - return all as non-existing
             logger.error(f"Error batch checking job existence (database): {str(e)}")
-            return {url: False for url in job_urls}
+            return {url: False for url in normalized_urls}
         except Exception as e:
             # Unexpected errors - log with warning and return all as non-existing
             logger.warning(
                 f"Unexpected error batch checking job existence ({type(e).__name__}): {str(e)}",
                 exc_info=True,
             )
-            return {url: False for url in job_urls}
+            return {url: False for url in normalized_urls}

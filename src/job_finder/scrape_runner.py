@@ -204,33 +204,86 @@ class ScrapeRunner:
 
     def _get_next_sources_by_rotation(self, limit: Optional[int]) -> List[Dict[str, Any]]:
         """
-        Get next sources by rotation (oldest lastScrapedAt first).
+        Get next sources by intelligent rotation.
+
+        Priority order:
+        1. Health score (sources with better health scraped first)
+        2. Tier (S > A > B > C > D)
+        3. Last scraped (oldest first, never scraped first)
+        4. Company fairness (less frequently scraped companies first)
 
         Args:
             limit: Maximum number of sources (None = all sources)
 
         Returns:
-            List of source documents sorted by lastScrapedAt
+            List of source documents sorted by rotation priority
         """
         from datetime import datetime, timezone
 
         sources = self.sources_manager.get_active_sources()
 
-        # Sort by lastScrapedAt (None values first, then oldest to newest)
-        def sort_key(source):
-            last_scraped = source.get("lastScrapedAt")
-            if last_scraped is None:
-                # Never scraped - highest priority (use epoch)
-                return datetime(1970, 1, 1, tzinfo=timezone.utc)
-            return last_scraped
+        # Score each source
+        scored_sources = []
 
-        sources_sorted = sorted(sources, key=sort_key)
+        for source in sources:
+            health = source.get("health", {})
+
+            # Get health score (0-1, default 1.0 for new sources)
+            health_score = health.get("healthScore", 1.0)
+
+            # Get tier priority (S=0, A=1, B=2, C=3, D=4)
+            tier = source.get("tier", "D")
+            tier_priority = {"S": 0, "A": 1, "B": 2, "C": 3, "D": 4}.get(tier, 4)
+
+            # Get last scraped timestamp (prefer older or never scraped)
+            # Use epoch for sources that were never scraped
+            last_scraped = source.get("lastScrapedAt") or source.get("scraped_at")
+            if last_scraped is None:
+                last_scraped = datetime(1970, 1, 1, tzinfo=timezone.utc)
+
+            # Get company fairness score (less scraped companies get higher priority)
+            company_id = source.get("company_id", "")
+            try:
+                from job_finder.utils.source_health import CompanyScrapeTracker
+
+                tracker = CompanyScrapeTracker(self.job_storage.db)
+                company_scrape_freq = tracker.get_scrape_frequency(company_id)
+            except Exception as e:
+                logger.warning(f"Error getting company scrape frequency: {e}")
+                company_scrape_freq = 0.0
+
+            scored_sources.append(
+                {
+                    "source": source,
+                    "health_score": health_score,
+                    "tier_priority": tier_priority,
+                    "last_scraped": last_scraped,
+                    "company_scrape_freq": company_scrape_freq,
+                }
+            )
+
+        # Sort by: health_score DESC, tier priority ASC, last_scraped ASC, company_freq ASC
+        scored_sources.sort(
+            key=lambda x: (
+                -x["health_score"],  # Higher health first
+                x["tier_priority"],  # Better tier first (S before A, etc)
+                x["last_scraped"],  # Oldest first (never scraped = epoch = first)
+                x["company_scrape_freq"],  # Less scraped companies first
+            )
+        )
+
+        logger.debug("Source rotation order:")
+        for i, scored in enumerate(scored_sources[:5]):
+            logger.debug(
+                f"  {i + 1}. {scored['source'].get('name')} "
+                f"(health={scored['health_score']:.2f}, tier={scored['source'].get('tier', 'D')})"
+            )
 
         # Return limited or all sources
         if limit is None:
-            return sources_sorted
+            return [s["source"] for s in scored_sources]
         else:
-            return sources_sorted[:limit]
+            return [s["source"] for s in scored_sources[:limit]]
 
     def _scrape_source(self, source: Dict[str, Any]) -> Dict[str, Any]:
         """
