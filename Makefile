@@ -57,8 +57,8 @@ help: ## Show this help message
 	@echo "$(CYAN)TESTING$(RESET)"
 	@echo "  $(GREEN)make test$(RESET)               Run all tests"
 	@echo "  $(GREEN)make test-coverage$(RESET)      Run tests with coverage report"
-	@echo "  $(GREEN)make test-e2e$(RESET)           Run end-to-end queue tests"
-	@echo "  $(GREEN)make test-e2e-full$(RESET)      Complete E2E suite: collect, clean, submit, monitor, save"
+	@echo "  $(GREEN)make test-e2e$(RESET)           Fast E2E test: 1 job/type, validate decision tree (90-120s)"
+	@echo "  $(GREEN)make test-e2e-full$(RESET)      Full E2E test: all prod data, quality assessment (monitors until complete)"
 	@echo "  $(GREEN)make test-specific$(RESET) TEST=<name>  Run specific test file"
 	@echo ""
 	@echo "$(CYAN)CODE QUALITY$(RESET)"
@@ -147,19 +147,52 @@ test-coverage: ## Run tests with coverage report
 	@echo "$(CYAN)Running tests with coverage...$(RESET)"
 	@. $(VENV_DIR)/bin/activate && $(PYTEST) $(TEST_DIR) --cov=$(SRC_DIR)/job_finder --cov-report=html --cov-report=term
 
-test-e2e: ## Run end-to-end queue tests
-	@echo "$(CYAN)Running end-to-end tests...$(RESET)"
-	@. $(VENV_DIR)/bin/activate && $(PYTHON) $(SCRIPTS_DIR)/testing/test_e2e_queue.py
+test-e2e: ## Run fast E2E test with 1 job of each type to validate decision tree logic (90-120s)
+	@echo "$(CYAN)Running fast E2E test (decision tree validation)...$(RESET)"
+	@echo "$(GREEN)✓ Safe: Testing on portfolio-staging (not production)$(RESET)"
+	@echo "$(BLUE)ℹ️  Test: 1 job of each type (JOB_SCRAPE, COMPANY, SOURCE_DISCOVERY)$(RESET)"
+	@echo "$(CYAN)Purpose: Validate state-driven pipeline and loop prevention$(RESET)"
+	@sleep 1
+	@mkdir -p test_results
+	@export TEST_RUN_ID="e2e_quick_$$(date +%s)" && \
+	export RESULTS_DIR="test_results/$${TEST_RUN_ID}" && \
+	export GOOGLE_APPLICATION_CREDENTIALS="$(shell pwd)/credentials/serviceAccountKey.json" && \
+	mkdir -p "$${RESULTS_DIR}" && \
+	echo "$(BLUE)Test Run ID: $${TEST_RUN_ID}$(RESET)" && \
+	echo "$(BLUE)Test Database: portfolio-staging$(RESET)" && \
+	echo "$(BLUE)Results Directory: $${RESULTS_DIR}$(RESET)" && \
+	echo "" && \
+	echo "$(CYAN)[1/3] Submitting test jobs (1 of each type)...$(RESET)" && \
+	. $(VENV_DIR)/bin/activate && $(PYTHON) tests/e2e/data_collector.py \
+		--database portfolio-staging \
+		--output-dir "$${RESULTS_DIR}" \
+		--test-count 1 \
+		--test-mode decision-tree \
+		--verbose && \
+	echo "" && \
+	echo "$(CYAN)[2/3] Monitoring queue until complete...$(RESET)" && \
+	. $(VENV_DIR)/bin/activate && $(PYTHON) tests/e2e/queue_monitor.py \
+		--database portfolio-staging \
+		--timeout 180 \
+		--output "$${RESULTS_DIR}/monitor.log" && \
+	echo "" && \
+	echo "$(CYAN)[3/3] Validating decision tree results...$(RESET)" && \
+	. $(VENV_DIR)/bin/activate && $(PYTHON) tests/e2e/validate_decision_tree.py \
+		--database portfolio-staging \
+		--results-dir "$${RESULTS_DIR}" && \
+	echo "" && \
+	echo "$(GREEN)✓ Fast E2E Test Complete!$(RESET)" && \
+	echo "$(YELLOW)Results: $${RESULTS_DIR}$(RESET)"
 
-test-e2e-full: ## Run complete E2E suite: collect data, clean, submit, monitor, save results (STAGING ONLY)
-	@echo "$(CYAN)Starting full E2E test suite...$(RESET)"
+test-e2e-full: ## Run complete E2E suite with ALL production data for quality assessment (monitors until complete)
+	@echo "$(CYAN)Starting FULL E2E test suite (quality assessment)...$(RESET)"
 	@echo "$(YELLOW)⚠️  WARNING: This will CLEAR collections in portfolio-staging database$(RESET)"
 	@echo "$(GREEN)✓ Safe: Testing on portfolio-staging (not production)$(RESET)"
-	@echo "$(BLUE)ℹ️  Note: Test data will be seeded from production (read-only)$(RESET)"
-	@echo "$(CYAN)This will: copy prod data, clean staging, submit jobs, monitor, save results$(RESET)"
+	@echo "$(BLUE)ℹ️  This will process ALL production data through the pipeline$(RESET)"
+	@echo "$(CYAN)Purpose: Data quality validation, comprehensive system test$(RESET)"
 	@sleep 2
 	@mkdir -p test_results
-	@export TEST_RUN_ID="e2e_$$(date +%s)" && \
+	@export TEST_RUN_ID="e2e_full_$$(date +%s)" && \
 	export RESULTS_DIR="test_results/$${TEST_RUN_ID}" && \
 	export GOOGLE_APPLICATION_CREDENTIALS="$(shell pwd)/credentials/serviceAccountKey.json" && \
 	mkdir -p "$${RESULTS_DIR}" && \
@@ -168,22 +201,22 @@ test-e2e-full: ## Run complete E2E suite: collect data, clean, submit, monitor, 
 	echo "$(BLUE)Source Database: portfolio (production - read only)$(RESET)" && \
 	echo "$(BLUE)Results Directory: $${RESULTS_DIR}$(RESET)" && \
 	echo "" && \
-	echo "$(CYAN)[1/5] Seeding staging with production data...$(RESET)" && \
+	echo "$(CYAN)[1/5] Seeding staging with ALL production data...$(RESET)" && \
 	. $(VENV_DIR)/bin/activate && $(PYTHON) tests/e2e/data_collector.py \
 		--database portfolio-staging \
 		--source-database portfolio \
 		--output-dir "$${RESULTS_DIR}" \
 		--backup-dir "$${RESULTS_DIR}/backup" \
 		--clean-before \
-		--test-count 1 \
+		--test-mode full \
 		--verbose && \
 	echo "" && \
-	echo "$(CYAN)[2/5] Running E2E tests with streaming logs...$(RESET)" && \
-	. $(VENV_DIR)/bin/activate && $(PYTHON) tests/e2e/run_with_streaming.py \
+	echo "$(CYAN)[2/5] Monitoring queue until all jobs complete...$(RESET)" && \
+	. $(VENV_DIR)/bin/activate && $(PYTHON) tests/e2e/queue_monitor.py \
 		--database portfolio-staging \
+		--timeout 3600 \
 		--stream-logs \
-		--monitor-quality \
-		--output "$${RESULTS_DIR}/e2e_output.log" && \
+		--output "$${RESULTS_DIR}/monitor.log" && \
 	echo "" && \
 	echo "$(CYAN)[3/5] Analyzing results and quality metrics...$(RESET)" && \
 	. $(VENV_DIR)/bin/activate && $(PYTHON) tests/e2e/results_analyzer.py \
@@ -191,12 +224,18 @@ test-e2e-full: ## Run complete E2E suite: collect data, clean, submit, monitor, 
 		--output-dir "$${RESULTS_DIR}/analysis" \
 		--verbose && \
 	echo "" && \
-	echo "$(CYAN)[4/5] Saving comprehensive report...$(RESET)" && \
-	. $(VENV_DIR)/bin/activate && $(PYTHON) -c "import json; import sys; sys.path.insert(0, 'tests'); from e2e.data_collector import TestRunResult; print('Report saved')" && \
+	echo "$(CYAN)[4/5] Generating data quality report...$(RESET)" && \
+	. $(VENV_DIR)/bin/activate && $(PYTHON) tests/e2e/quality_report.py \
+		--database portfolio-staging \
+		--results-dir "$${RESULTS_DIR}" \
+		--output "$${RESULTS_DIR}/quality_report.html" && \
 	echo "" && \
-	echo "$(GREEN)✓ E2E Test Suite Complete!$(RESET)" && \
+	echo "$(CYAN)[5/5] Saving comprehensive results...$(RESET)" && \
+	. $(VENV_DIR)/bin/activate && $(PYTHON) -c "import json; import sys; sys.path.insert(0, 'tests'); from e2e.data_collector import TestRunResult; print('Results saved')" && \
+	echo "" && \
+	echo "$(GREEN)✓ Full E2E Test Suite Complete!$(RESET)" && \
 	echo "$(YELLOW)Results saved to: $${RESULTS_DIR}$(RESET)" && \
-	echo "$(YELLOW)View analysis at: $${RESULTS_DIR}/analysis$(RESET)"
+	echo "$(YELLOW)Quality report: $${RESULTS_DIR}/quality_report.html$(RESET)"
 
 test-specific: ## Run specific test file (use TEST=filename)
 	@if [ -z "$(TEST)" ]; then \

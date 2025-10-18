@@ -905,6 +905,12 @@ def main():
         choices=[1, 2, 3, 4],
         help="Number of test jobs to submit (1-4, default: 2 for quick tests)",
     )
+    parser.add_argument(
+        "--test-mode",
+        choices=["decision-tree", "full"],
+        default="decision-tree",
+        help="Test mode: decision-tree (1 job each type, fast) or full (all production data)",
+    )
 
     args = parser.parse_args()
 
