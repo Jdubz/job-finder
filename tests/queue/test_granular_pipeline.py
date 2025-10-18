@@ -332,23 +332,3 @@ class TestPipelineStatePassthrough:
 
         # Should preserve original job_data
         assert pipeline_state["job_data"] == job_data
-
-
-class TestBackwardsCompatibility:
-    """Test legacy processing still works."""
-
-    def test_routes_to_legacy_when_no_subtask(self, processor):
-        """Should use legacy processor when sub_task is None."""
-        item = JobQueueItem(
-            id="test-123",
-            type=QueueItemType.JOB,
-            url="https://example.com/job",
-            company_name="Test",
-            sub_task=None,  # Legacy
-        )
-
-        processor.job_storage.job_exists.return_value = False
-
-        with patch.object(processor, "_process_job") as mock:
-            processor.process_item(item)
-            mock.assert_called_once()

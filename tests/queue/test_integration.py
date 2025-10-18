@@ -310,14 +310,14 @@ class TestEndToEndScenarios:
         )
         limit_stream.return_value = []
 
-        # Step 1: Submit company
-        company_added = scraper_intake.submit_company(
+        # Step 1: Submit company (using granular pipeline)
+        company_doc_id = scraper_intake.submit_company(
             company_name="New Startup",
             company_website="https://newstartup.com",
             source="automated_scan",
         )
 
-        assert company_added is True
+        assert company_doc_id is not None
 
         # Step 2: Submit jobs from that company
         jobs = [

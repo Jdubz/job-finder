@@ -264,7 +264,8 @@ class ScrapeRunner:
             board_token = config.get("board_token")
             if not board_token:
                 raise ValueError(f"Source {source_name} missing board_token in config")
-            scraper = GreenhouseScraper(board_token)
+            # Pass full config dict to scraper
+            scraper = GreenhouseScraper(config)
             jobs = scraper.scrape()
         elif source_type == "rss":
             rss_url = config.get("url")

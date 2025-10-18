@@ -1,0 +1,14 @@
+{
+  "url": "https://test.example.com/jobs/senior-python-engineer-remote",
+  "title": "Senior Python Engineer - AI/ML Platform",
+  "company": "TechCorp",
+  "company_website": "https://techcorp.example.com",
+  "location": "Remote (US)",
+  "salary": "$160,000 - $220,000",
+  "description": "We're looking for a Senior Python Engineer to join our AI/ML Platform team. You'll be building scalable data pipelines, working with FastAPI and Django, and deploying machine learning models to production.\n\nKey Responsibilities:\n- Design and implement RESTful APIs using FastAPI and Django\n- Build data processing pipelines with Apache Spark and Airflow\n- Deploy ML models using Docker and Kubernetes\n- Collaborate with data scientists to productionize machine learning workflows\n- Mentor junior engineers and contribute to technical design reviews\n\nRequired Skills:\n- 5+ years of professional Python development experience\n- Expert-level knowledge of FastAPI, Django, or Flask\n- Strong experience with AWS (EC2, S3, Lambda, RDS)\n- Proficiency with Docker and Kubernetes\n- Experience with SQL and NoSQL databases (PostgreSQL, MongoDB, Redis)\n- Familiarity with CI/CD pipelines and GitHub Actions\n- Understanding of machine learning deployment (MLOps)\n\nPreferred Skills:\n- Experience with Apache Spark, Airflow, or similar data tools\n- Knowledge of TensorFlow, PyTorch, or scikit-learn\n- Contributions to open source projects\n- Experience with microservices architecture\n\nOur Tech Stack:\n- Backend: Python 3.11, FastAPI, Django\n- Databases: PostgreSQL, Redis, MongoDB\n- Infrastructure: AWS, Docker, Kubernetes, Terraform\n- ML: TensorFlow, PyTorch, MLflow\n- Tools: GitHub, GitHub Actions, Datadog\n\nBenefits:\n- Competitive salary and equity\n- Fully remote work\n- Flexible hours\n- Health, dental, vision insurance\n- 401(k) matching\n- Unlimited PTO\n- Professional development budget\n\nWe're a remote-first company with a strong engineering culture. Our team values technical excellence, collaboration, and continuous learning.\n\nIf you're passionate about building scalable AI/ML platforms and want to work with cutting-edge technologies, we'd love to hear from you!",
+  "posted_date": "2025-10-15",
+  "company_info": "TechCorp is a leading AI/ML platform company helping enterprises deploy machine learning at scale. Our platform processes billions of predictions daily for Fortune 500 customers. We're a team of 200+ engineers, data scientists, and ML researchers building the future of AI infrastructure.",
+  "expected_match_score_min": 85,
+  "expected_priority": "High",
+  "test_name": "high_match_job"
+}

@@ -7,19 +7,25 @@ from typing import Any, Dict, List, Optional
 class BaseScraper(ABC):
     """Abstract base class for job scrapers.
 
-    Standard job dictionary structure:
+    Standard job dictionary structure returned by scrapers:
     {
+        # REQUIRED FIELDS (must be present for all jobs)
         "title": str,              # Job title/role
         "company": str,            # Company name
         "company_website": str,    # Company website URL
-        "company_info": str,       # Company culture/mission statements (optional)
         "location": str,           # Job location
         "description": str,        # Full job description
-        "url": str,                # Job posting URL
-        "posted_date": str,        # When the job was posted (optional)
-        "salary": str,             # Salary range (optional)
-        "keywords": List[str],     # Keywords for emphasis (populated by AI)
+        "url": str,                # Job posting URL (unique identifier)
+
+        # OPTIONAL FIELDS (may be absent if not available on job page)
+        "posted_date": str,        # Job posting date (None if not found)
+        "salary": str,             # Salary range (None if not listed)
+        "company_info": str,       # Company about/culture (fetched later, not from scraper)
     }
+
+    REMOVED FIELDS:
+    - "keywords": Previously used for scraper metadata. Now removed.
+      ATS keywords are stored in resumeIntakeData.atsKeywords (AI-generated only).
     """
 
     def __init__(self, config: Dict[str, Any]):
@@ -45,10 +51,12 @@ class BaseScraper(ABC):
             element: Raw job posting element from the page.
 
         Returns:
-            Standardized job posting dictionary with required fields:
+            Standardized job posting dictionary with REQUIRED fields:
             - title, company, company_website, location, description, url
-            Optional fields:
-            - company_info, posted_date, salary, keywords
-            Returns None if parsing fails.
+
+            OPTIONAL fields (only include if available):
+            - posted_date, salary
+
+            Returns None if parsing fails or required fields are missing.
         """
         pass

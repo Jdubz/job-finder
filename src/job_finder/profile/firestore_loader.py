@@ -70,8 +70,8 @@ class FirestoreProfileLoader:
             years_of_experience=self._calculate_years_experience(experiences),
             skills=skills,
             experience=experiences,
-            education=[],  # TODO: Add education collection if available
-            projects=[],  # TODO: Add projects collection if available
+            education=[],  # Not currently stored in Portfolio Firestore
+            projects=[],  # Not currently stored in Portfolio Firestore
             preferences=None,
             certifications=[],
             languages=[],

@@ -56,7 +56,7 @@ Compensation Range: $100,000 - $720,000 annually
 Netflix emphasizes a unique culture of collaboration, high-impact work,
 and continuous feedback.
     """.strip(),
-    "keywords": [],  # Will be populated by AI analysis from keywords_to_include
+    # Note: ATS keywords are stored in resumeIntakeData.atsKeywords, not at job level
 }
 
 print("\n📋 JOB POSTING")
@@ -162,14 +162,13 @@ try:
                 for point in exp.get("points_to_emphasize", [])[:2]:
                     print(f"    - {point}")
 
-            print(f"\n🔑 Keywords to Include:")
-            keywords = intake.get("keywords_to_include", [])
-            print(f"  {', '.join(keywords[:15])}")
-            if len(keywords) > 15:
-                print(f"  ... and {len(keywords) - 15} more")
+            print(f"\n🔑 ATS Keywords:")
+            ats_keywords = intake.get("ats_keywords", [])
+            print(f"  {', '.join(ats_keywords[:15])}")
+            if len(ats_keywords) > 15:
+                print(f"  ... and {len(ats_keywords) - 15} more")
 
-            # Populate keywords field in job dictionary from AI analysis
-            netflix_job["keywords"] = keywords
+            # Note: ATS keywords are stored in resumeIntakeData, not at job level
 
             # Save full results
             output_file = "data/netflix_analysis.json"

@@ -89,10 +89,15 @@ class ScraperIntake:
         return added_count
 
     def submit_company(
-        self, company_name: str, company_website: str, source: QueueSource = "scraper"
-    ) -> bool:
+        self,
+        company_name: str,
+        company_website: str,
+        source: QueueSource = "scraper",
+    ) -> Optional[str]:
         """
-        Submit a company for analysis to the queue.
+        Submit a company for granular pipeline analysis to the queue.
+
+        Uses the new 4-step granular pipeline (FETCH → EXTRACT → ANALYZE → SAVE).
 
         Args:
             company_name: Company name
@@ -100,33 +105,37 @@ class ScraperIntake:
             source: Source identifier
 
         Returns:
-            True if added successfully, False otherwise
+            Document ID if added successfully, None otherwise
         """
         try:
             # Validate URL exists and is non-empty
             url = company_website.strip()
             if not url:
                 logger.debug(f"Skipping company {company_name} with missing or empty URL")
-                return False
+                return None
 
             # Check if URL already in queue
             if self.queue_manager.url_exists_in_queue(url):
                 logger.debug(f"Company already in queue: {url}")
-                return False
+                return None
 
-            # Create queue item
+            # Import CompanySubTask
+            from job_finder.queue.models import CompanySubTask
+
+            # Create granular pipeline item starting with FETCH
             queue_item = JobQueueItem(
                 type=QueueItemType.COMPANY,
                 url=url,
                 company_name=company_name,
                 source=source,
+                company_sub_task=CompanySubTask.FETCH,
             )
 
             # Add to queue
-            self.queue_manager.add_item(queue_item)
-            logger.info(f"Submitted company to queue: {company_name}")
-            return True
+            doc_id = self.queue_manager.add_item(queue_item)
+            logger.info(f"Submitted company to granular pipeline: {company_name} (ID: {doc_id})")
+            return doc_id
 
         except Exception as e:
-            logger.error(f"Error adding company to queue: {e}")
-            return False
+            logger.error(f"Error adding company to granular pipeline: {e}")
+            return None

@@ -50,5 +50,9 @@ class JobStorage:
 
     def _save_database(self, jobs: List[Dict[str, Any]]) -> None:
         """Save jobs to database."""
-        # TODO: Implement database storage using SQLAlchemy
-        raise NotImplementedError("Database storage not yet implemented")
+        # Note: SQLAlchemy/SQL database storage is not planned.
+        # This tool uses Firestore exclusively for storage to align with
+        # the Firebase-based architecture shared with the Portfolio project.
+        raise NotImplementedError(
+            "SQL database storage not supported. Use Firestore via FirestoreJobStorage."
+        )

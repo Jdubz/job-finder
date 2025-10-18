@@ -1,0 +1,15 @@
+{
+  "url": "https://test.example.com/jobs/python-developer-entry-level",
+  "title": "Python Developer - Entry Level",
+  "company": "StartupCo",
+  "company_website": "https://startupco.example.com",
+  "location": "Remote",
+  "salary": "$60,000 - $80,000",
+  "description": "We're looking for an entry-level Python Developer to help build our web application.\n\nKey Responsibilities:\n- Write Python code for our Django web application\n- Fix bugs and add small features\n- Learn from senior developers\n- Participate in code reviews\n\nRequired Skills:\n- 0-1 years of Python experience (recent grads welcome!)\n- Basic knowledge of Django or Flask\n- Familiarity with HTML/CSS/JavaScript\n- Willingness to learn\n\nPreferred Skills:\n- Internship experience\n- Portfolio of personal projects\n- Computer Science degree\n\nOur Tech Stack:\n- Backend: Python 3.9, Django\n- Frontend: React, TypeScript\n- Database: PostgreSQL\n- Hosting: Heroku\n\nWe're a small startup (10 people) building a SaaS product for small businesses. This is a great opportunity to learn and grow your skills in a supportive environment.\n\nNote: This is an entry-level position with mentorship and growth opportunities. We're not expecting extensive experience, just eagerness to learn!",
+  "posted_date": "2025-10-16",
+  "company_info": "StartupCo is a 10-person startup building project management software for small businesses. We're pre-Series A and focused on finding product-market fit.",
+  "expected_match_score_max": 75,
+  "expected_status": "skipped",
+  "skip_reason": "Score below threshold (lacks senior-level experience and requirements)",
+  "test_name": "low_match_job"
+}
