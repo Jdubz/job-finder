@@ -22,10 +22,15 @@ Job Finder is an AI-powered web scraping application that finds online job posti
 - **Portfolio's purpose**: Display matched jobs, manage applications, generate tailored resumes
 - **Data flow**: job-finder (scraping + AI analysis) → Firestore → portfolio (UI + user interaction)
 
+**Shared Resources:**
+- **Firestore Collections**: `job-queue`, `job-matches`, `companies`, `job-sources`
+- **Google Cloud Logging**: Structured logs with environment labels for real-time monitoring (see [CLOUD_LOGGING_DESIGN.md](docs/CLOUD_LOGGING_DESIGN.md))
+
 When considering improvements or new features:
 - ❌ **DO NOT** build a web UI, dashboard, or visualization in this project
 - ✅ **DO** focus on improving scraping, filtering, matching quality, and data structure
 - ✅ **DO** ensure data is properly structured for consumption by the Portfolio project
+- ✅ **DO** use structured logging for visibility into worker operations
 
 ## Commands
 
