@@ -14,6 +14,8 @@ services:
 
       # Environment Configuration
       - ENVIRONMENT=staging
+      - ENABLE_QUEUE_MODE=true
+      - ENABLE_CLOUD_LOGGING=true
 
       # Database Overrides - USE STAGING DATABASES
       - PROFILE_DATABASE_NAME=portfolio-staging
