@@ -1460,19 +1460,19 @@ class QueueItemProcessor:
             # Process based on detected type
             if source_type == "greenhouse":
                 success, source_id, message = self._discover_greenhouse_source(
-                    url, source_config, config, company_name
+                    url, source_config, config, company_name, item
                 )
             elif source_type == "workday":
                 success, source_id, message = self._discover_workday_source(
-                    url, source_config, config, company_name
+                    url, source_config, config, company_name, item
                 )
             elif source_type == "rss":
                 success, source_id, message = self._discover_rss_source(
-                    url, source_config, config, company_name
+                    url, source_config, config, company_name, item
                 )
             else:  # generic
                 success, source_id, message = self._discover_generic_source(
-                    url, source_config, config, company_name
+                    url, source_config, config, company_name, item
                 )
 
             if success:
@@ -1501,6 +1501,7 @@ class QueueItemProcessor:
         source_config: Dict[str, str],
         discovery_config: Any,
         company_name: Optional[str],
+        item: "JobQueueItem",
     ) -> tuple[bool, Optional[str], str]:
         """
         Discover and validate Greenhouse source.
@@ -1548,10 +1549,10 @@ class QueueItemProcessor:
                 name=source_name,
                 source_type="greenhouse",
                 config={"board_token": board_token},
-                discovered_via=discovery_config.source or "user_submission",
-                discovered_by=discovery_config.submitted_by,
+                discovered_via=item.source or "user_submission",
+                discovered_by=item.submitted_by,
                 discovery_confidence="high",  # Greenhouse is reliable
-                discovery_queue_item_id=discovery_config.id,
+                discovery_queue_item_id=item.id,
                 company_id=discovery_config.company_id,
                 company_name=company_name,
                 enabled=discovery_config.auto_enable,
@@ -1570,6 +1571,7 @@ class QueueItemProcessor:
         source_config: Dict[str, str],
         discovery_config: Any,
         company_name: Optional[str],
+        item: "JobQueueItem",
     ) -> tuple[bool, Optional[str], str]:
         """
         Discover and validate Workday source.
@@ -1599,10 +1601,10 @@ class QueueItemProcessor:
                 name=source_name,
                 source_type="workday",
                 config={"company_id": company_id, "base_url": base_url},
-                discovered_via=discovery_config.source or "user_submission",
-                discovered_by=discovery_config.submitted_by,
+                discovered_via=item.source or "user_submission",
+                discovered_by=item.submitted_by,
                 discovery_confidence="medium",  # Workday needs validation
-                discovery_queue_item_id=discovery_config.id,
+                discovery_queue_item_id=item.id,
                 company_id=discovery_config.company_id,
                 company_name=company_name,
                 enabled=False,  # Workday requires manual validation
@@ -1625,6 +1627,7 @@ class QueueItemProcessor:
         source_config: Dict[str, str],
         discovery_config: Any,
         company_name: Optional[str],
+        item: "JobQueueItem",
     ) -> tuple[bool, Optional[str], str]:
         """
         Discover and validate RSS source.
@@ -1659,10 +1662,10 @@ class QueueItemProcessor:
                 name=source_name,
                 source_type="rss",
                 config={"url": url, "parse_format": "standard"},
-                discovered_via=discovery_config.source or "user_submission",
-                discovered_by=discovery_config.submitted_by,
+                discovered_via=item.source or "user_submission",
+                discovered_by=item.submitted_by,
                 discovery_confidence="high",  # RSS is reliable if valid
-                discovery_queue_item_id=discovery_config.id,
+                discovery_queue_item_id=item.id,
                 company_id=discovery_config.company_id,
                 company_name=company_name,
                 enabled=discovery_config.auto_enable,
@@ -1681,6 +1684,7 @@ class QueueItemProcessor:
         source_config: Dict[str, str],
         discovery_config: Any,
         company_name: Optional[str],
+        item: "JobQueueItem",
     ) -> tuple[bool, Optional[str], str]:
         """
         Discover generic HTML source using AI selector discovery.
@@ -1731,10 +1735,10 @@ class QueueItemProcessor:
                     "selectors": selectors,
                     "discovered_by_ai": True,
                 },
-                discovered_via=discovery_config.source or "user_submission",
-                discovered_by=discovery_config.submitted_by,
+                discovered_via=item.source or "user_submission",
+                discovered_by=item.submitted_by,
                 discovery_confidence=confidence,
-                discovery_queue_item_id=discovery_config.id,
+                discovery_queue_item_id=item.id,
                 company_id=discovery_config.company_id,
                 company_name=company_name,
                 enabled=auto_enable,
