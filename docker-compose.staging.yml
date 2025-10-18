@@ -1,57 +1,38 @@
 version: '3.8'
 
 services:
-  job-finder-staging:
+  job-finder:
     image: ghcr.io/jdubz/job-finder:staging
     container_name: job-finder-staging
     restart: unless-stopped
 
     environment:
-      # API Keys - SET THESE IN PORTAINER
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
       - GOOGLE_APPLICATION_CREDENTIALS=/app/credentials/serviceAccountKey.json
-
-      # Environment Configuration
       - ENVIRONMENT=staging
       - ENABLE_QUEUE_MODE=true
       - ENABLE_CLOUD_LOGGING=true
-
-      # Database Overrides - USE STAGING DATABASES
       - PROFILE_DATABASE_NAME=portfolio-staging
       - STORAGE_DATABASE_NAME=portfolio-staging
-
-      # Config path
       - CONFIG_PATH=/app/config/config.yaml
       - LOG_FILE=/app/logs/scheduler.log
-      - QUEUE_WORKER_LOG_FILE=/app/logs/queue_worker.log
-
-      # Timezone for cron
       - TZ=America/Los_Angeles
 
     volumes:
-      # Mount credentials (REQUIRED)
-      - ./credentials:/app/credentials:ro
-
-      # Mount staging config (uses default config.yaml)
-      - ./config:/app/config:ro
-
-      # Mount logs for persistence
-      - ./logs-staging:/app/logs
-
-      # Mount data for any local file outputs
-      - ./data-staging:/app/data
+      - /srv/dev-disk-by-uuid-45e47416-96ad-41be-9fc0-582e15241cbd/storage/jobscraper/staging/credentials:/app/credentials:ro
+      - /srv/dev-disk-by-uuid-45e47416-96ad-41be-9fc0-582e15241cbd/storage/jobscraper/staging/config:/app/config:ro
+      - /srv/dev-disk-by-uuid-45e47416-96ad-41be-9fc0-582e15241cbd/storage/jobscraper/staging/logs:/app/logs
+      - /srv/dev-disk-by-uuid-45e47416-96ad-41be-9fc0-582e15241cbd/storage/jobscraper/staging/data:/app/data
 
     labels:
-      # Watchtower auto-update labels - more aggressive for staging
+      # Watchtower auto-update labels
       - "com.centurylinklabs.watchtower.enable=true"
       - "environment=staging"
-      - "update.frequency=high"
 
     networks:
       - job-finder-staging-network
 
-    # Resource limits (lower than production for cost savings)
     deploy:
       resources:
         limits:
@@ -68,31 +49,24 @@ services:
       retries: 3
       start_period: 30s
 
-  # Watchtower for auto-updates (more aggressive in staging)
-  watchtower-staging:
+  # Watchtower for auto-updates
+  watchtower:
     image: containrrr/watchtower:latest
     container_name: watchtower-job-finder-staging
     restart: unless-stopped
 
     environment:
       - WATCHTOWER_CLEANUP=true
-      - WATCHTOWER_POLL_INTERVAL=180  # Check every 3 minutes (aggressive for testing)
+      - WATCHTOWER_POLL_INTERVAL=180  # Check every 3 minutes (more aggressive for staging)
       - WATCHTOWER_LABEL_ENABLE=true  # Only update containers with watchtower label
       - WATCHTOWER_INCLUDE_RESTARTING=true
-      - WATCHTOWER_NOTIFICATIONS=shoutrrr
-      - WATCHTOWER_NOTIFICATION_URL=${WATCHTOWER_NOTIFICATION_URL:-}  # Optional: Slack/Discord webhook
       - TZ=America/Los_Angeles
-      # Only monitor staging containers
-      - WATCHTOWER_SCOPE=staging
 
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
 
     networks:
       - job-finder-staging-network
-
-    labels:
-      - "com.centurylinklabs.watchtower.scope=staging"
 
 networks:
   job-finder-staging-network:
