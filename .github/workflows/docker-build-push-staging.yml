@@ -1,9 +1,9 @@
-name: Build and Push Production Docker Image
+name: Build and Push Staging Docker Image
 
 on:
   push:
     branches:
-      - main
+      - staging
     paths-ignore:
       - '**.md'
       - 'docs/**'
@@ -15,7 +15,7 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  build-and-push-production:
+  build-and-push-staging:
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -41,11 +41,9 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
+            type=raw,value=staging
+            type=sha,prefix=staging-
             type=ref,event=branch
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=sha
-            type=raw,value=latest,enable={{is_default_branch}}
 
       - name: Build and push Docker image
         id: build-push
@@ -64,15 +62,15 @@ jobs:
 
       - name: Deployment Summary
         run: |
-          echo "## Production Deployment 🎯" >> $GITHUB_STEP_SUMMARY
+          echo "## Staging Deployment 🚀" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Image:** \`${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Image:** \`${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:staging\`" >> $GITHUB_STEP_SUMMARY
           echo "**Digest:** \`${{ steps.build-push.outputs.digest }}\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Watchtower will auto-deploy to production environment in ~5 minutes" >> $GITHUB_STEP_SUMMARY
+          echo "Watchtower will auto-deploy to staging environment in ~3 minutes" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Next Steps" >> $GITHUB_STEP_SUMMARY
-          echo "1. Monitor deployment: \`docker logs job-finder-production -f\`" >> $GITHUB_STEP_SUMMARY
-          echo "2. Verify queue processing in production" >> $GITHUB_STEP_SUMMARY
-          echo "3. Check error logs for issues" >> $GITHUB_STEP_SUMMARY
-          echo "4. Monitor resource usage" >> $GITHUB_STEP_SUMMARY
+          echo "1. Monitor deployment: \`docker logs job-finder-staging -f\`" >> $GITHUB_STEP_SUMMARY
+          echo "2. Verify queue processing in staging" >> $GITHUB_STEP_SUMMARY
+          echo "3. Test new features" >> $GITHUB_STEP_SUMMARY
+          echo "4. If successful, merge to \`main\` for production deployment" >> $GITHUB_STEP_SUMMARY

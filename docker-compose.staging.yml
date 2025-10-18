@@ -1,0 +1,97 @@
+version: '3.8'
+
+services:
+  job-finder-staging:
+    image: ghcr.io/jdubz/job-finder:staging
+    container_name: job-finder-staging
+    restart: unless-stopped
+
+    environment:
+      # API Keys - SET THESE IN PORTAINER
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/credentials/serviceAccountKey.json
+
+      # Environment Configuration
+      - ENVIRONMENT=staging
+
+      # Database Overrides - USE STAGING DATABASES
+      - PROFILE_DATABASE_NAME=portfolio-staging
+      - STORAGE_DATABASE_NAME=portfolio-staging
+
+      # Config path
+      - CONFIG_PATH=/app/config/config.yaml
+      - LOG_FILE=/app/logs/scheduler.log
+      - QUEUE_WORKER_LOG_FILE=/app/logs/queue_worker.log
+
+      # Timezone for cron
+      - TZ=America/Los_Angeles
+
+    volumes:
+      # Mount credentials (REQUIRED)
+      - ./credentials:/app/credentials:ro
+
+      # Mount staging config (uses default config.yaml)
+      - ./config:/app/config:ro
+
+      # Mount logs for persistence
+      - ./logs-staging:/app/logs
+
+      # Mount data for any local file outputs
+      - ./data-staging:/app/data
+
+    labels:
+      # Watchtower auto-update labels - more aggressive for staging
+      - "com.centurylinklabs.watchtower.enable=true"
+      - "environment=staging"
+      - "update.frequency=high"
+
+    networks:
+      - job-finder-staging-network
+
+    # Resource limits (lower than production for cost savings)
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+    healthcheck:
+      test: ["CMD", "python", "-c", "import sys; sys.exit(0)"]
+      interval: 5m
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # Watchtower for auto-updates (more aggressive in staging)
+  watchtower-staging:
+    image: containrrr/watchtower:latest
+    container_name: watchtower-job-finder-staging
+    restart: unless-stopped
+
+    environment:
+      - WATCHTOWER_CLEANUP=true
+      - WATCHTOWER_POLL_INTERVAL=180  # Check every 3 minutes (aggressive for testing)
+      - WATCHTOWER_LABEL_ENABLE=true  # Only update containers with watchtower label
+      - WATCHTOWER_INCLUDE_RESTARTING=true
+      - WATCHTOWER_NOTIFICATIONS=shoutrrr
+      - WATCHTOWER_NOTIFICATION_URL=${WATCHTOWER_NOTIFICATION_URL:-}  # Optional: Slack/Discord webhook
+      - TZ=America/Los_Angeles
+      # Only monitor staging containers
+      - WATCHTOWER_SCOPE=staging
+
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+
+    networks:
+      - job-finder-staging-network
+
+    labels:
+      - "com.centurylinklabs.watchtower.scope=staging"
+
+networks:
+  job-finder-staging-network:
+    driver: bridge

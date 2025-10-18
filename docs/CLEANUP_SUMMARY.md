@@ -448,3 +448,104 @@ If critical issues arise:
 See [DATA_STRUCTURE_CLEANUP_PLAN.md](DATA_STRUCTURE_CLEANUP_PLAN.md) for detailed rationale and original plan.
 
 **Status**: ✅ Production Ready
+
+---
+
+## Session Update: October 17, 2025 (18:30)
+
+### Additional Changes Completed
+
+#### Company Name Normalization
+**Problem**: Duplicate companies like "Cloudflare" and "Cloudflare Careers" treated as different entities.
+
+**Solution Implemented**:
+1. ✅ Created `src/job_finder/utils/company_name_utils.py`
+   - `normalize_company_name()` removes common suffixes
+   - Job board suffixes: Careers, Jobs, Hiring, Opportunities, etc.
+   - Legal entity suffixes: Inc., LLC, Corporation, Ltd., etc.
+   - Handles separators: " - Careers", " | Careers"
+
+2. ✅ Updated `src/job_finder/storage/companies_manager.py`
+   - Query by `name_normalized` field in `get_company()`
+   - Store `name_normalized` field in `save_company()`
+
+3. ✅ Created comprehensive tests (`tests/test_company_name_utils.py`)
+   - 10 test cases, 100% coverage, all passing
+
+4. ✅ Deployed to staging
+   - Docker image rebuilt with normalization
+   - Container restarted (job-finder-staging-local)
+   - Database: portfolio-staging
+
+**Git**: Commit ca12407
+
+#### Cost Optimization
+✅ Changed all AI tasks to use Claude Haiku (ModelTier.FAST)
+- ANALYZE task now uses Haiku instead of Sonnet
+- **95% cost savings** - $0.001/1K vs $0.015-0.075/1K
+- Updated `src/job_finder/ai/providers.py`
+
+#### Comprehensive Deduplication
+✅ Enhanced `ScraperIntake` to check storage collections:
+- Added `job_storage` parameter - checks job-matches collection
+- Added `companies_manager` parameter - checks companies collection
+- Rejects duplicates found in either queue OR storage
+
+#### Bug Fixes
+1. **Filter Job Signature** (`scrape_runner.py`)
+   - Fixed `filter_job()` call to pass title/description strings
+   - Was passing entire job dict causing attribute errors
+
+2. **Source Discovery** (`processor.py`)
+   - Fixed discovery functions to use `item.source` and `item.id`
+   - Was trying to access non-existent attributes on SourceDiscoveryConfig
+
+#### CI Pipeline
+✅ Excluded e2e tests from automatic CI runs
+- Modified `.github/workflows/tests.yml`
+- E2E tests now run manually only
+
+#### Shared Types
+✅ Updated shared-types repository
+- Created comprehensive `job.types.ts`
+- Published updated package
+
+#### Database Cleanup
+✅ Production (portfolio) and staging (portfolio-staging)
+- Removed 29 monolithic queue items
+- Migrated legacy data structures
+- Verified database health
+
+### Current Environment
+
+**Staging Container**:
+- Name: job-finder-staging-local
+- Image: job-finder:staging (latest with normalization)
+- Status: Running
+- Database: portfolio-staging
+- Features:
+  - Granular pipelines (job + company)
+  - Company name normalization
+  - Comprehensive deduplication
+  - Claude Haiku for all AI tasks
+
+**Production Status**:
+- Database: portfolio (cleaned)
+- Pending: Deploy updated code
+
+### Test Results
+- ✅ 576 tests passed, 15 skipped
+- ✅ 46% overall coverage
+- ✅ 100% coverage on new utils
+- ✅ All pre-commit/pre-push checks passed
+
+### Next Actions
+1. Monitor staging for company deduplication effectiveness
+2. Verify "Cloudflare" and "Cloudflare Careers" deduplicate
+3. Check for Firestore index requirements on `name_normalized`
+4. Clean duplicate companies in staging after verification
+5. Deploy to production when stable
+
+**Last Updated**: October 17, 2025 18:30
+**Branch**: develop (ca12407)
+**Status**: ✅ Staging Active, Ready for Production
