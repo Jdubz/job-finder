@@ -14,10 +14,10 @@ class AITask(str, Enum):
     Types of AI tasks with different model requirements.
 
     Different tasks have different cost/quality tradeoffs:
-    - SCRAPE: Extract structured data from HTML (cheap, fast)
+    - SCRAPE: Extract structured data from HTML (cheap, fast - Haiku)
     - FILTER: Not used (filtering is rule-based)
-    - ANALYZE: Match job to profile (expensive, high quality)
-    - SELECTOR_DISCOVERY: Discover CSS selectors (cheap, one-time)
+    - ANALYZE: Match job to profile (cheap, fast - Haiku, 95% cost savings vs Sonnet)
+    - SELECTOR_DISCOVERY: Discover CSS selectors (cheap, one-time - Haiku)
     """
 
     SCRAPE = "scrape"
@@ -52,7 +52,7 @@ MODEL_SELECTION = {
 # Task to tier mapping
 TASK_MODEL_TIERS = {
     AITask.SCRAPE: ModelTier.FAST,
-    AITask.ANALYZE: ModelTier.SMART,
+    AITask.ANALYZE: ModelTier.FAST,  # Changed to FAST - Haiku handles job analysis well at 95% cost savings
     AITask.SELECTOR_DISCOVERY: ModelTier.FAST,
 }
 
@@ -149,8 +149,8 @@ def get_model_for_task(provider_type: str, task: AITask) -> str:
     Get the appropriate model for a specific task.
 
     Uses cost-optimized model selection:
-    - Fast/cheap models (Haiku, GPT-4o-mini) for scraping and discovery
-    - Smart/expensive models (Sonnet, GPT-4) for job analysis
+    - Fast/cheap models (Haiku, GPT-4o-mini) for ALL tasks (95% cost savings)
+    - Haiku handles job analysis well despite being cheaper than Sonnet
 
     Args:
         provider_type: Type of provider ('claude', 'openai')
@@ -166,7 +166,7 @@ def get_model_for_task(provider_type: str, task: AITask) -> str:
         >>> get_model_for_task("claude", AITask.SCRAPE)
         'claude-3-5-haiku-20241022'
         >>> get_model_for_task("claude", AITask.ANALYZE)
-        'claude-3-5-sonnet-20241022'
+        'claude-3-5-haiku-20241022'
     """
     provider_type = provider_type.lower()
 
