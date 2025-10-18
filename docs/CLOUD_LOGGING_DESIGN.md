@@ -4,6 +4,8 @@
 
 This document describes the architecture for sharing structured logs between the job-finder worker and the Portfolio UI using **Google Cloud Logging**, enabling real-time monitoring and debugging from the web interface.
 
+**Type Safety:** Log structure is enforced via **@jdubz/job-finder-shared-types** npm package, ensuring consistency between Portfolio (TypeScript) and job-finder (Python).
+
 ## Why Cloud Logging (Not Firestore)
 
 **Correct Approach:** Use Google Cloud Logging for all application logs
@@ -63,27 +65,40 @@ logger.info("Worker started", extra={
 
 ### Structured Fields
 
-All log entries should include these **standardized JSON fields**:
+All log entries should include these **standardized JSON fields**.
 
+**Type Definitions:** See [@jdubz/job-finder-shared-types](https://github.com/Jdubz/job-finder-shared-types/blob/main/src/logging.types.ts) for complete TypeScript definitions.
+
+**Portfolio Usage:**
+```typescript
+import {
+  StructuredLogEntry,
+  LogCategory,
+  LogAction,
+  CloudLogEntry
+} from '@jdubz/job-finder-shared-types';
+```
+
+**Structure:**
 ```json
 {
   "severity": "INFO",
   "timestamp": "2025-10-18T09:15:00.123Z",
   "labels": {
-    "environment": "staging",
+    "environment": "staging",  // CloudLoggingLabels.environment
     "service": "job-finder",
     "version": "1.0.0"
   },
-  "jsonPayload": {
+  "jsonPayload": {  // StructuredLogEntry type
     // Standard fields (always present)
-    "category": "worker|queue|pipeline|scrape|ai|database",
-    "action": "started|processing|completed|failed|skipped",
+    "category": "worker|queue|pipeline|scrape|ai|database",  // LogCategory
+    "action": "started|processing|completed|failed|skipped",  // LogAction
     "message": "Human-readable message",
 
     // Context fields (optional)
     "queueItemId": "abc123",
     "queueItemType": "job|company|scrape|source_discovery",
-    "pipelineStage": "scrape|filter|analyze|save|fetch|extract",
+    "pipelineStage": "scrape|filter|analyze|save|fetch|extract",  // PipelineStage
 
     // Metadata (optional)
     "details": {
@@ -105,7 +120,7 @@ All log entries should include these **standardized JSON fields**:
 
 ### Log Categories
 
-**Consistent categories for filtering:**
+**Consistent categories for filtering** (enforced by `LogCategory` type):
 - `worker` - Worker lifecycle (started, idle, processing, stopped)
 - `queue` - Queue item processing (job, company, scrape, source_discovery)
 - `pipeline` - Pipeline stages (scrape, filter, analyze, save, fetch, extract)
