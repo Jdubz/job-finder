@@ -14,6 +14,8 @@ services:
 
       # Environment Configuration
       - ENVIRONMENT=production
+      - ENABLE_QUEUE_MODE=true
+      - ENABLE_CLOUD_LOGGING=true
 
       # Database Overrides - USE PRODUCTION DATABASES
       - PROFILE_DATABASE_NAME=portfolio
