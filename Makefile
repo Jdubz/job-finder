@@ -35,7 +35,7 @@ CYAN := \033[36m
 # Mark targets that don't create files
 .PHONY: help setup install dev-install clean test test-coverage test-e2e test-e2e-full test-e2e-local test-e2e-local-verbose test-e2e-local-full lint format type-check \
         run search docker-build docker-push docker-run docker-up docker-down docker-logs \
-        db-explore db-cleanup db-merge-companies db-setup-listings worker scheduler \
+        db-explore db-cleanup db-merge-companies db-setup-listings db-setup-config worker scheduler \
         deploy-staging deploy-production clean-cache clean-all
 
 ## === Help & Information ===
@@ -84,6 +84,7 @@ help: ## Show this help message
 	@echo "  $(GREEN)make db-cleanup$(RESET)         Clean up Firestore data"
 	@echo "  $(GREEN)make db-merge-companies$(RESET) Merge duplicate company records"
 	@echo "  $(GREEN)make db-setup-listings$(RESET)  Setup job listings in database"
+	@echo "  $(GREEN)make db-setup-config$(RESET)    Setup Firestore configuration (safe - only creates if missing)"
 	@echo ""
 	@echo "$(CYAN)DEPLOYMENT$(RESET)"
 	@echo "  $(GREEN)make deploy-staging$(RESET)     Deploy to staging environment"
@@ -352,6 +353,10 @@ db-setup-listings: ## Setup job listings in database
 db-cleanup-matches: ## Clean up job matches
 	@echo "$(CYAN)Cleaning up job matches...$(RESET)"
 	@. $(VENV_DIR)/bin/activate && $(PYTHON) $(SCRIPTS_DIR)/database/cleanup_job_matches.py
+
+db-setup-config: ## Setup Firestore configuration (only creates if missing)
+	@echo "$(CYAN)Setting up Firestore configuration...$(RESET)"
+	@. $(VENV_DIR)/bin/activate && $(PYTHON) $(SCRIPTS_DIR)/setup_firestore_config.py
 
 ## === Deployment ===
 

@@ -360,9 +360,11 @@ class ConfigLoader:
                     "updated_by": data.get("updatedBy"),
                 }
                 self._cache["scheduler_settings"] = settings
-                logger.info(f"Loaded scheduler settings: enabled={settings['enabled']}, "
-                           f"target_matches={settings['target_matches']}, "
-                           f"max_sources={settings['max_sources']}")
+                logger.info(
+                    f"Loaded scheduler settings: enabled={settings['enabled']}, "
+                    f"target_matches={settings['target_matches']}, "
+                    f"max_sources={settings['max_sources']}"
+                )
                 return settings
             else:
                 logger.error(

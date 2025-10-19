@@ -355,6 +355,8 @@ def get_ai_settings_config() -> Dict[str, Any]:
 def setup_firestore_config(database_name: str = DATABASE_NAME):
     """
     Setup all Firestore configuration documents.
+    
+    Only creates documents that don't already exist to prevent overwriting.
 
     Args:
         database_name: Name of the Firestore database
@@ -373,11 +375,34 @@ def setup_firestore_config(database_name: str = DATABASE_NAME):
         "scheduler-settings": get_scheduler_settings_config(),
     }
 
+    created_count = 0
+    skipped_count = 0
+    
     for doc_name, config in configs.items():
-        logger.info(f"  Writing {doc_name}...")
         doc_ref = collection.document(doc_name)
+        
+        # Check if document already exists
+        if doc_ref.get().exists:
+            logger.info(f"  ⊘ {doc_name} already exists - skipping")
+            skipped_count += 1
+            continue
+        
+        # Create new document
+        logger.info(f"  Creating {doc_name}...")
         doc_ref.set(config)
-        logger.info(f"  ✓ {doc_name} written successfully")
+        logger.info(f"  ✓ {doc_name} created successfully")
+        created_count += 1
+    
+    # Summary of operations
+    logger.info(f"\n📊 Operations summary:")
+    logger.info(f"  Created: {created_count}")
+    logger.info(f"  Skipped (already exist): {skipped_count}")
+    
+    # Only show detailed summary if we created documents
+    if created_count == 0:
+        logger.info("\n⚠️  No new configurations created - all documents already exist")
+        logger.info("     To update existing configs, edit them in Firestore Console")
+        return
 
     logger.info("\n" + "=" * 70)
     logger.info("CONFIGURATION SUMMARY")
@@ -452,9 +477,11 @@ if __name__ == "__main__":
     logger.info("=" * 70)
     logger.info("SETTING UP SCHEDULER CONFIGURATION FOR BOTH DATABASES")
     logger.info("=" * 70)
-    logger.info("\nThis will create scheduler-settings in:")
+    logger.info("\nThis will create scheduler-settings (and other configs) in:")
     for db in databases:
         logger.info(f"  - {db}")
+    logger.info("\n⚠️  SAFETY: Only creates configs that don't already exist")
+    logger.info("   Existing configurations will NOT be overwritten")
     logger.info("\nScheduler will be DISABLED by default (enabled=false)")
     logger.info("Set enabled=true in Firestore when ready to activate\n")
     

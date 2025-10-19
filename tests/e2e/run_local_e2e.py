@@ -9,7 +9,7 @@ staging or production data.
 Prerequisites:
     1. Portfolio Firebase emulators must be running:
        cd ~/path/to/portfolio && make firebase-emulators
-    
+
     2. Emulators should be accessible on:
        - Firestore: localhost:8080
        - Auth: localhost:9099
@@ -18,16 +18,16 @@ Prerequisites:
 Usage:
     # Run fast E2E test (4 jobs)
     python tests/e2e/run_local_e2e.py
-    
+
     # Run full E2E test (20+ jobs)
     python tests/e2e/run_local_e2e.py --full
-    
+
     # Run with verbose logging
     python tests/e2e/run_local_e2e.py --verbose
-    
+
     # Run without Docker (direct Python execution)
     python tests/e2e/run_local_e2e.py --no-docker
-    
+
     # Custom emulator host
     python tests/e2e/run_local_e2e.py --emulator-host localhost:8080
 """
@@ -40,6 +40,7 @@ import time
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
+
 
 # Color codes for output
 class Colors:
@@ -82,12 +83,12 @@ def print_error(message: str) -> None:
 def check_emulator_running(host: str = "localhost:8080") -> bool:
     """Check if Firebase emulator is running."""
     import socket
-    
+
     try:
         host_parts = host.split(":")
         hostname = host_parts[0]
         port = int(host_parts[1]) if len(host_parts) > 1 else 8080
-        
+
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.settimeout(2)
         result = sock.connect_ex((hostname, port))
@@ -101,11 +102,7 @@ def check_emulator_running(host: str = "localhost:8080") -> bool:
 def check_docker_available() -> bool:
     """Check if Docker is available."""
     try:
-        subprocess.run(
-            ["docker", "--version"],
-            capture_output=True,
-            check=True
-        )
+        subprocess.run(["docker", "--version"], capture_output=True, check=True)
         return True
     except (subprocess.CalledProcessError, FileNotFoundError):
         return False
@@ -114,52 +111,53 @@ def check_docker_available() -> bool:
 def run_with_docker(args: argparse.Namespace) -> int:
     """Run E2E test using Docker Compose."""
     print_header("Running Local E2E Test with Docker")
-    
+
     # Generate test run ID
     test_run_id = f"e2e_local_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-    
+
     # Prepare environment variables
     env = os.environ.copy()
     env["TEST_RUN_ID"] = test_run_id
     env["FIRESTORE_EMULATOR_HOST"] = args.emulator_host
-    
+
     # Build docker-compose command
     cmd = [
-        "docker", "compose",
-        "-f", "docker-compose.local-e2e.yml",
+        "docker",
+        "compose",
+        "-f",
+        "docker-compose.local-e2e.yml",
         "up",
         "--build" if args.build else "--no-build",
         "--abort-on-container-exit",
-        "--remove-orphans"
+        "--remove-orphans",
     ]
-    
+
     print_info(f"Test Run ID: {test_run_id}")
     print_info(f"Emulator Host: {args.emulator_host}")
     print_info(f"Mode: {'Full' if args.full else 'Fast'}")
     print_info(f"Command: {' '.join(cmd)}")
     print()
-    
+
     # Run docker-compose
     try:
         result = subprocess.run(cmd, env=env)
-        
+
         if result.returncode == 0:
             print_success("E2E test completed successfully!")
             print_info(f"Results saved to: test_results/{test_run_id}/")
         else:
             print_error(f"E2E test failed with exit code {result.returncode}")
-        
+
         return result.returncode
-    
+
     except KeyboardInterrupt:
         print_warning("\nTest interrupted by user")
         # Clean up containers
         subprocess.run(
-            ["docker", "compose", "-f", "docker-compose.local-e2e.yml", "down"],
-            capture_output=True
+            ["docker", "compose", "-f", "docker-compose.local-e2e.yml", "down"], capture_output=True
         )
         return 130
-    
+
     except Exception as e:
         print_error(f"Error running Docker: {e}")
         return 1
@@ -168,7 +166,7 @@ def run_with_docker(args: argparse.Namespace) -> int:
 def run_without_docker(args: argparse.Namespace) -> int:
     """Run E2E test directly with Python (no Docker)."""
     print_header("Running Local E2E Test (No Docker)")
-    
+
     # Set environment variables
     os.environ["FIRESTORE_EMULATOR_HOST"] = args.emulator_host
     os.environ["FIREBASE_AUTH_EMULATOR_HOST"] = args.auth_emulator_host
@@ -176,49 +174,51 @@ def run_without_docker(args: argparse.Namespace) -> int:
     os.environ["STORAGE_DATABASE_NAME"] = "(default)"
     os.environ["E2E_TEST_MODE"] = "true"
     os.environ["CONFIG_PATH"] = "config/config.local-e2e.yaml"
-    
+
     # Generate test run ID
     test_run_id = f"e2e_local_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
     output_dir = f"test_results/{test_run_id}"
-    
+
     # Build command
     cmd = [
         sys.executable,
         "tests/e2e/data_collector.py",
-        "--database", "(default)",
-        "--output-dir", output_dir
+        "--database",
+        "(default)",
+        "--output-dir",
+        output_dir,
     ]
-    
+
     if args.full:
         cmd.append("--full-mode")
     else:
         cmd.append("--fast-mode")
-    
+
     if args.verbose:
         cmd.append("--verbose")
-    
+
     print_info(f"Test Run ID: {test_run_id}")
     print_info(f"Emulator Host: {args.emulator_host}")
     print_info(f"Mode: {'Full' if args.full else 'Fast'}")
     print_info(f"Command: {' '.join(cmd)}")
     print()
-    
+
     # Run test
     try:
         result = subprocess.run(cmd)
-        
+
         if result.returncode == 0:
             print_success("E2E test completed successfully!")
             print_info(f"Results saved to: {output_dir}/")
         else:
             print_error(f"E2E test failed with exit code {result.returncode}")
-        
+
         return result.returncode
-    
+
     except KeyboardInterrupt:
         print_warning("\nTest interrupted by user")
         return 130
-    
+
     except Exception as e:
         print_error(f"Error running test: {e}")
         return 1
@@ -242,61 +242,53 @@ Examples:
   
   # Custom emulator host
   python tests/e2e/run_local_e2e.py --emulator-host 192.168.1.100:8080
-        """
+        """,
     )
-    
+
     parser.add_argument(
         "--full",
         action="store_true",
-        help="Run full E2E test (20+ jobs) instead of fast mode (4 jobs)"
+        help="Run full E2E test (20+ jobs) instead of fast mode (4 jobs)",
     )
-    
+
+    parser.add_argument("--verbose", "-v", action="store_true", help="Enable verbose logging")
+
     parser.add_argument(
-        "--verbose", "-v",
-        action="store_true",
-        help="Enable verbose logging"
+        "--no-docker", action="store_true", help="Run without Docker (direct Python execution)"
     )
-    
+
     parser.add_argument(
-        "--no-docker",
-        action="store_true",
-        help="Run without Docker (direct Python execution)"
+        "--build", action="store_true", help="Build Docker image before running (Docker mode only)"
     )
-    
-    parser.add_argument(
-        "--build",
-        action="store_true",
-        help="Build Docker image before running (Docker mode only)"
-    )
-    
+
     parser.add_argument(
         "--emulator-host",
         default="localhost:8080",
-        help="Firestore emulator host:port (default: localhost:8080)"
+        help="Firestore emulator host:port (default: localhost:8080)",
     )
-    
+
     parser.add_argument(
         "--auth-emulator-host",
         default="localhost:9099",
-        help="Auth emulator host:port (default: localhost:9099)"
+        help="Auth emulator host:port (default: localhost:9099)",
     )
-    
+
     args = parser.parse_args()
-    
+
     # Print welcome banner
     print_header("Job Finder - Local E2E Test")
-    
+
     # Check prerequisites
     print_info("Checking prerequisites...")
-    
+
     # Check if emulator is running
     if not check_emulator_running(args.emulator_host):
         print_error(f"Firebase emulator not running on {args.emulator_host}")
         print_info("Start emulators with: cd ~/path/to/portfolio && make firebase-emulators")
         return 1
-    
+
     print_success(f"Firestore emulator is running on {args.emulator_host}")
-    
+
     # Check Docker availability (if needed)
     if not args.no_docker:
         if not check_docker_available():
@@ -304,7 +296,7 @@ Examples:
             print_info("Install Docker or use --no-docker flag")
             return 1
         print_success("Docker is available")
-    
+
     # Check if API keys are set
     if not os.getenv("ANTHROPIC_API_KEY") and not os.getenv("OPENAI_API_KEY"):
         print_warning("No AI API keys found in environment")
@@ -314,9 +306,9 @@ Examples:
     else:
         print_success("AI API key found - tests will use REAL AI APIs")
         print_info("Note: Tests will consume API credits (~$0.01-0.05 per run)")
-    
+
     print()
-    
+
     # Run test
     if args.no_docker:
         return run_without_docker(args)
