@@ -33,6 +33,8 @@ New to Job Finder? Start here:
 - **[Environment Configuration](guides/environments.md)** - Multi-environment setup (staging/production)
 - **[Local Testing](guides/local-testing.md)** - Docker local testing with docker-compose
 - **[Cloud Logging](guides/cloud-logging.md)** - Google Cloud Logging setup
+- **[Scheduler Configuration](SCHEDULER_CONFIG.md)** - Control automated scraping via Firestore
+  - **[Quick Reference](SCHEDULER_CONFIG_QUICKREF.md)** - Quick commands for scheduler control
 
 ## Reference Documentation
 

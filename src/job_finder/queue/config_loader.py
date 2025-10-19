@@ -326,6 +326,55 @@ class ConfigLoader:
             "strikes": {"missingAllRequired": 1, "perBadTech": 2},
         }
 
+    def get_scheduler_settings(self) -> Optional[Dict[str, Any]]:
+        """
+        Get scheduler settings for cron-based scraping.
+
+        Returns:
+            Dictionary with enabled, cron_schedule, daytime_hours, target_matches, etc.
+            Returns None if settings document doesn't exist (scheduler should not run).
+        """
+        if "scheduler_settings" in self._cache:
+            return self._cache["scheduler_settings"]
+
+        try:
+            doc = self.db.collection(self.collection_name).document("scheduler-settings").get()
+
+            if doc.exists:
+                data = doc.to_dict()
+                settings = {
+                    # Enable/disable scheduler
+                    "enabled": data.get("enabled", True),
+                    # Cron schedule (stored for reference, actual scheduling happens in crontab)
+                    "cron_schedule": data.get("cron_schedule", "0 */6 * * *"),
+                    # Daytime hours (when to actually run scrapes)
+                    "daytime_hours": data.get("daytime_hours", {"start": 6, "end": 22}),
+                    # Timezone for daytime hours check
+                    "timezone": data.get("timezone", "America/Los_Angeles"),
+                    # Scrape settings
+                    "target_matches": data.get("target_matches", 5),
+                    "max_sources": data.get("max_sources", 10),
+                    "min_match_score": data.get("min_match_score", 80),
+                    # Metadata
+                    "last_updated": data.get("updatedAt"),
+                    "updated_by": data.get("updatedBy"),
+                }
+                self._cache["scheduler_settings"] = settings
+                logger.info(f"Loaded scheduler settings: enabled={settings['enabled']}, "
+                           f"target_matches={settings['target_matches']}, "
+                           f"max_sources={settings['max_sources']}")
+                return settings
+            else:
+                logger.error(
+                    "Scheduler settings document not found in Firestore. "
+                    "Please run 'python scripts/setup_firestore_config.py' to create it."
+                )
+                return None
+
+        except Exception as e:
+            logger.error(f"Error loading scheduler settings from Firestore: {e}")
+            return None
+
     def refresh_cache(self) -> None:
         """Clear cache to force reload of all settings on next access."""
         self._cache.clear()

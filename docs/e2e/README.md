@@ -9,6 +9,7 @@
 | Document | Purpose | When to Use |
 |----------|---------|-------------|
 | **[Getting Started](./GETTING_STARTED.md)** | Setup and run your first E2E test | New to E2E testing |
+| **[Local Testing](./LOCAL_TESTING.md)** | Test with Firebase emulators (no cloud) | Daily development |
 | **[User Guide](./USER_GUIDE.md)** | Running tests, interpreting results | Day-to-day testing |
 | **[Architecture](./ARCHITECTURE.md)** | How E2E tests work internally | Understanding the system |
 | **[Troubleshooting](./TROUBLESHOOTING.md)** | Common issues and solutions | When tests fail |

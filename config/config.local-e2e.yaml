@@ -1,0 +1,192 @@
+# Job Finder Configuration - Local E2E Testing
+# 
+# This configuration is used for local E2E tests with Firebase emulators.
+# It connects to emulators running in the portfolio project.
+
+# Profile Configuration
+profile:
+  # Use Firestore emulator for profile data
+  source: "firestore"
+  
+  # JSON profile path (fallback if Firestore unavailable)
+  profile_path: "data/profile.example.json"
+  
+  # Firestore settings (connects to emulator)
+  firestore:
+    database_name: "(default)"  # Emulator default database
+    name: "Test User"
+    email: "test@example.com"
+
+# AI Configuration
+ai:
+  provider: "anthropic"  # or "openai"
+  model: "claude-3-5-sonnet-20241022"
+  temperature: 0.0
+  match_threshold: 75  # Jobs scoring above this are prioritized
+  
+  # Token limits
+  max_tokens: 4096
+  
+  # Resume intake generation
+  generate_resume_intake: true
+  
+  # Scoring configuration
+  scoring:
+    enabled: true
+    include_reasoning: true
+  
+  # IMPORTANT: Local E2E tests use REAL AI APIs (not stubs)
+  # Requires valid ANTHROPIC_API_KEY or OPENAI_API_KEY environment variable
+  # Tests will fail if API keys are missing or invalid
+  use_real_apis: true  # Always true for local E2E tests
+
+# Job Search Configuration
+search:
+  keywords:
+    - "software engineer"
+    - "backend engineer"
+    - "python developer"
+  
+  locations:
+    - "Remote"
+    - "San Francisco"
+    - "Los Angeles"
+  
+  experience_levels:
+    - "mid-level"
+    - "senior"
+  
+  max_results: 10
+
+# Filter Configuration
+filters:
+  # Keywords that automatically exclude jobs
+  exclude_keywords:
+    - "sales"
+    - "marketing"
+    - "unpaid"
+    - "volunteer"
+  
+  # Company exclusion list
+  exclude_companies:
+    - "Bad Company Inc"
+  
+  # Minimum match score (0-100)
+  min_match_score: 60
+  
+  # Maximum job age in days
+  max_age_days: 30
+
+# Output Settings
+output:
+  format: firestore  # Always use Firestore for E2E tests
+  filename: "test_results/jobs_{timestamp}.json"
+  include_rejected: false
+
+# Firestore Storage (connects to emulator)
+storage:
+  database_name: "(default)"  # Emulator default database
+
+# Scraping Configuration
+scraping:
+  # Rate limiting
+  delay_between_requests: 1.0
+  max_retries: 2
+  timeout: 15
+  
+  # User agent
+  user_agent: "Mozilla/5.0 (compatible; JobFinder-E2E-Test/1.0)"
+  
+  # Enable specific scrapers for E2E tests
+  enabled_scrapers:
+    - greenhouse
+    - workday
+    - lever
+
+# Queue Configuration (for E2E tests)
+queue:
+  # Poll interval in seconds
+  poll_interval: 30  # Faster polling for E2E tests
+  
+  # Max processing time per job
+  max_processing_time: 120
+  
+  # Batch size
+  batch_size: 5
+  
+  # Queue collection name
+  collection_name: "job-queue"
+  
+  # Auto-exit when queue is empty (for E2E tests)
+  exit_when_empty: true
+  
+  # Max wait time for queue items
+  max_wait_seconds: 300  # 5 minutes
+
+# Logging Configuration
+logging:
+  level: DEBUG  # Verbose logging for E2E tests
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file: "logs/e2e_test.log"
+  
+  # Console logging
+  console:
+    enabled: true
+    level: INFO
+  
+  # Cloud logging (disabled for local tests)
+  cloud:
+    enabled: false
+
+# E2E Test Specific Settings
+e2e:
+  # Fast mode (fewer test jobs)
+  fast_mode: true
+  
+  # Test jobs configuration
+  test_jobs:
+    # Number of jobs per test type
+    jobs_per_type: 1
+    
+    # Test job types
+    types:
+      - greenhouse
+      - workday
+      - lever
+      - rss
+  
+  # Backup configuration
+  backup:
+    enabled: true
+    path: "test_results/backups"
+  
+  # Cleanup after test
+  cleanup:
+    enabled: true
+    keep_test_data: false
+  
+  # Monitoring
+  monitoring:
+    poll_interval: 10  # Check queue every 10 seconds
+    max_wait_minutes: 5
+    log_progress: true
+
+# Data Quality Settings
+data_quality:
+  # Validation rules
+  required_fields:
+    job_listings:
+      - company
+      - title
+      - url
+    job_matches:
+      - job_id
+      - match_score
+      - analysis
+  
+  # Quality thresholds
+  thresholds:
+    min_company_name_length: 2
+    min_title_length: 5
+    min_description_length: 50
+    max_url_length: 2000

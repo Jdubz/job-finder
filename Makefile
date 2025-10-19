@@ -33,7 +33,7 @@ CYAN := \033[36m
 .DEFAULT_GOAL := help
 
 # Mark targets that don't create files
-.PHONY: help setup install dev-install clean test test-coverage test-e2e test-e2e-full lint format type-check \
+.PHONY: help setup install dev-install clean test test-coverage test-e2e test-e2e-full test-e2e-local test-e2e-local-verbose test-e2e-local-full lint format type-check \
         run search docker-build docker-push docker-run docker-up docker-down docker-logs \
         db-explore db-cleanup db-merge-companies db-setup-listings worker scheduler \
         deploy-staging deploy-production clean-cache clean-all
@@ -59,6 +59,9 @@ help: ## Show this help message
 	@echo "  $(GREEN)make test-coverage$(RESET)      Run tests with coverage report"
 	@echo "  $(GREEN)make test-e2e$(RESET)           Fast E2E test: 1 job/type, validate decision tree (90-120s)"
 	@echo "  $(GREEN)make test-e2e-full$(RESET)      Full E2E test: all prod data, quality assessment (monitors until complete)"
+	@echo "  $(GREEN)make test-e2e-local$(RESET)     Local E2E test: Uses Firebase emulators (no staging/prod data)"
+	@echo "  $(GREEN)make test-e2e-local-verbose$(RESET)  Local E2E test with verbose logging"
+	@echo "  $(GREEN)make test-e2e-local-full$(RESET)  Full local E2E test (20+ jobs with emulators)"
 	@echo "  $(GREEN)make test-specific$(RESET) TEST=<name>  Run specific test file"
 	@echo ""
 	@echo "$(CYAN)CODE QUALITY$(RESET)"
@@ -232,6 +235,30 @@ test-e2e-full: ## Run complete E2E suite with ALL production data for quality as
 	echo "$(GREEN)✓ Full E2E Test Suite Complete!$(RESET)" && \
 	echo "$(YELLOW)Results saved to: $${RESULTS_DIR}$(RESET)" && \
 	echo "$(YELLOW)Quality report: $${RESULTS_DIR}/quality_report.html$(RESET)"
+
+test-e2e-local: ## Run local E2E test with Firebase emulators (fast mode, Docker)
+	@echo "$(CYAN)Running local E2E test with Firebase emulators...$(RESET)"
+	@echo "$(GREEN)✓ Safe: Uses Firebase emulators (no staging/prod data)$(RESET)"
+	@echo "$(BLUE)ℹ️  Prerequisites: Portfolio emulators must be running$(RESET)"
+	@echo "$(CYAN)Start emulators: cd ~/path/to/portfolio && make firebase-emulators$(RESET)"
+	@sleep 1
+	@. $(VENV_DIR)/bin/activate && $(PYTHON) tests/e2e/run_local_e2e.py
+
+test-e2e-local-verbose: ## Run local E2E test with verbose logging
+	@echo "$(CYAN)Running local E2E test with verbose logging...$(RESET)"
+	@echo "$(GREEN)✓ Safe: Uses Firebase emulators (no staging/prod data)$(RESET)"
+	@. $(VENV_DIR)/bin/activate && $(PYTHON) tests/e2e/run_local_e2e.py --verbose
+
+test-e2e-local-full: ## Run full local E2E test (20+ jobs with emulators)
+	@echo "$(CYAN)Running FULL local E2E test with Firebase emulators...$(RESET)"
+	@echo "$(GREEN)✓ Safe: Uses Firebase emulators (no staging/prod data)$(RESET)"
+	@echo "$(YELLOW)⚠️  This will take longer (20+ jobs)$(RESET)"
+	@. $(VENV_DIR)/bin/activate && $(PYTHON) tests/e2e/run_local_e2e.py --full
+
+test-e2e-local-no-docker: ## Run local E2E test without Docker (direct Python)
+	@echo "$(CYAN)Running local E2E test without Docker...$(RESET)"
+	@echo "$(GREEN)✓ Safe: Uses Firebase emulators (no staging/prod data)$(RESET)"
+	@. $(VENV_DIR)/bin/activate && $(PYTHON) tests/e2e/run_local_e2e.py --no-docker
 
 test-specific: ## Run specific test file (use TEST=filename)
 	@if [ -z "$(TEST)" ]; then \
