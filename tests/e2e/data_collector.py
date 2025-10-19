@@ -716,20 +716,25 @@ class E2ETestDataCollector:
         log_format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
         level = logging.DEBUG if verbose else logging.INFO
 
+        # Get root logger
+        root_logger = logging.getLogger()
+
+        # Clear any existing handlers to prevent duplicate logging
+        # (handlers may exist from previous runs or imported modules)
+        root_logger.handlers.clear()
+
+        root_logger.setLevel(level)
+
         # File handler
         file_handler = logging.FileHandler(log_file)
         file_handler.setLevel(level)
         file_handler.setFormatter(logging.Formatter(log_format))
+        root_logger.addHandler(file_handler)
 
         # Console handler
         console_handler = logging.StreamHandler()
         console_handler.setLevel(level)
         console_handler.setFormatter(logging.Formatter(log_format))
-
-        # Root logger
-        root_logger = logging.getLogger()
-        root_logger.setLevel(level)
-        root_logger.addHandler(file_handler)
         root_logger.addHandler(console_handler)
 
         logger.info(f"Logging initialized: {log_file}")
