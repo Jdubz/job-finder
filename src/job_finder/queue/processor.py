@@ -2,6 +2,7 @@
 
 import logging
 import traceback
+import uuid
 from typing import Any, Dict, Optional
 
 from job_finder.ai import AIJobMatcher, AITask, create_provider
@@ -1110,6 +1111,7 @@ class QueueItemProcessor:
                     company_id=company_id,
                     source="automated_scan",
                     source_discovery_config=discovery_config,
+                    tracking_id=str(uuid.uuid4()),  # Required for loop prevention
                 )
 
                 self.queue_manager.add_item(source_item)

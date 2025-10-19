@@ -199,6 +199,7 @@ class QueueManager:
                 data = doc.to_dict()
                 if data:
                     return JobQueueItem.from_firestore(doc.id, data)
+                return None
             else:
                 logger.warning(f"Queue item {item_id} not found")
                 return None
