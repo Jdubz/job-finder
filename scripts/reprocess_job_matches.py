@@ -179,51 +179,90 @@ class JobMatchReprocessor:
 
 
 def main():
-    """Main entry point."""
+    """Main function with production safety checks."""
     parser = argparse.ArgumentParser(
-        description="Re-process all production job matches",
+        description="Re-process all job matches (backup, delete, re-submit)",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  # Dry run (backup only, no changes)
-  python scripts/reprocess_job_matches.py --dry-run
-
-  # Full run on production
-  python scripts/reprocess_job_matches.py
-
-  # Backup only (no deletion or re-submission)
-  python scripts/reprocess_job_matches.py --backup-only
-
-  # Use staging database
+  # Safe - dry run on staging (no changes)
+  python scripts/reprocess_job_matches.py --database portfolio-staging --dry-run
+  
+  # Safe - full run on staging
   python scripts/reprocess_job_matches.py --database portfolio-staging
+  
+  # Blocked - production requires flag
+  python scripts/reprocess_job_matches.py --database portfolio
+  
+  # Dangerous - explicit production override
+  python scripts/reprocess_job_matches.py --database portfolio --allow-production
         """,
     )
     parser.add_argument(
         "--database",
-        default="portfolio",
-        help="Firestore database name (default: portfolio)",
+        required=True,
+        choices=["portfolio-staging", "portfolio"],
+        help="Database to process (use portfolio-staging for safety)",
     )
     parser.add_argument(
-        "--credentials",
-        help="Path to service account credentials JSON",
-    )
-    parser.add_argument(
-        "--backup-file",
-        type=Path,
-        help="Path to backup file (default: data/backups/job-matches-TIMESTAMP.json)",
+        "--allow-production",
+        action="store_true",
+        help="DANGER: Allow production database modification (not recommended)",
     )
     parser.add_argument(
         "--dry-run",
         action="store_true",
-        help="Perform backup but don't delete or re-submit",
+        help="Backup only, don't delete or re-submit",
     )
     parser.add_argument(
         "--backup-only",
         action="store_true",
-        help="Only perform backup, no deletion or re-submission",
+        help="Only backup, don't delete or re-submit",
+    )
+    parser.add_argument(
+        "--backup-file",
+        type=Path,
+        help="Path to backup file (default: data/backups/job_matches_TIMESTAMP.json)",
+    )
+    parser.add_argument(
+        "--skip-backup",
+        action="store_true",
+        help="Skip backup step (use existing backup file)",
     )
 
     args = parser.parse_args()
+
+    # SAFETY CHECK: Prevent accidental production usage
+    if args.database == "portfolio" and not args.allow_production:
+        print("=" * 80)
+        print("🚨 PRODUCTION DATABASE BLOCKED 🚨")
+        print("=" * 80)
+        print("")
+        print("This script would DELETE and RE-SUBMIT all job-matches in production!")
+        print("Database specified: portfolio (PRODUCTION)")
+        print("")
+        print("This script is designed for staging only.")
+        print("Use --database portfolio-staging instead.")
+        print("")
+        print("If you REALLY need to run on production (not recommended):")
+        print("  python scripts/reprocess_job_matches.py --database portfolio --allow-production")
+        print("")
+        print("=" * 80)
+        import sys
+
+        sys.exit(1)
+
+    # Warning for production usage
+    if args.database == "portfolio":
+        print("=" * 80)
+        print("⚠️  RUNNING ON PRODUCTION DATABASE ⚠️")
+        print("=" * 80)
+        print("This will DELETE and RE-SUBMIT all job-matches from production!")
+        print("Press Ctrl+C within 10 seconds to abort...")
+        print("=" * 80)
+        import time
+
+        time.sleep(10)
 
     # Generate default backup file path with timestamp
     if not args.backup_file:

@@ -8,8 +8,12 @@ Issues to fix:
 2. Missing fields (salary, location, etc.)
 3. Duplicate job postings
 4. Invalid match scores
+
+SAFETY: Requires explicit --database flag and --allow-production to modify production.
 """
+import argparse
 import sys
+import time
 from pathlib import Path
 from typing import Dict, List
 
@@ -182,49 +186,104 @@ def cleanup_duplicates(db, database_name: str):  # type: ignore[no-untyped-def]
 
 
 def main():
-    """Main cleanup function."""
+    """Main cleanup function with production safety checks."""
+    parser = argparse.ArgumentParser(
+        description="Clean up job-matches duplicates in Firestore",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  # Safe - clean staging only
+  python scripts/database/cleanup_job_matches.py --database portfolio-staging
+  
+  # Blocked - production requires flag
+  python scripts/database/cleanup_job_matches.py --database portfolio
+  
+  # Dangerous - explicit production override
+  python scripts/database/cleanup_job_matches.py --database portfolio --allow-production
+        """,
+    )
+    parser.add_argument(
+        "--database",
+        required=True,
+        choices=["portfolio-staging", "portfolio"],
+        help="Database to clean (use portfolio-staging for safety)",
+    )
+    parser.add_argument(
+        "--allow-production",
+        action="store_true",
+        help="DANGER: Allow production database modification (not recommended)",
+    )
+    parser.add_argument(
+        "--analyze-only",
+        action="store_true",
+        help="Only analyze issues, don't delete anything",
+    )
+
+    args = parser.parse_args()
+
+    # SAFETY CHECK: Prevent accidental production usage
+    if args.database == "portfolio" and not args.allow_production:
+        print("=" * 80)
+        print("🚨 PRODUCTION DATABASE BLOCKED 🚨")
+        print("=" * 80)
+        print("")
+        print("This script would DELETE DUPLICATE RECORDS from production!")
+        print("Database specified: portfolio (PRODUCTION)")
+        print("")
+        print("This script is designed for staging only.")
+        print("Use --database portfolio-staging instead.")
+        print("")
+        print("If you REALLY need to run on production (not recommended):")
+        print(
+            "  python scripts/database/cleanup_job_matches.py --database portfolio --allow-production"
+        )
+        print("")
+        print("=" * 80)
+        sys.exit(1)
+
+    # Warning for production usage
+    if args.database == "portfolio":
+        print("=" * 80)
+        print("⚠️  RUNNING ON PRODUCTION DATABASE ⚠️")
+        print("=" * 80)
+        print("This will DELETE DUPLICATE job-matches from production!")
+        print("Press Ctrl+C within 10 seconds to abort...")
+        print("=" * 80)
+        time.sleep(10)
+
     print("\n" + "=" * 70)
-    print("Job-Matches Cleanup")
+    print(f"Job-Matches Cleanup - {args.database}")
     print("=" * 70)
 
-    # Analyze both databases
-    portfolio_db = FirestoreClient.get_client("portfolio")
-    staging_db = FirestoreClient.get_client("portfolio-staging")
+    # Connect to specified database
+    db = FirestoreClient.get_client(args.database)
 
-    print("\n### Portfolio Database ###")
-    portfolio_issues = analyze_job_matches(portfolio_db, "portfolio")
+    # Analyze
+    print(f"\n### Analyzing {args.database} ###")
+    issues = analyze_job_matches(db, args.database)
 
-    print("\n\n### Portfolio-Staging Database ###")
-    staging_issues = analyze_job_matches(staging_db, "portfolio-staging")
+    if args.analyze_only:
+        print("\n" + "=" * 70)
+        print("Analysis complete (no changes made)")
+        print("=" * 70)
+        return
 
     # Clean up duplicates
-    print("\n\n" + "=" * 70)
+    print("\n" + "=" * 70)
     print("Cleanup Actions")
     print("=" * 70)
-
-    print("\n### Cleaning Portfolio Database ###")
-    portfolio_deleted = cleanup_duplicates(portfolio_db, "portfolio")
-
-    print("\n\n### Cleaning Portfolio-Staging Database ###")
-    staging_deleted = cleanup_duplicates(staging_db, "portfolio-staging")
+    print(f"\n### Cleaning {args.database} ###")
+    deleted = cleanup_duplicates(db, args.database)
 
     # Final summary
-    print("\n\n" + "=" * 70)
+    print("\n" + "=" * 70)
     print("Cleanup Complete!")
     print("=" * 70)
-    print("\nTotal duplicates removed:")
-    print(f"  Portfolio:         {portfolio_deleted}")
-    print(f"  Portfolio-Staging: {staging_deleted}")
-    print(f"  Total:             {portfolio_deleted + staging_deleted}")
+    print(f"\nDuplicates removed from {args.database}: {deleted}")
 
     print("\nRemaining data quality issues:")
-    print("\nPortfolio:")
-    print("  - Empty company info: {}".format(portfolio_issues["empty_company_info"]))
-    print("  - Missing locations:  {}".format(portfolio_issues["missing_location"]))
-
-    print("\nPortfolio-Staging:")
-    print("  - Empty company info: {}".format(staging_issues["empty_company_info"]))
-    print("  - Missing locations:  {}".format(staging_issues["missing_location"]))
+    print(f"  - Empty company info: {issues['empty_company_info']}")
+    print(f"  - Missing locations:  {issues['missing_location']}")
 
     print("\nNote: These remaining issues require company info fetcher to resolve.")
 
