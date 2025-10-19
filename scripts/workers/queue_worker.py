@@ -22,7 +22,7 @@ from dotenv import load_dotenv  # noqa: E402
 from job_finder.ai import AIJobMatcher  # noqa: E402
 from job_finder.ai.providers import create_provider  # noqa: E402
 from job_finder.company_info_fetcher import CompanyInfoFetcher  # noqa: E402
-from job_finder.logging_config import setup_logging  # noqa: E402
+from job_finder.logging_config import get_structured_logger, setup_logging  # noqa: E402
 from job_finder.profile import FirestoreProfileLoader  # noqa: E402
 from job_finder.queue import ConfigLoader, QueueManager  # noqa: E402
 from job_finder.queue.processor import QueueItemProcessor  # noqa: E402
@@ -36,7 +36,7 @@ load_dotenv()
 # Configure logging (with Cloud Logging support)
 log_file = os.getenv("QUEUE_WORKER_LOG_FILE", "/app/logs/queue_worker.log")
 setup_logging(log_file=log_file)
-logger = logging.getLogger(__name__)
+slogger = get_structured_logger(__name__)
 
 # Global flag for graceful shutdown
 shutdown_requested = False
@@ -45,17 +45,17 @@ shutdown_requested = False
 def signal_handler(signum, frame):
     """Handle shutdown signals gracefully."""
     global shutdown_requested
-    logger.info(f"Received signal {signum}, initiating graceful shutdown...")
+    slogger.worker_status("shutdown_requested", {"signal": signum})
     shutdown_requested = True
 
 
 def load_config() -> dict:
     """Load configuration from file."""
     config_path = os.getenv("CONFIG_PATH", "config/config.yaml")
-    logger.info(f"Loading configuration from: {config_path}")
+    slogger.logger.info(f"Loading configuration from: {config_path}")
 
     if not Path(config_path).exists():
-        logger.error(f"Configuration file not found: {config_path}")
+        slogger.logger.error(f"Configuration file not found: {config_path}")
         sys.exit(1)
 
     with open(config_path, "r") as f:
@@ -78,9 +78,10 @@ def initialize_components(config: dict) -> Tuple[QueueManager, QueueItemProcesso
         "STORAGE_DATABASE_NAME", config.get("storage", {}).get("database_name", "portfolio-staging")
     )
 
-    logger.info("Initializing components...")
-    logger.info(f"  Profile database: {profile_db}")
-    logger.info(f"  Storage database: {storage_db}")
+    slogger.worker_status(
+        "initializing",
+        {"profile_db": profile_db, "storage_db": storage_db},
+    )
 
     # Initialize managers
     queue_manager = QueueManager(database_name=storage_db)
@@ -90,7 +91,7 @@ def initialize_components(config: dict) -> Tuple[QueueManager, QueueItemProcesso
     sources_manager = JobSourcesManager(database_name=storage_db)
 
     # Load profile
-    logger.info("Loading user profile...")
+    slogger.database_activity("query", "experience-entries", "loading profile")
     profile_config = config.get("profile", {}).get("firestore", {})
     profile_loader = FirestoreProfileLoader(database_name=profile_db)
     profile = profile_loader.load_profile(
@@ -98,10 +99,12 @@ def initialize_components(config: dict) -> Tuple[QueueManager, QueueItemProcesso
         name=profile_config.get("name", "User"),
         email=profile_config.get("email"),
     )
-    logger.info(f"Profile loaded: {profile.name}")
+    slogger.database_activity(
+        "query", "experience-entries", "profile loaded", {"name": profile.name}
+    )
 
     # Initialize AI components
-    logger.info("Initializing AI components...")
+    slogger.logger.info("Initializing AI components...")
     ai_config = config.get("ai", {})
 
     # Override AI config with Firestore settings if available
@@ -136,7 +139,7 @@ def initialize_components(config: dict) -> Tuple[QueueManager, QueueItemProcesso
         profile=profile,
     )
 
-    logger.info("All components initialized successfully")
+    slogger.worker_status("initialized", {"ai_provider": ai_provider_type, "ai_model": ai_model})
     return queue_manager, processor, config_loader
 
 
@@ -151,12 +154,10 @@ def run_worker_loop(
         processor: Item processor
         poll_interval: Seconds between polls (default: 60)
     """
-    logger.info("=" * 70)
-    logger.info("QUEUE WORKER STARTED")
-    logger.info("=" * 70)
-    logger.info(f"Poll interval: {poll_interval} seconds")
-    logger.info("Waiting for queue items...")
-    logger.info("")
+    slogger.worker_status(
+        "started",
+        {"poll_interval": poll_interval, "environment": os.getenv("ENVIRONMENT", "development")},
+    )
 
     iteration = 0
     items_processed_total = 0
@@ -169,46 +170,48 @@ def run_worker_loop(
             items = queue_manager.get_pending_items(limit=10)
 
             if items:
-                logger.info(f"[Iteration {iteration}] Found {len(items)} pending items")
+                slogger.worker_status(
+                    "processing_batch", {"iteration": iteration, "items_count": len(items)}
+                )
 
                 for item in items:
                     if shutdown_requested:
-                        logger.info("Shutdown requested, stopping item processing")
+                        slogger.worker_status("shutdown_in_progress")
                         break
 
                     try:
                         processor.process_item(item)
                         items_processed_total += 1
                     except Exception as e:
-                        logger.error(f"Error processing item {item.id}: {e}", exc_info=True)
+                        slogger.logger.error(f"Error processing item {item.id}: {e}", exc_info=True)
 
                 # Get updated stats
                 stats = queue_manager.get_queue_stats()
-                logger.info(f"Queue stats: {stats}")
+                slogger.worker_status("batch_completed", {"queue_stats": str(stats)})
             else:
                 # No items to process
                 # Log every 10 iterations (~10 minutes)
                 if iteration % 10 == 0:
-                    logger.debug(
-                        f"[Iteration {iteration}] No pending items. "
-                        f"Total processed: {items_processed_total}"
+                    slogger.worker_status(
+                        "idle",
+                        {
+                            "iteration": iteration,
+                            "total_processed": items_processed_total,
+                        },
                     )
 
             # Sleep before next poll
             time.sleep(poll_interval)
 
         except KeyboardInterrupt:
-            logger.info("Keyboard interrupt received, shutting down...")
+            slogger.worker_status("keyboard_interrupt")
             break
         except Exception as e:
-            logger.error(f"Error in worker loop: {e}", exc_info=True)
-            logger.info("Continuing after error...")
+            slogger.logger.error(f"Error in worker loop: {e}", exc_info=True)
+            slogger.worker_status("error_recovery")
             time.sleep(poll_interval)
 
-    logger.info("=" * 70)
-    logger.info("QUEUE WORKER STOPPED")
-    logger.info(f"Total items processed: {items_processed_total}")
-    logger.info("=" * 70)
+    slogger.worker_status("stopped", {"total_processed": items_processed_total})
 
 
 def main():
@@ -233,7 +236,7 @@ def main():
         return 0
 
     except Exception as e:
-        logger.error(f"Fatal error in queue worker: {e}", exc_info=True)
+        slogger.logger.error(f"Fatal error in queue worker: {e}", exc_info=True)
         return 1
 
 

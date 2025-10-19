@@ -45,16 +45,33 @@ logger = logging.getLogger(__name__)
 PT = ZoneInfo("America/Los_Angeles")
 
 
-def is_daytime_hours() -> bool:
+def is_daytime_hours(scheduler_settings: Optional[Dict[str, Any]] = None) -> bool:
     """
-    Check if current time is within daytime hours (6am-10pm PT).
+    Check if current time is within daytime hours.
+
+    Args:
+        scheduler_settings: Optional scheduler settings from Firestore
+                          If provided, uses daytime_hours and timezone from settings
 
     Returns:
         True if within daytime hours, False otherwise
     """
-    now_pt = datetime.now(PT)
-    hour = now_pt.hour
-    return 6 <= hour < 22  # 6am to 10pm (22:00 is 10pm)
+    if scheduler_settings:
+        # Use settings from Firestore
+        daytime_hours = scheduler_settings.get("daytime_hours", {"start": 6, "end": 22})
+        timezone_str = scheduler_settings.get("timezone", "America/Los_Angeles")
+        tz = ZoneInfo(timezone_str)
+        start_hour = daytime_hours.get("start", 6)
+        end_hour = daytime_hours.get("end", 22)
+    else:
+        # Use defaults
+        tz = PT
+        start_hour = 6
+        end_hour = 22
+
+    now = datetime.now(tz)
+    hour = now.hour
+    return start_hour <= hour < end_hour
 
 
 def get_next_sources(sources_manager: JobSourcesManager, limit: int = 10) -> List[Dict[str, Any]]:
@@ -232,11 +249,6 @@ def run_hourly_scrape(config: Dict[str, Any]) -> Dict[str, Any]:
     logger.info(f"HOURLY SCRAPE - {datetime.now(PT).isoformat()}")
     logger.info("=" * 70)
 
-    # Check if within daytime hours
-    if not is_daytime_hours():
-        logger.info("⏸️  Outside daytime hours (6am-10pm PT), skipping scrape")
-        return {"status": "skipped", "reason": "outside_daytime_hours"}
-
     # Get database name
     storage_db = os.getenv(
         "STORAGE_DATABASE_NAME",
@@ -250,11 +262,48 @@ def run_hourly_scrape(config: Dict[str, Any]) -> Dict[str, Any]:
     logger.info(f"Storage database: {storage_db}")
     logger.info(f"Profile database: {profile_db}")
 
+    # Initialize config loader first to get scheduler settings
+    config_loader = ConfigLoader(database_name=storage_db)
+    
+    # Load scheduler settings from Firestore
+    logger.info("\n⚙️  Loading scheduler settings from Firestore...")
+    scheduler_settings = config_loader.get_scheduler_settings()
+    
+    # Check if scheduler settings exist
+    if scheduler_settings is None:
+        logger.error("❌ Scheduler settings not found in Firestore!")
+        logger.error("   The scheduler requires configuration to run.")
+        logger.error("   Please run: python scripts/setup_firestore_config.py")
+        logger.error(f"   Database: {storage_db}")
+        logger.error(f"   Expected document: job-finder-config/scheduler-settings")
+        return {"status": "error", "reason": "scheduler_settings_missing"}
+    
+    # Check if scheduler is enabled
+    if not scheduler_settings.get("enabled", True):
+        logger.info("🚫 Scheduler is DISABLED in Firestore config (scheduler-settings.enabled=false)")
+        logger.info("   To enable: Update job-finder-config/scheduler-settings in Firestore")
+        return {"status": "skipped", "reason": "scheduler_disabled"}
+    
+    logger.info(f"✓ Scheduler is enabled")
+    logger.info(f"  Target matches: {scheduler_settings.get('target_matches', 5)}")
+    logger.info(f"  Max sources: {scheduler_settings.get('max_sources', 10)}")
+    logger.info(f"  Min match score: {scheduler_settings.get('min_match_score', 80)}")
+    
+    # Check if within daytime hours (using settings from Firestore)
+    if not is_daytime_hours(scheduler_settings):
+        daytime_hours = scheduler_settings.get("daytime_hours", {"start": 6, "end": 22})
+        timezone_str = scheduler_settings.get("timezone", "America/Los_Angeles")
+        logger.info(
+            f"⏸️  Outside daytime hours "
+            f"({daytime_hours['start']}:00-{daytime_hours['end']}:00 {timezone_str}), "
+            f"skipping scrape"
+        )
+        return {"status": "skipped", "reason": "outside_daytime_hours"}
+
     # Initialize managers
     sources_manager = JobSourcesManager(database_name=storage_db)
     job_storage = FirestoreJobStorage(database_name=storage_db)
     companies_manager = CompaniesManager(database_name=storage_db)
-    config_loader = ConfigLoader(database_name=storage_db)
 
     # Load profile
     logger.info("\n🔄 Loading profile...")
@@ -287,16 +336,25 @@ def run_hourly_scrape(config: Dict[str, Any]) -> Dict[str, Any]:
         config=ai_config,
     )
     company_info_fetcher = CompanyInfoFetcher(ai_provider=provider, ai_config=ai_config)
+    company_info_fetcher = CompanyInfoFetcher(ai_provider=provider, ai_config=ai_config)
     logger.info("✓ AI matcher initialized")
 
-    # Get scheduler settings from config (before getting sources)
-    scheduler_config = config.get("scheduler", {})
-    max_sources = scheduler_config.get("max_sources_per_run", 20)
+    # Get scheduler settings from Firestore (already loaded above)
+    max_sources = scheduler_settings.get("max_sources", 10)
+    target_matches = scheduler_settings.get("target_matches", 5)
+    
+    # Override min_match_score if specified in scheduler settings
+    scheduler_min_score = scheduler_settings.get("min_match_score")
+    if scheduler_min_score is not None:
+        ai_matcher.min_match_score = scheduler_min_score
+        logger.info(f"  Overriding min_match_score from scheduler: {scheduler_min_score}")
 
     # Get next sources to scrape (rotation)
     logger.info("\n📋 Getting next sources to scrape...")
     sources = get_next_sources(sources_manager, limit=max_sources)
     logger.info(f"✓ Found {len(sources)} sources in rotation")
+    logger.info(f"  Target matches: {target_matches}")
+    logger.info(f"  Max sources: {max_sources}")
 
     # Scraping stats
     total_stats = {
@@ -310,10 +368,6 @@ def run_hourly_scrape(config: Dict[str, Any]) -> Dict[str, Any]:
         "jobs_saved": 0,
         "errors": [],
     }
-
-    # Get target matches setting (max_sources already retrieved above)
-    target_matches = scheduler_config.get("target_matches", 5)
-    logger.info(f"Scheduler settings: target_matches={target_matches}, max_sources={max_sources}")
 
     # Scrape until we find target potential matches or run out of sources
     potential_matches = 0  # Tracks jobs that went to AI analysis

@@ -178,6 +178,37 @@ def get_queue_settings_config() -> Dict[str, Any]:
     }
 
 
+
+def get_scheduler_settings_config() -> Dict[str, Any]:
+    """Get scheduler settings for cron-based scraping."""
+    return {
+        # Enable/disable the scheduler
+        "enabled": False,  # Disabled by default - enable when ready
+        # Cron schedule (for reference - actual cron is set in crontab file)
+        # Examples:
+        #   "0 */6 * * *"   = Every 6 hours
+        #   "0 8,14,20 * * *" = At 8am, 2pm, 8pm
+        #   "0 * * * *"     = Every hour
+        "cron_schedule": "0 */6 * * *",
+        # Daytime hours when scraping should actually run (24-hour format)
+        # Cron may trigger, but scraping only happens within these hours
+        "daytime_hours": {
+            "start": 6,   # 6am
+            "end": 22,    # 10pm
+        },
+        # Timezone for daytime hours check
+        "timezone": "America/Los_Angeles",
+        # Scrape settings
+        "target_matches": 5,      # Stop after finding this many potential matches
+        "max_sources": 10,        # Maximum sources to scrape per run
+        "min_match_score": 80,    # Minimum AI match score to consider
+        # Metadata
+        "updatedAt": datetime.utcnow().isoformat(),
+        "updatedBy": "setup_script",
+        "description": "Controls automated job scraping via cron. Set enabled=true to enable.",
+    }
+
+
 def get_ai_settings_config() -> Dict[str, Any]:
     """Get AI matching settings."""
     return {
@@ -324,6 +355,8 @@ def get_ai_settings_config() -> Dict[str, Any]:
 def setup_firestore_config(database_name: str = DATABASE_NAME):
     """
     Setup all Firestore configuration documents.
+    
+    Only creates documents that don't already exist to prevent overwriting.
 
     Args:
         database_name: Name of the Firestore database
@@ -339,13 +372,37 @@ def setup_firestore_config(database_name: str = DATABASE_NAME):
         "stop-list": get_stop_list_config(),
         "queue-settings": get_queue_settings_config(),
         "ai-settings": get_ai_settings_config(),
+        "scheduler-settings": get_scheduler_settings_config(),
     }
 
+    created_count = 0
+    skipped_count = 0
+    
     for doc_name, config in configs.items():
-        logger.info(f"  Writing {doc_name}...")
         doc_ref = collection.document(doc_name)
+        
+        # Check if document already exists
+        if doc_ref.get().exists:
+            logger.info(f"  ⊘ {doc_name} already exists - skipping")
+            skipped_count += 1
+            continue
+        
+        # Create new document
+        logger.info(f"  Creating {doc_name}...")
         doc_ref.set(config)
-        logger.info(f"  ✓ {doc_name} written successfully")
+        logger.info(f"  ✓ {doc_name} created successfully")
+        created_count += 1
+    
+    # Summary of operations
+    logger.info(f"\n📊 Operations summary:")
+    logger.info(f"  Created: {created_count}")
+    logger.info(f"  Skipped (already exist): {skipped_count}")
+    
+    # Only show detailed summary if we created documents
+    if created_count == 0:
+        logger.info("\n⚠️  No new configurations created - all documents already exist")
+        logger.info("     To update existing configs, edit them in Firestore Console")
+        return
 
     logger.info("\n" + "=" * 70)
     logger.info("CONFIGURATION SUMMARY")
@@ -390,16 +447,64 @@ def setup_firestore_config(database_name: str = DATABASE_NAME):
     logger.info(f"  Model: {ai_settings['model']}")
     logger.info(f"  Min Match Score: {ai_settings['minMatchScore']}")
 
+    # Scheduler Settings Summary
+    scheduler_settings = configs["scheduler-settings"]
+    logger.info("\n⏰ Scheduler Settings:")
+    logger.info(f"  Enabled: {'✓ YES' if scheduler_settings['enabled'] else '✗ NO (DISABLED)'}")
+    logger.info(f"  Cron Schedule: {scheduler_settings['cron_schedule']}")
+    logger.info(f"  Daytime Hours: {scheduler_settings['daytime_hours']['start']}:00 - {scheduler_settings['daytime_hours']['end']}:00 {scheduler_settings['timezone']}")
+    logger.info(f"  Target Matches: {scheduler_settings['target_matches']} per run")
+    logger.info(f"  Max Sources: {scheduler_settings['max_sources']} per run")
+
     logger.info("\n" + "=" * 70)
     logger.info("✅ Configuration setup complete!")
     logger.info("=" * 70)
     logger.info("\nYou can now:")
     logger.info("1. Edit these configurations in Firestore Console")
     logger.info("2. Or use the Portfolio web UI to manage them")
+    logger.info("3. Set scheduler-settings.enabled=true to ENABLE automated scraping")
     logger.info(
-        f"3. View at: https://console.firebase.google.com/project/static-sites-257923/firestore/databases/{database_name}/data/~2Fjob-finder-config"
+        f"4. View at: https://console.firebase.google.com/project/static-sites-257923/firestore/databases/{database_name}/data/~2Fjob-finder-config"
     )
 
 
 if __name__ == "__main__":
-    setup_firestore_config()
+    import sys
+    
+    # Setup both staging and production databases
+    databases = ["portfolio-staging", "portfolio"]
+    
+    logger.info("=" * 70)
+    logger.info("SETTING UP SCHEDULER CONFIGURATION FOR BOTH DATABASES")
+    logger.info("=" * 70)
+    logger.info("\nThis will create scheduler-settings (and other configs) in:")
+    for db in databases:
+        logger.info(f"  - {db}")
+    logger.info("\n⚠️  SAFETY: Only creates configs that don't already exist")
+    logger.info("   Existing configurations will NOT be overwritten")
+    logger.info("\nScheduler will be DISABLED by default (enabled=false)")
+    logger.info("Set enabled=true in Firestore when ready to activate\n")
+    
+    # Prompt for confirmation
+    response = input("Continue? (yes/no): ").strip().lower()
+    if response not in ["yes", "y"]:
+        logger.info("Setup cancelled.")
+        sys.exit(0)
+    
+    # Setup each database
+    for database_name in databases:
+        logger.info("\n" + "=" * 70)
+        logger.info(f"Setting up: {database_name}")
+        logger.info("=" * 70)
+        setup_firestore_config(database_name)
+    
+    logger.info("\n" + "=" * 70)
+    logger.info("✅ ALL DATABASES CONFIGURED")
+    logger.info("=" * 70)
+    logger.info("\nScheduler status: DISABLED in both databases")
+    logger.info("To enable:")
+    logger.info("  1. Go to Firebase Console")
+    logger.info("  2. Navigate to job-finder-config/scheduler-settings")
+    logger.info("  3. Set enabled=true")
+    logger.info("  4. Save changes")
+

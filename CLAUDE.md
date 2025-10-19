@@ -22,10 +22,15 @@ Job Finder is an AI-powered web scraping application that finds online job posti
 - **Portfolio's purpose**: Display matched jobs, manage applications, generate tailored resumes
 - **Data flow**: job-finder (scraping + AI analysis) → Firestore → portfolio (UI + user interaction)
 
+**Shared Resources:**
+- **Firestore Collections**: `job-queue`, `job-matches`, `companies`, `job-sources`
+- **Google Cloud Logging**: Structured logs with environment labels for real-time monitoring (see [CLOUD_LOGGING_DESIGN.md](docs/CLOUD_LOGGING_DESIGN.md))
+
 When considering improvements or new features:
 - ❌ **DO NOT** build a web UI, dashboard, or visualization in this project
 - ✅ **DO** focus on improving scraping, filtering, matching quality, and data structure
 - ✅ **DO** ensure data is properly structured for consumption by the Portfolio project
+- ✅ **DO** use structured logging for visibility into worker operations
 
 ## Commands
 
@@ -100,7 +105,61 @@ mypy src/
 The application uses a **Firestore-backed queue system** for asynchronous job processing. This allows the portfolio project to submit jobs for analysis, and this tool processes them in the background.
 
 **Queue Collection**: `job-queue` in Firestore
-**Processing**: Cloud Run worker polls queue and processes items in FIFO order
+**Processing**: Worker container (running in Portainer on NAS) polls queue and processes items in FIFO order
+
+**Worker Deployment**:
+- **Location**: Portainer stack `job-finder-staging` running on NAS
+- **Container**: `job-finder-staging` (image: `ghcr.io/jdubz/job-finder:staging`)
+- **Database**: `portfolio-staging` Firestore database
+- **Logging**: Google Cloud Logging (log name: `job-finder`)
+
+**Monitoring Worker**:
+```bash
+# Check staging worker logs (with environment labels)
+gcloud logging read 'logName="projects/static-sites-257923/logs/job-finder" AND labels.environment="staging"' \
+  --limit 20 \
+  --freshness 1h
+
+# Check production worker logs
+gcloud logging read 'logName="projects/static-sites-257923/logs/job-finder" AND labels.environment="production"' \
+  --limit 20 \
+  --freshness 1h
+
+# Filter by specific operation types (structured logging)
+# Worker status
+gcloud logging read 'logName="projects/static-sites-257923/logs/job-finder" AND labels.environment="staging" AND textPayload:"[WORKER]"' \
+  --limit 10
+
+# Queue processing
+gcloud logging read 'logName="projects/static-sites-257923/logs/job-finder" AND labels.environment="staging" AND textPayload:"[QUEUE:"' \
+  --limit 10
+
+# Pipeline stages
+gcloud logging read 'logName="projects/static-sites-257923/logs/job-finder" AND labels.environment="staging" AND textPayload:"[PIPELINE:"' \
+  --limit 10
+```
+
+**Structured Logging Format**:
+All logs use a structured format with categories for easy filtering:
+- `[WORKER]` - Worker lifecycle events (started, idle, stopped)
+- `[QUEUE:type]` - Queue item processing (JOB, COMPANY, SCRAPE)
+- `[PIPELINE:stage]` - Pipeline stages (SCRAPE, FILTER, ANALYZE, SAVE)
+- `[SCRAPE]` - Web scraping operations
+- `[AI:operation]` - AI model operations (MATCH, ANALYZE, EXTRACT)
+- `[DB:operation]` - Database operations (CREATE, UPDATE, QUERY)
+
+**Environment Labels**:
+All Cloud Logging entries include labels for filtering:
+- `environment`: staging, production, or development
+- `service`: job-finder
+- `version`: 1.0.0
+
+**Worker Configuration** (docker-compose.staging.yml):
+- `ENABLE_QUEUE_MODE=true` - Queue worker enabled
+- `ENABLE_CRON=false` - No automatic scraping (manual submissions only)
+- `ENABLE_CLOUD_LOGGING=true` - Logs sent to Google Cloud with environment labels
+- `ENVIRONMENT=staging` - Environment identifier (added to all logs)
+- `STORAGE_DATABASE_NAME=portfolio-staging` - Firestore database
 
 ### Granular Pipeline Architecture (NEW)
 

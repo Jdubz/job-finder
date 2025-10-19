@@ -1,201 +1,399 @@
-# GitHub Actions Workflows
+# GitHub Actions Workflows# GitHub Actions Workflows
 
-Automated CI/CD workflows for job-finder project.
 
----
 
-## Workflows Overview
+This directory contains the CI/CD workflows for the job-finder project, organized following best practices to avoid duplication and run checks appropriately.Automated CI/CD workflows for job-finder project.
+
+
+
+## 🔄 Workflow Overview---
+
+
+
+### 1. Code Quality (`quality.yml`)## Workflows Overview
+
+**Triggers:** Pull requests to `main` or `staging` (Python files only)
 
 | Workflow | Trigger | Purpose | Output |
-|----------|---------|---------|--------|
-| **docker-build-push-staging.yml** | Push to `staging` | Build & deploy staging | `:staging` tag |
-| **docker-build-push.yml** | Push to `main` | Build & deploy production | `:latest` tag |
-| **tests.yml** | Push/PR to any branch | Run tests | Test results |
 
----
+Enforces code quality standards:|----------|---------|---------|--------|
 
-## Workflow Details
+- ✅ Code formatting (black)| **docker-build-push-staging.yml** | Push to `staging` | Build & deploy staging | `:staging` tag |
 
-### 1. Build and Push Staging Docker Image
+- ✅ Linting (flake8)  | **docker-build-push.yml** | Push to `main` | Build & deploy production | `:latest` tag |
 
-**File:** `docker-build-push-staging.yml`
+- ✅ Type checking (mypy)| **tests.yml** | Push/PR to any branch | Run tests | Test results |
+
+
+
+**Why separate?** Quality checks are fast and should run on every PR, independent of tests.---
+
+
+
+---## Workflow Details
+
+
+
+### 2. Tests (`tests.yml`)### 1. Build and Push Staging Docker Image
+
+**Triggers:** 
+
+- Pull requests to `main` or `staging`**File:** `docker-build-push-staging.yml`
+
+- Direct pushes to `staging` (development workflow)
 
 **Triggers:**
-- Push to `staging` branch
-- Manual workflow dispatch
 
-**Steps:**
+Validates functionality:- Push to `staging` branch
+
+- ✅ Unit tests (pytest)- Manual workflow dispatch
+
+- ✅ Code coverage reporting
+
+- ✅ Coverage upload to Codecov (PRs only)**Steps:**
+
 1. Checkout code
-2. Set up Docker Buildx
+
+**Why here?** Tests validate functionality and are required before merge.2. Set up Docker Buildx
+
 3. Login to GitHub Container Registry
-4. Build Docker image
+
+---4. Build Docker image
+
 5. Tag as `:staging` and `:staging-<sha>`
-6. Push to `ghcr.io/jdubz/job-finder:staging`
-7. Display deployment summary
 
-**Deployment:**
-- Watchtower pulls `:staging` image
-- Auto-deploys to `job-finder-staging` container
-- Expected time: ~3 minutes
+### 3. Build Staging (`docker-build-push-staging.yml`)6. Push to `ghcr.io/jdubz/job-finder:staging`
 
-**Use when:**
+**Triggers:** Pushes to `staging` branch7. Display deployment summary
+
+
+
+Builds and deploys staging:**Deployment:**
+
+- 🐳 Build Docker image- Watchtower pulls `:staging` image
+
+- 📦 Push to GHCR with `staging` tag- Auto-deploys to `job-finder-staging` container
+
+- 🚀 Auto-deploys via Watchtower (~3 min)- Expected time: ~3 minutes
+
+
+
+**Tags:** `staging`, `staging-<sha>`**Use when:**
+
 - Pushing changes to staging branch
-- Testing features before production
+
+---- Testing features before production
+
 - Daily development work
 
----
+### 4. Build Production (`docker-build-push.yml`)
 
-### 2. Build and Push Production Docker Image
+**Triggers:** Pushes to `main` branch---
 
-**File:** `docker-build-push.yml`
+
+
+Builds and deploys production:### 2. Build and Push Production Docker Image
+
+- 🐳 Build Docker image
+
+- 📦 Push to GHCR with `latest` and `production` tags**File:** `docker-build-push.yml`
+
+- 🎯 Auto-deploys via Watchtower (~5 min)
 
 **Triggers:**
-- Push to `main` branch
+
+**Tags:** `latest`, `production`, `prod-<sha>`- Push to `main` branch
+
 - Manual workflow dispatch
 
-**Steps:**
-1. Checkout code
-2. Set up Docker Buildx
-3. Login to GitHub Container Registry
-4. Build Docker image
-5. Tag as `:latest` and various semantic versions
-6. Push to `ghcr.io/jdubz/job-finder:latest`
-7. Display deployment summary
+---
 
-**Deployment:**
+**Steps:**
+
+## 📋 What Runs Where?1. Checkout code
+
+2. Set up Docker Buildx
+
+| Check | Pre-commit | Pre-push | GitHub Actions |3. Login to GitHub Container Registry
+
+|-------|-----------|----------|----------------|4. Build Docker image
+
+| **Black formatting** | ✅ | ❌ | ✅ (PRs only) |5. Tag as `:latest` and various semantic versions
+
+| **Flake8 linting** | ❌ | ❌ | ✅ (PRs only) |6. Push to `ghcr.io/jdubz/job-finder:latest`
+
+| **Mypy type checking** | ❌ | ✅ | ✅ (PRs only) |7. Display deployment summary
+
+| **Pytest tests** | ❌ | ✅ | ✅ (PRs + staging pushes) |
+
+| **Docker build** | ❌ | ❌ | ✅ (main/staging only) |**Deployment:**
+
 - Watchtower pulls `:latest` image
-- Auto-deploys to `job-finder-production` container
+
+**Key insight:** Quality checks run in CI for PRs, pre-push hooks handle direct pushes to staging. This avoids duplicate work while maintaining quality.- Auto-deploys to `job-finder-production` container
+
 - Expected time: ~5 minutes
 
-**Use when:**
-- Merging PR from `staging` to `main`
-- Deploying validated features to production
-- Hotfix deployments
-
 ---
 
-### 3. Tests
+**Use when:**
 
-**File:** `tests.yml`
+## 🌿 Development Workflow- Merging PR from `staging` to `main`
 
-**Triggers:**
+- Deploying validated features to production
+
+### Feature Development- Hotfix deployments
+
+```bash
+
+# 1. Branch from staging---
+
+git checkout staging && git pull
+
+git checkout -b feature/my-feature### 3. Tests
+
+
+
+# 2. Develop and commit**File:** `tests.yml`
+
+# (pre-commit: black formatting check)
+
+git commit -m "feat: add feature"**Triggers:**
+
 - Push to `main`, `staging`, or `develop` branches
-- Pull requests targeting these branches
 
-**Steps:**
+# 3. Push- Pull requests targeting these branches
+
+# (pre-push: mypy + tests)
+
+git push origin feature/my-feature**Steps:**
+
 1. Checkout code
-2. Set up Python 3.12
-3. Install dependencies
+
+# 4. Create PR to staging2. Set up Python 3.12
+
+# GitHub runs: quality.yml + tests.yml3. Install dependencies
+
 4. Run linting (flake8)
-5. Check code formatting (black)
-6. Type checking (mypy)
-7. Run unit tests (pytest)
+
+# 5. Merge to staging5. Check code formatting (black)
+
+# GitHub runs: tests.yml + docker-build-push-staging.yml6. Type checking (mypy)
+
+# Auto-deploys to staging environment7. Run unit tests (pytest)
+
 8. Upload coverage to Codecov
 
-**No Deployment:**
-- Tests only, no Docker build
-- Validates code quality
-- Reports test coverage
+# 6. Test in staging, then PR to main
 
-**Use when:**
+# GitHub runs: quality.yml + tests.yml**No Deployment:**
+
+- Tests only, no Docker build
+
+# 7. Merge to main- Validates code quality
+
+# GitHub runs: docker-build-push.yml- Reports test coverage
+
+# Auto-deploys to production
+
+```**Use when:**
+
 - Every push to ensure code quality
-- Pull requests for validation
+
+---- Pull requests for validation
+
 - Before merging to any branch
+
+## 🔒 Branch Protection
 
 ---
 
-## Docker Image Tags
+### Recommended for `main`:
 
-### Tag Strategy
+- ✅ Require PR reviews (1 approval)## Docker Image Tags
+
+- ✅ Require status checks: `quality`, `test`
+
+- ✅ Require branches up to date### Tag Strategy
+
+- ❌ No direct pushes
 
 **Production (`:latest`):**
+
+### Recommended for `staging`:```
+
+- ✅ Require status checks: `test`ghcr.io/jdubz/job-finder:latest
+
+- ✅ Allow direct pushes (development)ghcr.io/jdubz/job-finder:main
+
+- ❌ PR reviews optionalghcr.io/jdubz/job-finder:sha-abc123
+
 ```
-ghcr.io/jdubz/job-finder:latest
-ghcr.io/jdubz/job-finder:main
-ghcr.io/jdubz/job-finder:sha-abc123
-```
+
+---
 
 **Staging (`:staging`):**
-```
+
+## 🚀 Manual Triggers```
+
 ghcr.io/jdubz/job-finder:staging
-ghcr.io/jdubz/job-finder:staging-abc123
+
+Both Docker workflows support manual triggering:ghcr.io/jdubz/job-finder:staging-abc123
+
 ```
 
-### Tag Usage
+```bash
+
+# Via GitHub UI### Tag Usage
+
+Actions → [Select workflow] → Run workflow
 
 | Tag | Used By | Purpose |
-|-----|---------|---------|
-| `:latest` | Production container | Latest production release |
-| `:staging` | Staging container | Latest staging build |
-| `:sha-<hash>` | Manual deployment | Specific commit deployment |
+
+# Via GitHub CLI|-----|---------|---------|
+
+gh workflow run "Build and Push Staging Docker Image"| `:latest` | Production container | Latest production release |
+
+gh workflow run "Build and Push Production Docker Image"| `:staging` | Staging container | Latest staging build |
+
+```| `:sha-<hash>` | Manual deployment | Specific commit deployment |
+
 | `:staging-<hash>` | Manual staging rollback | Specific staging version |
 
 ---
 
+---
+
+## 💾 Caching
+
 ## Workflow Execution
 
-### Viewing Workflow Runs
+All workflows use caching for speed:
+
+- **pip:** Cached by `requirements.txt` hash### Viewing Workflow Runs
+
+- **Docker:** Layer caching via GitHub Actions cache
 
 **GitHub UI:**
-1. Navigate to repository
+
+**Average speedup:** 2-3x on cache hits1. Navigate to repository
+
 2. Click "Actions" tab
-3. Select workflow from left sidebar
+
+---3. Select workflow from left sidebar
+
 4. View recent runs
 
+## 🐛 Troubleshooting
+
 **Deployment Summary:**
-Each workflow run includes a summary with:
-- Docker image tag
-- Image digest
-- Expected deployment time
-- Next steps for verification
+
+### Quality checks failedEach workflow run includes a summary with:
+
+```bash- Docker image tag
+
+black src/ tests/          # Fix formatting- Image digest
+
+flake8 src/ tests/          # Check linting- Expected deployment time
+
+mypy src/                   # Check types- Next steps for verification
+
+```
 
 ### Manual Workflow Trigger
 
-**Via GitHub UI:**
-1. Go to Actions tab
-2. Select workflow
-3. Click "Run workflow"
-4. Select branch
+### Tests failed
+
+```bash**Via GitHub UI:**
+
+pytest                      # Run locally1. Go to Actions tab
+
+pytest -v                   # Verbose output2. Select workflow
+
+pytest --lf                 # Run last failed3. Click "Run workflow"
+
+```4. Select branch
+
 5. Click "Run workflow" button
 
-**Via GitHub CLI:**
-```bash
-# Trigger staging deployment
+### Docker build failed
+
+- Check Dockerfile syntax**Via GitHub CLI:**
+
+- Verify all files are committed```bash
+
+- Review build logs in Actions# Trigger staging deployment
+
 gh workflow run docker-build-push-staging.yml --ref staging
 
-# Trigger production deployment
-gh workflow run docker-build-push.yml --ref main
+### Deployment not happening
+
+- Check Watchtower is running: `docker ps | grep watchtower`# Trigger production deployment
+
+- View logs: `docker logs watchtower -f`gh workflow run docker-build-push.yml --ref main
+
+- Verify image tags match
 
 # Trigger tests
-gh workflow run tests.yml --ref staging
+
+---gh workflow run tests.yml --ref staging
+
 ```
+
+## 📊 Usage Stats
 
 ---
 
+**Free tier: 2,000 minutes/month**
+
 ## Monitoring Deployments
 
-### GitHub Actions Logs
+Estimated usage:
 
-**View build logs:**
-```
+- Quality: ~100 min/month (50 PRs × 2 min)### GitHub Actions Logs
+
+- Tests: ~450 min/month (150 runs × 3 min)
+
+- Staging builds: ~500 min/month (100 pushes × 5 min)**View build logs:**
+
+- Prod builds: ~50 min/month (10 pushes × 5 min)```
+
 GitHub → Actions → Select workflow run → View logs
-```
 
-**Check for errors:**
+**Total: ~1,100 min/month** (well within limits!)```
+
+
+
+---**Check for errors:**
+
 - Red X: Build/test failed
-- Yellow circle: In progress
+
+## 📝 Recent Changes- Yellow circle: In progress
+
 - Green checkmark: Success
 
-### Container Deployment
+**2025-10-19:** Workflow cleanup
 
-**After workflow completes:**
+- ❌ Removed non-existent `develop` branch from triggers### Container Deployment
 
-```bash
-# Check staging deployment
+- ❌ Removed duplicate quality checks from tests.yml
+
+- ✅ Created separate quality.yml for linting/formatting/type checking**After workflow completes:**
+
+- ✅ Added caching for faster runs
+
+- ✅ Updated tags for better organization```bash
+
+- ✅ Added path filters to skip unnecessary runs# Check staging deployment
+
 docker logs job-finder-staging -f --tail 50
 
+---
+
 # Check production deployment
-docker logs job-finder-production -f --tail 50
+
+**Last Updated:** 2025-10-19docker logs job-finder-production -f --tail 50
+
 
 # Verify image tag
 docker inspect job-finder-staging | grep Image

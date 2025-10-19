@@ -1,0 +1,64 @@
+name: Code Quality
+
+on:
+  # Run quality checks on PRs only
+  # Pre-push hooks handle quality for direct pushes
+  pull_request:
+    branches: [ main, staging ]
+    paths:
+      - '**.py'
+      - 'requirements*.txt'
+      - 'pyproject.toml'
+      - 'mypy.ini'
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python 3.12
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.12'
+
+    - name: Cache pip dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-quality-${{ hashFiles('requirements*.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-quality-
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install -r requirements-test.txt
+        pip install black flake8 mypy
+        pip install -e .
+
+    - name: Check code formatting with black
+      run: |
+        black --check src/ tests/
+
+    - name: Lint with flake8
+      run: |
+        # Stop on syntax errors or undefined names
+        flake8 src/ tests/ --count --select=E9,F63,F7,F82 --show-source --statistics
+        # Check complexity and style (non-blocking)
+        flake8 src/ tests/ --count --exit-zero --max-complexity=10 --max-line-length=100 --statistics
+
+    - name: Type checking with mypy
+      run: |
+        mypy src/
+
+    - name: Quality Summary
+      if: always()
+      run: |
+        echo "## Code Quality Checks 🔍" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "✅ Code formatting (black)" >> $GITHUB_STEP_SUMMARY
+        echo "✅ Linting (flake8)" >> $GITHUB_STEP_SUMMARY
+        echo "✅ Type checking (mypy)" >> $GITHUB_STEP_SUMMARY

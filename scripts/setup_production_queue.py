@@ -7,7 +7,10 @@ This script:
 2. Creates a test queue item to initialize the collection
 3. Verifies the item was created successfully
 4. Optionally cleans up the test item
+
+SAFETY: Requires --database flag and confirmation for production.
 """
+import argparse
 import logging
 import os
 import sys
@@ -76,9 +79,13 @@ def setup_queue_collection(database_name: str = "portfolio", cleanup: bool = Tru
             if retrieved_item:
                 print(f"✅ Test item verified:")
                 print(f"   ID: {retrieved_item.id}")
-                print(f"   Type: {retrieved_item.type.value if hasattr(retrieved_item.type, 'value') else retrieved_item.type}")
+                print(
+                    f"   Type: {retrieved_item.type.value if hasattr(retrieved_item.type, 'value') else retrieved_item.type}"
+                )
                 print(f"   URL: {retrieved_item.url}")
-                print(f"   Status: {retrieved_item.status.value if hasattr(retrieved_item.status, 'value') else retrieved_item.status}")
+                print(
+                    f"   Status: {retrieved_item.status.value if hasattr(retrieved_item.status, 'value') else retrieved_item.status}"
+                )
                 print()
 
                 # 5. Clean up test item if requested
@@ -124,40 +131,64 @@ def setup_queue_collection(database_name: str = "portfolio", cleanup: bool = Tru
 
 
 def main():
-    """Main entry point."""
-    import argparse
-
+    """Main entry point with safety confirmation."""
     parser = argparse.ArgumentParser(
-        description="Initialize job-queue collection in production database"
+        description="Setup job-queue collection (creates test item to initialize)",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+NOTE: This script creates and optionally deletes a single test item.
+It is designed for initial database setup and is relatively safe.
+
+Examples:
+  # Setup staging
+  python scripts/setup_production_queue.py --database portfolio-staging
+  
+  # Setup production (with confirmation)
+  python scripts/setup_production_queue.py --database portfolio
+        """,
     )
     parser.add_argument(
         "--database",
-        default="portfolio",
-        help="Database name (default: portfolio for production)",
+        required=True,
+        choices=["portfolio-staging", "portfolio"],
+        help="Database name to setup",
     )
     parser.add_argument(
         "--no-cleanup",
         action="store_true",
-        help="Don't delete test item after creation",
+        help="Leave test item in queue (don't delete after creation)",
     )
 
     args = parser.parse_args()
 
-    success = setup_queue_collection(
-        database_name=args.database, cleanup=not args.no_cleanup
-    )
+    # Add confirmation for production
+    if args.database == "portfolio":
+        print("=" * 70)
+        print("⚠️  PRODUCTION DATABASE SETUP ⚠️")
+        print("=" * 70)
+        print(f"This will create a test item in {args.database} database.")
+        print("This is relatively safe (only creates/deletes 1 test item).")
+        print()
+        response = input("Continue? (yes/no): ")
+        if response.lower() not in ["yes", "y"]:
+            print("Cancelled by user")
+            sys.exit(0)
+        print()
+
+    success = setup_queue_collection(database_name=args.database, cleanup=not args.no_cleanup)
 
     if success:
         print()
         print("🎉 Setup successful! The job-queue collection is ready.")
         print()
-        print("⚠️  IMPORTANT: This only initializes the collection.")
-        print("   You still need to verify Portfolio frontend configuration:")
-        print()
-        print("   1. Check Portfolio's Firestore database configuration")
-        print("   2. Ensure it uses 'portfolio' database in production")
-        print("   3. Verify Firestore security rules allow writes to job-queue")
-        print()
+        if args.database == "portfolio":
+            print("⚠️  IMPORTANT: This only initializes the collection.")
+            print("   You still need to verify Portfolio frontend configuration:")
+            print()
+            print("   1. Check Portfolio's Firestore database configuration")
+            print("   2. Ensure it uses 'portfolio' database in production")
+            print("   3. Verify Firestore security rules allow writes to job-queue")
+            print()
 
     return 0 if success else 1
 

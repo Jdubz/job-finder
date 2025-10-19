@@ -1,10 +1,12 @@
 """Helper for scrapers to submit jobs to the queue."""
 
 import logging
+import uuid
 from typing import Any, Dict, List, Optional
 
 from job_finder.queue.manager import QueueManager
-from job_finder.queue.models import JobQueueItem, QueueItemType, QueueSource
+from job_finder.queue.models import JobQueueItem, JobSubTask, QueueItemType, QueueSource
+from job_finder.utils.url_utils import normalize_url
 
 logger = logging.getLogger(__name__)
 
@@ -64,33 +66,48 @@ class ScraperIntake:
                     logger.debug("Skipping job with missing or empty URL")
                     continue
 
+                # Normalize URL for consistent comparison
+                normalized_url = normalize_url(url)
+
                 # Check if URL already in queue
-                if self.queue_manager.url_exists_in_queue(url):
+                if self.queue_manager.url_exists_in_queue(normalized_url):
                     skipped_count += 1
-                    logger.debug(f"Job already in queue: {url}")
+                    logger.debug(f"Job already in queue: {normalized_url}")
                     continue
 
                 # Check if job already exists in job-matches
-                if self.job_storage and self.job_storage.job_exists(url):
+                if self.job_storage and self.job_storage.job_exists(normalized_url):
                     skipped_count += 1
-                    logger.debug(f"Job already exists in job-matches: {url}")
+                    logger.debug(f"Job already exists in job-matches: {normalized_url}")
                     continue
 
-                # Create queue item
+                # Create queue item with normalized URL and JOB_SCRAPE sub-task
+                # Generate tracking_id for this root job (all spawned items will inherit it)
+                tracking_id = str(uuid.uuid4())
+
                 # Note: Full job data will be re-scraped during processing if not provided
                 queue_item = JobQueueItem(
                     type=QueueItemType.JOB,
-                    url=url,
+                    url=normalized_url,
                     company_name=job.get("company", ""),
                     company_id=company_id,
                     source=source,
+                    sub_task=JobSubTask.SCRAPE,  # Required: Start at JOB_SCRAPE stage
                     scraped_data=(
                         job if len(job) > 2 else None
                     ),  # Include full job data if available
+                    tracking_id=tracking_id,  # Root tracking ID
+                    ancestry_chain=[],  # Root has no ancestors
+                    spawn_depth=0,  # Root starts at depth 0
                 )
 
                 # Add to queue
-                self.queue_manager.add_item(queue_item)
+                doc_id = self.queue_manager.add_item(queue_item)
+                # Set tracking_id as first item in ancestry chain
+                queue_item.ancestry_chain = [doc_id]
+                self.queue_manager.db.collection("job-queue").document(doc_id).update(
+                    {"ancestry_chain": [doc_id]}
+                )
                 added_count += 1
 
             except Exception as e:
@@ -129,9 +146,12 @@ class ScraperIntake:
                 logger.debug(f"Skipping company {company_name} with missing or empty URL")
                 return None
 
+            # Normalize URL for consistent comparison
+            normalized_url = normalize_url(url)
+
             # Check if URL already in queue
-            if self.queue_manager.url_exists_in_queue(url):
-                logger.debug(f"Company already in queue: {url}")
+            if self.queue_manager.url_exists_in_queue(normalized_url):
+                logger.debug(f"Company already in queue: {normalized_url}")
                 return None
 
             # Check if company already exists in companies collection
@@ -146,18 +166,30 @@ class ScraperIntake:
             # Import CompanySubTask
             from job_finder.queue.models import CompanySubTask
 
+            # Generate tracking_id for this root company (all spawned items will inherit it)
+            tracking_id = str(uuid.uuid4())
+
             # Create granular pipeline item starting with FETCH
             queue_item = JobQueueItem(
                 type=QueueItemType.COMPANY,
-                url=url,
+                url=normalized_url,
                 company_name=company_name,
                 source=source,
                 company_sub_task=CompanySubTask.FETCH,
+                tracking_id=tracking_id,  # Root tracking ID
+                ancestry_chain=[],  # Root has no ancestors
+                spawn_depth=0,  # Root starts at depth 0
             )
 
             # Add to queue
             doc_id = self.queue_manager.add_item(queue_item)
-            logger.info(f"Submitted company to granular pipeline: {company_name} (ID: {doc_id})")
+            # Set doc_id as first item in ancestry chain
+            self.queue_manager.db.collection("job-queue").document(doc_id).update(
+                {"ancestry_chain": [doc_id]}
+            )
+            logger.info(
+                f"Submitted company to granular pipeline: {company_name} (ID: {doc_id}, tracking_id: {tracking_id})"
+            )
             return doc_id
 
         except Exception as e:

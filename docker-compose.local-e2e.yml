@@ -1,0 +1,106 @@
+version: '3.8'
+
+# Local E2E Testing with Firebase Emulators
+# 
+# This setup connects job-finder to Firebase emulators running in the portfolio project.
+# It allows for local end-to-end testing without touching staging or production data.
+#
+# IMPORTANT: Tests use REAL AI APIs (not stubs)
+# - Requires valid ANTHROPIC_API_KEY or OPENAI_API_KEY
+# - Consumes API credits (~$0.01-0.05 per test run)
+# - Validates actual AI integration and match quality
+#
+# Prerequisites:
+#   1. Portfolio Firebase emulators must be running (make firebase-emulators in portfolio repo)
+#   2. Emulators should be accessible on host network
+#   3. AI API keys must be set in environment (.env file)
+#
+# Usage:
+#   make test-e2e-local            # Run local E2E test with Docker
+#   make test-e2e-local-verbose    # Run with verbose logging
+
+services:
+  job-finder-e2e:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: job-finder-e2e-local
+    
+    # Use host network to connect to portfolio's Firebase emulators
+    # Emulators typically run on:
+    #   - Firestore: localhost:8080
+    #   - Auth: localhost:9099
+    #   - UI: localhost:4000
+    network_mode: host
+    
+    environment:
+      # Firebase Emulator Connection
+      - FIRESTORE_EMULATOR_HOST=localhost:8080
+      - FIREBASE_AUTH_EMULATOR_HOST=localhost:9099
+      
+      # Environment Configuration
+      - ENVIRONMENT=local-e2e
+      
+      # Database Configuration (use emulator's default database)
+      - PROFILE_DATABASE_NAME=(default)
+      - STORAGE_DATABASE_NAME=(default)
+      
+      # API Keys (required for AI matching)
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      
+      # Disable cloud logging for local tests
+      - ENABLE_CLOUD_LOGGING=false
+      - LOG_LEVEL=DEBUG
+      
+      # Config paths
+      - CONFIG_PATH=/app/config/config.local-e2e.yaml
+      
+      # Test configuration
+      - E2E_TEST_MODE=true
+      - E2E_OUTPUT_DIR=/app/test_results
+    
+    volumes:
+      # Mount test results for easy access
+      - ./test_results:/app/test_results
+      
+      # Mount config for local E2E
+      - ./config:/app/config:ro
+      
+      # Mount logs
+      - ./logs:/app/logs
+      
+      # Mount source code for development (optional - comment out for production-like testing)
+      - ./src:/app/src:ro
+      - ./tests:/app/tests:ro
+    
+    # Override default entrypoint to run E2E test
+    command: python tests/e2e/data_collector.py --database "(default)" --fast-mode --output-dir /app/test_results/e2e_local_${TEST_RUN_ID:-$(date +%Y%m%d_%H%M%S)}
+    
+    # No restart policy - one-shot test execution
+    restart: "no"
+    
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+
+  # Optional: Standalone test runner (no Docker, direct Python execution)
+  # This is a template - actual execution happens via Makefile
+  test-runner:
+    profiles:
+      - manual
+    image: python:3.12-slim
+    network_mode: host
+    working_dir: /workspace
+    volumes:
+      - .:/workspace
+    environment:
+      - FIRESTORE_EMULATOR_HOST=localhost:8080
+      - FIREBASE_AUTH_EMULATOR_HOST=localhost:9099
+      - PROFILE_DATABASE_NAME=(default)
+      - STORAGE_DATABASE_NAME=(default)
+      - E2E_TEST_MODE=true
+    command: python tests/e2e/data_collector.py --database "(default)" --fast-mode

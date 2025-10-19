@@ -274,6 +274,24 @@ class JobQueueItem(BaseModel):
         description="Company pipeline step (fetch/extract/analyze/save). None = legacy monolithic processing",
     )
 
+    # Loop prevention fields (auto-generated if not provided)
+    tracking_id: str = Field(
+        default_factory=lambda: str(__import__("uuid").uuid4()),
+        description="UUID that tracks entire job lineage. Generated at root, inherited by all spawned children.",
+    )
+    ancestry_chain: List[str] = Field(
+        default_factory=list,
+        description="Chain of parent item IDs from root to current. Used to detect circular dependencies.",
+    )
+    spawn_depth: int = Field(
+        default=0,
+        description="Recursion depth in spawn chain. Root items = 0, increments by 1 with each spawn.",
+    )
+    max_spawn_depth: int = Field(
+        default=10,
+        description="Maximum allowed spawn depth before blocking to prevent infinite loops.",
+    )
+
     model_config = ConfigDict(use_enum_values=True)
 
     def to_firestore(self) -> Dict[str, Any]:

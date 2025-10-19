@@ -33,9 +33,9 @@ CYAN := \033[36m
 .DEFAULT_GOAL := help
 
 # Mark targets that don't create files
-.PHONY: help setup install dev-install clean test test-coverage test-e2e lint format type-check \
+.PHONY: help setup install dev-install clean test test-coverage test-e2e test-e2e-full test-e2e-local test-e2e-local-verbose test-e2e-local-full lint format type-check \
         run search docker-build docker-push docker-run docker-up docker-down docker-logs \
-        db-explore db-cleanup db-merge-companies db-setup-listings worker scheduler \
+        db-explore db-cleanup db-merge-companies db-setup-listings db-setup-config worker scheduler \
         deploy-staging deploy-production clean-cache clean-all
 
 ## === Help & Information ===
@@ -57,7 +57,11 @@ help: ## Show this help message
 	@echo "$(CYAN)TESTING$(RESET)"
 	@echo "  $(GREEN)make test$(RESET)               Run all tests"
 	@echo "  $(GREEN)make test-coverage$(RESET)      Run tests with coverage report"
-	@echo "  $(GREEN)make test-e2e$(RESET)           Run end-to-end queue tests"
+	@echo "  $(GREEN)make test-e2e$(RESET)           Fast E2E test: 1 job/type, validate decision tree (90-120s)"
+	@echo "  $(GREEN)make test-e2e-full$(RESET)      Full E2E test: all prod data, quality assessment (monitors until complete)"
+	@echo "  $(GREEN)make test-e2e-local$(RESET)     Local E2E test: Uses Firebase emulators (no staging/prod data)"
+	@echo "  $(GREEN)make test-e2e-local-verbose$(RESET)  Local E2E test with verbose logging"
+	@echo "  $(GREEN)make test-e2e-local-full$(RESET)  Full local E2E test (20+ jobs with emulators)"
 	@echo "  $(GREEN)make test-specific$(RESET) TEST=<name>  Run specific test file"
 	@echo ""
 	@echo "$(CYAN)CODE QUALITY$(RESET)"
@@ -80,6 +84,7 @@ help: ## Show this help message
 	@echo "  $(GREEN)make db-cleanup$(RESET)         Clean up Firestore data"
 	@echo "  $(GREEN)make db-merge-companies$(RESET) Merge duplicate company records"
 	@echo "  $(GREEN)make db-setup-listings$(RESET)  Setup job listings in database"
+	@echo "  $(GREEN)make db-setup-config$(RESET)    Setup Firestore configuration (safe - only creates if missing)"
 	@echo ""
 	@echo "$(CYAN)DEPLOYMENT$(RESET)"
 	@echo "  $(GREEN)make deploy-staging$(RESET)     Deploy to staging environment"
@@ -146,9 +151,115 @@ test-coverage: ## Run tests with coverage report
 	@echo "$(CYAN)Running tests with coverage...$(RESET)"
 	@. $(VENV_DIR)/bin/activate && $(PYTEST) $(TEST_DIR) --cov=$(SRC_DIR)/job_finder --cov-report=html --cov-report=term
 
-test-e2e: ## Run end-to-end queue tests
-	@echo "$(CYAN)Running end-to-end tests...$(RESET)"
-	@. $(VENV_DIR)/bin/activate && $(PYTHON) $(SCRIPTS_DIR)/testing/test_e2e_queue.py
+test-e2e: ## Run fast E2E test - submits jobs sequentially, monitors each until complete (90-120s per job)
+	@echo "$(CYAN)Running fast E2E test (sequential job submission)...$(RESET)"
+	@echo "$(GREEN)✓ Safe: Testing on portfolio-staging (not production)$(RESET)"
+	@echo "$(BLUE)ℹ️  Strategy: Submit job → monitor until complete → submit next job$(RESET)"
+	@echo "$(CYAN)Purpose: Validate state-driven pipeline and loop prevention$(RESET)"
+	@sleep 1
+	@mkdir -p test_results
+	@export TEST_RUN_ID="e2e_quick_$$(date +%s)" && \
+	export RESULTS_DIR="test_results/$${TEST_RUN_ID}" && \
+	export GOOGLE_APPLICATION_CREDENTIALS="$(shell pwd)/credentials/serviceAccountKey.json" && \
+	mkdir -p "$${RESULTS_DIR}" && \
+	echo "$(BLUE)Test Run ID: $${TEST_RUN_ID}$(RESET)" && \
+	echo "$(BLUE)Test Database: portfolio-staging$(RESET)" && \
+	echo "$(BLUE)Source Database: portfolio (production - read only)$(RESET)" && \
+	echo "$(BLUE)Results Directory: $${RESULTS_DIR}$(RESET)" && \
+	echo "" && \
+	echo "$(CYAN)[1/2] Sequential job submission with monitoring...$(RESET)" && \
+	. $(VENV_DIR)/bin/activate && $(PYTHON) tests/e2e/data_collector.py \
+		--database portfolio-staging \
+		--source-database portfolio \
+		--output-dir "$${RESULTS_DIR}" \
+		--test-count 2 \
+		--test-mode decision-tree \
+		--verbose && \
+	echo "" && \
+	echo "$(CYAN)[2/2] Validating decision tree results...$(RESET)" && \
+	. $(VENV_DIR)/bin/activate && $(PYTHON) tests/e2e/validate_decision_tree.py \
+		--database portfolio-staging \
+		--results-dir "$${RESULTS_DIR}" && \
+	echo "" && \
+	echo "$(GREEN)✓ Fast E2E Test Complete!$(RESET)" && \
+	echo "$(YELLOW)Results: $${RESULTS_DIR}$(RESET)"
+
+test-e2e-full: ## Run complete E2E suite with ALL production data for quality assessment (monitors until complete)
+	@echo "$(CYAN)Starting FULL E2E test suite (quality assessment)...$(RESET)"
+	@echo "$(YELLOW)⚠️  WARNING: This will CLEAR collections in portfolio-staging database$(RESET)"
+	@echo "$(GREEN)✓ Safe: Testing on portfolio-staging (not production)$(RESET)"
+	@echo "$(BLUE)ℹ️  This will process ALL production data through the pipeline$(RESET)"
+	@echo "$(CYAN)Purpose: Data quality validation, comprehensive system test$(RESET)"
+	@sleep 2
+	@mkdir -p test_results
+	@export TEST_RUN_ID="e2e_full_$$(date +%s)" && \
+	export RESULTS_DIR="test_results/$${TEST_RUN_ID}" && \
+	export GOOGLE_APPLICATION_CREDENTIALS="$(shell pwd)/credentials/serviceAccountKey.json" && \
+	mkdir -p "$${RESULTS_DIR}" && \
+	echo "$(BLUE)Test Run ID: $${TEST_RUN_ID}$(RESET)" && \
+	echo "$(BLUE)Test Database: portfolio-staging (staging)$(RESET)" && \
+	echo "$(BLUE)Source Database: portfolio (production - read only)$(RESET)" && \
+	echo "$(BLUE)Results Directory: $${RESULTS_DIR}$(RESET)" && \
+	echo "" && \
+	echo "$(CYAN)[1/5] Seeding staging with ALL production data...$(RESET)" && \
+	. $(VENV_DIR)/bin/activate && $(PYTHON) tests/e2e/data_collector.py \
+		--database portfolio-staging \
+		--source-database portfolio \
+		--output-dir "$${RESULTS_DIR}" \
+		--backup-dir "$${RESULTS_DIR}/backup" \
+		--clean-before \
+		--test-mode full \
+		--verbose && \
+	echo "" && \
+	echo "$(CYAN)[2/5] Monitoring queue until all jobs complete...$(RESET)" && \
+	. $(VENV_DIR)/bin/activate && $(PYTHON) tests/e2e/queue_monitor.py \
+		--database portfolio-staging \
+		--timeout 3600 \
+		--stream-logs \
+		--output "$${RESULTS_DIR}/monitor.log" && \
+	echo "" && \
+	echo "$(CYAN)[3/5] Analyzing results and quality metrics...$(RESET)" && \
+	. $(VENV_DIR)/bin/activate && $(PYTHON) tests/e2e/results_analyzer.py \
+		--results-dir "$${RESULTS_DIR}" \
+		--output-dir "$${RESULTS_DIR}/analysis" \
+		--verbose && \
+	echo "" && \
+	echo "$(CYAN)[4/5] Generating data quality report...$(RESET)" && \
+	. $(VENV_DIR)/bin/activate && $(PYTHON) tests/e2e/quality_report.py \
+		--database portfolio-staging \
+		--results-dir "$${RESULTS_DIR}" \
+		--output "$${RESULTS_DIR}/quality_report.html" && \
+	echo "" && \
+	echo "$(CYAN)[5/5] Saving comprehensive results...$(RESET)" && \
+	. $(VENV_DIR)/bin/activate && $(PYTHON) -c "import json; import sys; sys.path.insert(0, 'tests'); from e2e.data_collector import TestRunResult; print('Results saved')" && \
+	echo "" && \
+	echo "$(GREEN)✓ Full E2E Test Suite Complete!$(RESET)" && \
+	echo "$(YELLOW)Results saved to: $${RESULTS_DIR}$(RESET)" && \
+	echo "$(YELLOW)Quality report: $${RESULTS_DIR}/quality_report.html$(RESET)"
+
+test-e2e-local: ## Run local E2E test with Firebase emulators (fast mode, Docker)
+	@echo "$(CYAN)Running local E2E test with Firebase emulators...$(RESET)"
+	@echo "$(GREEN)✓ Safe: Uses Firebase emulators (no staging/prod data)$(RESET)"
+	@echo "$(BLUE)ℹ️  Prerequisites: Portfolio emulators must be running$(RESET)"
+	@echo "$(CYAN)Start emulators: cd ~/path/to/portfolio && make firebase-emulators$(RESET)"
+	@sleep 1
+	@. $(VENV_DIR)/bin/activate && $(PYTHON) tests/e2e/run_local_e2e.py
+
+test-e2e-local-verbose: ## Run local E2E test with verbose logging
+	@echo "$(CYAN)Running local E2E test with verbose logging...$(RESET)"
+	@echo "$(GREEN)✓ Safe: Uses Firebase emulators (no staging/prod data)$(RESET)"
+	@. $(VENV_DIR)/bin/activate && $(PYTHON) tests/e2e/run_local_e2e.py --verbose
+
+test-e2e-local-full: ## Run full local E2E test (20+ jobs with emulators)
+	@echo "$(CYAN)Running FULL local E2E test with Firebase emulators...$(RESET)"
+	@echo "$(GREEN)✓ Safe: Uses Firebase emulators (no staging/prod data)$(RESET)"
+	@echo "$(YELLOW)⚠️  This will take longer (20+ jobs)$(RESET)"
+	@. $(VENV_DIR)/bin/activate && $(PYTHON) tests/e2e/run_local_e2e.py --full
+
+test-e2e-local-no-docker: ## Run local E2E test without Docker (direct Python)
+	@echo "$(CYAN)Running local E2E test without Docker...$(RESET)"
+	@echo "$(GREEN)✓ Safe: Uses Firebase emulators (no staging/prod data)$(RESET)"
+	@. $(VENV_DIR)/bin/activate && $(PYTHON) tests/e2e/run_local_e2e.py --no-docker
 
 test-specific: ## Run specific test file (use TEST=filename)
 	@if [ -z "$(TEST)" ]; then \
@@ -242,6 +353,10 @@ db-setup-listings: ## Setup job listings in database
 db-cleanup-matches: ## Clean up job matches
 	@echo "$(CYAN)Cleaning up job matches...$(RESET)"
 	@. $(VENV_DIR)/bin/activate && $(PYTHON) $(SCRIPTS_DIR)/database/cleanup_job_matches.py
+
+db-setup-config: ## Setup Firestore configuration (only creates if missing)
+	@echo "$(CYAN)Setting up Firestore configuration...$(RESET)"
+	@. $(VENV_DIR)/bin/activate && $(PYTHON) $(SCRIPTS_DIR)/setup_firestore_config.py
 
 ## === Deployment ===
 
