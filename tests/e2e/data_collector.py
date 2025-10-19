@@ -816,28 +816,11 @@ class E2ETestDataCollector:
             result.jobs_failed = failed
             logger.info("")
 
-            # Step 5: Wait for processing and collect results
-            logger.info("STEP 5: WAITING FOR QUEUE PROCESSING")
+            # Step 5: Collect final results
+            logger.info("STEP 5: COLLECTING FINAL RESULTS")
             logger.info("-" * 80)
-            import time
-
-            logger.info("Waiting for queue worker to process jobs...")
-            logger.info("Worker polls every 60 seconds and processes in FIFO order.")
-            logger.info("Each job goes through: SCRAPE → EXTRACT → ANALYZE → SAVE")
-            logger.info("Expected time: ~30-60 seconds per job")
-            logger.info("")
-
-            # Wait long enough for worker to pick up and process all jobs
-            # Worker polls every 60s, so wait at least 2 cycles
-            wait_time = 180  # 3 minutes
-            logger.info(f"Waiting {wait_time} seconds for processing...")
-
-            # Poll every 30 seconds to show progress
-            for i in range(wait_time // 30):
-                time.sleep(30)
-                logger.info(f"  ... {(i + 1) * 30}s elapsed ...")
-
-            logger.info("Processing wait complete. Collecting results...")
+            logger.info("All jobs have been submitted and monitored to completion.")
+            logger.info("Collecting final state from Firestore...")
             logger.info("")
 
             # Get final collection counts
