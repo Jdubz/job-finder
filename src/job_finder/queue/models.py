@@ -274,9 +274,10 @@ class JobQueueItem(BaseModel):
         description="Company pipeline step (fetch/extract/analyze/save). None = legacy monolithic processing",
     )
 
-    # Loop prevention fields (REQUIRED - no backward compatibility)
+    # Loop prevention fields (auto-generated if not provided)
     tracking_id: str = Field(
-        description="UUID that tracks entire job lineage. Generated at root, inherited by all spawned children."
+        default_factory=lambda: str(__import__("uuid").uuid4()),
+        description="UUID that tracks entire job lineage. Generated at root, inherited by all spawned children.",
     )
     ancestry_chain: List[str] = Field(
         default_factory=list,
