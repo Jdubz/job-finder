@@ -304,38 +304,45 @@ class TestJobSubmitter:
 
         jobs = []
 
-        # Get recent successful jobs from job-matches
-        query = (
-            self.source_db.collection("job-matches")
-            .order_by("created_at", direction="DESCENDING")
-            .limit(self.test_count * 2)  # Get extra in case some are duplicates
-        )
+        try:
+            # Get jobs from job-matches (no ordering to avoid index issues)
+            # Just get the first few jobs we find
+            query = self.source_db.collection("job-matches").limit(self.test_count * 3)
 
-        for doc in query.stream():
-            if len(jobs) >= self.test_count:
-                break
+            for doc in query.stream():
+                if len(jobs) >= self.test_count:
+                    break
 
-            data = doc.to_dict()
-            if not data:
-                continue
+                data = doc.to_dict()
+                if not data:
+                    continue
 
-            url = data.get("url")
-            company = data.get("company")
-            title = data.get("title")
-            description = data.get("description", "")
+                url = data.get("url")
+                company = data.get("company")
+                title = data.get("title")
+                description = data.get("description", "")
 
-            if url and company and title:
-                jobs.append(
-                    {
-                        "company_name": company,
-                        "job_title": title,
-                        "job_url": url,
-                        "description": description,
-                        "expected_behavior": "should_reprocess",
-                    }
-                )
+                if url and company and title:
+                    jobs.append(
+                        {
+                            "company_name": company,
+                            "job_title": title,
+                            "job_url": url,
+                            "description": description,
+                            "expected_behavior": "should_reprocess",
+                        }
+                    )
+                    logger.info(f"  Found: {title} at {company}")
+
+        except Exception as e:
+            logger.error(f"Error fetching test jobs from production: {e}")
 
         logger.info(f"Found {len(jobs)} real job URLs for testing")
+
+        if len(jobs) == 0:
+            logger.warning("No jobs found in production database!")
+            logger.warning("Check that job-matches collection has documents")
+
         return jobs
 
     def submit_test_job(self, test_job: Dict[str, Any], test_run_id: str) -> TestJobSubmission:
