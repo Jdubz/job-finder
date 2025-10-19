@@ -399,9 +399,57 @@ class TestJobSubmitter:
         record.duration_seconds = time.time() - start_time
         return record
 
+    def wait_for_queue_completion(self, timeout: int = 180, poll_interval: int = 5) -> bool:
+        """
+        Wait for queue to complete (no pending/processing items).
+
+        Args:
+            timeout: Maximum seconds to wait
+            poll_interval: Seconds between checks
+
+        Returns:
+            True if queue completed, False if timeout
+        """
+        import time
+
+        start_time = time.time()
+        logger.info("Waiting for queue to complete...")
+
+        while True:
+            elapsed = time.time() - start_time
+
+            if elapsed > timeout:
+                logger.error(f"Timeout waiting for queue completion ({timeout}s)")
+                return False
+
+            # Count active items
+            pending_count = len(
+                list(self.db.collection("job-queue").where("status", "==", "pending").stream())
+            )
+            processing_count = len(
+                list(self.db.collection("job-queue").where("status", "==", "processing").stream())
+            )
+
+            active_count = pending_count + processing_count
+
+            if active_count == 0:
+                logger.info(f"✓ Queue complete in {elapsed:.1f}s")
+                return True
+
+            logger.info(
+                f"  [{elapsed:.0f}s] Active: {active_count} (pending: {pending_count}, processing: {processing_count})"
+            )
+            time.sleep(poll_interval)
+
     def submit_all_test_jobs(self, test_run_id: str) -> List[TestJobSubmission]:
         """
-        Submit all test jobs.
+        Submit test jobs one at a time, waiting for each to complete before submitting next.
+
+        This sequential approach ensures:
+        - Clear cause-and-effect for debugging
+        - Each job's spawned items are processed before next job
+        - Easy to identify which job caused issues
+        - Better resource usage (no queue flooding)
 
         Args:
             test_run_id: Test run identifier
@@ -410,9 +458,33 @@ class TestJobSubmitter:
             List of submission records
         """
         records = []
-        for test_job in self.TEST_JOBS:
+
+        for i, test_job in enumerate(self.TEST_JOBS, 1):
+            logger.info("=" * 80)
+            logger.info(f"SUBMITTING JOB {i}/{len(self.TEST_JOBS)}")
+            logger.info("=" * 80)
+
+            # Submit job
             record = self.submit_test_job(test_job, test_run_id)
             records.append(record)
+
+            if record.actual_result == "queued":
+                # Wait for this job to complete before submitting next
+                logger.info(f"Monitoring queue until job {i} completes...")
+                completed = self.wait_for_queue_completion(timeout=180, poll_interval=5)
+
+                if not completed:
+                    logger.warning(f"Job {i} did not complete in time. Stopping test.")
+                    break
+
+                logger.info(f"✓ Job {i} complete. Ready for next job.\n")
+            else:
+                logger.info(f"Job {i} was not queued ({record.actual_result}). Moving to next.\n")
+
+        logger.info("=" * 80)
+        logger.info(f"ALL JOBS SUBMITTED: {len(records)}/{len(self.TEST_JOBS)}")
+        logger.info("=" * 80)
+
         return records
 
     def _count_existing_jobs(self, test_job: Dict[str, Any]) -> int:

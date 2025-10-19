@@ -147,10 +147,10 @@ test-coverage: ## Run tests with coverage report
 	@echo "$(CYAN)Running tests with coverage...$(RESET)"
 	@. $(VENV_DIR)/bin/activate && $(PYTEST) $(TEST_DIR) --cov=$(SRC_DIR)/job_finder --cov-report=html --cov-report=term
 
-test-e2e: ## Run fast E2E test with 1 job of each type to validate decision tree logic (90-120s)
-	@echo "$(CYAN)Running fast E2E test (decision tree validation)...$(RESET)"
+test-e2e: ## Run fast E2E test - submits jobs sequentially, monitors each until complete (90-120s per job)
+	@echo "$(CYAN)Running fast E2E test (sequential job submission)...$(RESET)"
 	@echo "$(GREEN)✓ Safe: Testing on portfolio-staging (not production)$(RESET)"
-	@echo "$(BLUE)ℹ️  Test: 1 job of each type (JOB_SCRAPE, COMPANY, SOURCE_DISCOVERY)$(RESET)"
+	@echo "$(BLUE)ℹ️  Strategy: Submit job → monitor until complete → submit next job$(RESET)"
 	@echo "$(CYAN)Purpose: Validate state-driven pipeline and loop prevention$(RESET)"
 	@sleep 1
 	@mkdir -p test_results
@@ -160,23 +160,19 @@ test-e2e: ## Run fast E2E test with 1 job of each type to validate decision tree
 	mkdir -p "$${RESULTS_DIR}" && \
 	echo "$(BLUE)Test Run ID: $${TEST_RUN_ID}$(RESET)" && \
 	echo "$(BLUE)Test Database: portfolio-staging$(RESET)" && \
+	echo "$(BLUE)Source Database: portfolio (production - read only)$(RESET)" && \
 	echo "$(BLUE)Results Directory: $${RESULTS_DIR}$(RESET)" && \
 	echo "" && \
-	echo "$(CYAN)[1/3] Submitting test jobs (1 of each type)...$(RESET)" && \
+	echo "$(CYAN)[1/2] Sequential job submission with monitoring...$(RESET)" && \
 	. $(VENV_DIR)/bin/activate && $(PYTHON) tests/e2e/data_collector.py \
 		--database portfolio-staging \
+		--source-database portfolio \
 		--output-dir "$${RESULTS_DIR}" \
-		--test-count 1 \
+		--test-count 2 \
 		--test-mode decision-tree \
 		--verbose && \
 	echo "" && \
-	echo "$(CYAN)[2/3] Monitoring queue until complete...$(RESET)" && \
-	. $(VENV_DIR)/bin/activate && $(PYTHON) tests/e2e/queue_monitor.py \
-		--database portfolio-staging \
-		--timeout 180 \
-		--output "$${RESULTS_DIR}/monitor.log" && \
-	echo "" && \
-	echo "$(CYAN)[3/3] Validating decision tree results...$(RESET)" && \
+	echo "$(CYAN)[2/2] Validating decision tree results...$(RESET)" && \
 	. $(VENV_DIR)/bin/activate && $(PYTHON) tests/e2e/validate_decision_tree.py \
 		--database portfolio-staging \
 		--results-dir "$${RESULTS_DIR}" && \
