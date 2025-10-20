@@ -112,11 +112,47 @@ class FirestoreJobStorage:
 
         return role.strip()
 
+    def _get_existing_job_id(self, normalized_url: str, user_id: Optional[str] = None) -> Optional[str]:
+        """
+        Check if a job with the normalized URL already exists.
+
+        Args:
+            normalized_url: Normalized job URL
+            user_id: Optional user ID for multi-user support
+
+        Returns:
+            Document ID if job exists, None otherwise
+        """
+        if not self.db or not normalized_url:
+            return None
+
+        try:
+            query = self.db.collection("job-matches").where("url", "==", normalized_url)
+
+            if user_id:
+                query = query.where("userId", "==", user_id)
+
+            query = query.limit(1)
+            docs = list(query.stream())
+
+            if docs:
+                return docs[0].id
+
+            return None
+
+        except Exception as e:
+            logger.warning(f"Error checking for existing job: {e}")
+            return None
+
     def save_job_match(
         self, job: Dict[str, Any], match_result: "JobMatchResult", user_id: Optional[str] = None
     ) -> str:
         """
         Save a job match to Firestore.
+
+        Checks for duplicates before saving. If a job with the same normalized URL
+        already exists, logs and skips the save operation, returning the existing
+        document ID.
 
         Args:
             job: Job posting dictionary
@@ -124,7 +160,7 @@ class FirestoreJobStorage:
             user_id: Optional user ID for multi-user support
 
         Returns:
-            Document ID of saved job match
+            Document ID of saved job match (new or existing)
         """
         if not self.db:
             raise RuntimeError("Firestore not initialized")
@@ -136,6 +172,16 @@ class FirestoreJobStorage:
         # Normalize URL for consistent storage and deduplication
         job_url = job.get("url", "")
         normalized_url = normalize_url(job_url) if job_url else ""
+
+        # Check for duplicate before saving
+        if normalized_url:
+            existing_doc_id = self._get_existing_job_id(normalized_url, user_id)
+            if existing_doc_id:
+                logger.info(
+                    f"[DB:DUPLICATE] Job already exists: {title} at {job.get('company')} "
+                    f"(URL: {normalized_url[:60]}..., existing ID: {existing_doc_id})"
+                )
+                return existing_doc_id
 
         # Build job match document
         # Note: Field names use camelCase for Firestore storage
@@ -191,7 +237,8 @@ class FirestoreJobStorage:
             doc_ref = self.db.collection("job-matches").add(job_match)
             doc_id = doc_ref[1].id
             logger.info(
-                f"Saved job match: {job.get('title')} at {job.get('company')} (ID: {doc_id})"
+                f"[DB:CREATE] Saved job match: {job.get('title')} at {job.get('company')} "
+                f"(ID: {doc_id}, Score: {match_result.match_score})"
             )
             return doc_id
 
