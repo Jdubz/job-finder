@@ -142,7 +142,7 @@ job-finder-worker/
 - **Deployment**: Docker (Portainer on NAS)
 
 ### Key Libraries
-- **Web Scraping**: requests, BeautifulSoup4, lxml
+- **Web Scraping**: requests, beautifulsoup4, lxml
 - **AI/LLM**: anthropic, openai
 - **Cloud**: google-cloud-firestore, google-cloud-logging
 - **Testing**: pytest, pytest-cov
