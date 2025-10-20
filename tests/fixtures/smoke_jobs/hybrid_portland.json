@@ -1,0 +1,11 @@
+{
+  "title": "Full Stack Developer",
+  "company": "Portland Software Co",
+  "company_website": "https://portlandsoft.example.com",
+  "location": "Portland, OR (Hybrid)",
+  "description": "Join our Portland-based team building modern web applications. You'll work with React, TypeScript, Node.js, and PostgreSQL. We offer a flexible hybrid schedule with 2-3 days in office. Requirements: 3+ years of full-stack development, strong JavaScript/TypeScript skills, experience with React and Node.js. Tech stack: React, TypeScript, Node.js, PostgreSQL, GraphQL, Docker. Portland office in the Pearl District.",
+  "url": "https://portlandsoft.example.com/jobs/fullstack-dev-456",
+  "posted_date": "2025-10-12",
+  "salary": "$130,000 - $160,000",
+  "test_case_notes": "Hybrid job with Portland location - should receive Portland office bonus. Tests timezone scoring and location preference filtering."
+}

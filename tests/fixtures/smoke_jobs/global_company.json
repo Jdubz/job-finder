@@ -1,0 +1,11 @@
+{
+  "title": "Software Development Engineer II",
+  "company": "Amazon",
+  "company_website": "https://amazon.com",
+  "location": "Seattle, WA / Remote",
+  "description": "Amazon Web Services (AWS) is looking for talented software engineers to build cloud infrastructure. You will design and develop distributed systems that power AWS services used by millions. Requirements: BS in Computer Science or equivalent, 3+ years of professional software development, experience with distributed systems, strong data structures and algorithms knowledge. Tech stack: Java, Python, AWS, DynamoDB, Lambda, Kubernetes. Remote options available for experienced candidates.",
+  "url": "https://amazon.jobs/en/jobs/12345/software-development-engineer-ii",
+  "posted_date": "2025-10-10",
+  "salary": "$150,000 - $200,000",
+  "test_case_notes": "Large global company (Fortune 500). Should not be penalized for HQ timezone (large company exception). Tests company size scoring and global company handling."
+}

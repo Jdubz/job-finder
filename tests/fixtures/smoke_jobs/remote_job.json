@@ -1,0 +1,11 @@
+{
+  "title": "Senior Software Engineer - Backend",
+  "company": "TechCorp Inc",
+  "company_website": "https://techcorp.example.com",
+  "location": "Remote (US)",
+  "description": "We are seeking a Senior Software Engineer to join our backend team. You will work with Python, Django, and PostgreSQL to build scalable APIs. Requirements: 5+ years of backend development experience, strong understanding of RESTful APIs, experience with microservices architecture. Tech stack: Python, Django, PostgreSQL, Docker, Kubernetes, AWS. Remote-first company with a distributed team across the US.",
+  "url": "https://techcorp.example.com/careers/senior-backend-engineer-123",
+  "posted_date": "2025-10-15",
+  "salary": "$150,000 - $180,000",
+  "test_case_notes": "Remote job with clear tech stack alignment (Python, Django). Should pass filters and score well on match analysis. Tests remote location filtering."
+}

@@ -1,0 +1,100 @@
+name: Queue Smoke Test
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to test'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+      timeout:
+        description: 'Timeout in seconds'
+        required: false
+        default: '600'
+        type: string
+
+jobs:
+  smoke-test:
+    name: Run Queue Pipeline Smoke Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt -r requirements-test.txt
+      
+      - name: Set up credentials
+        env:
+          FIREBASE_CREDENTIALS: ${{ secrets.FIREBASE_CREDENTIALS }}
+        run: |
+          mkdir -p credentials
+          echo "$FIREBASE_CREDENTIALS" > credentials/serviceAccountKey.json
+      
+      - name: Run smoke test with AI stubs
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/credentials/serviceAccountKey.json
+          USE_AI_STUBS: 'true'
+          PYTHONPATH: ${{ github.workspace }}/src
+        run: |
+          python scripts/smoke/queue_pipeline_smoke.py \
+            --env ${{ github.event.inputs.environment }} \
+            --timeout ${{ github.event.inputs.timeout }} \
+            --verbose
+      
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-test-results-${{ github.event.inputs.environment }}
+          path: test_results/queue_smoke/
+          retention-days: 30
+      
+      - name: Check validation status
+        run: |
+          # Find the most recent report
+          REPORT_FILE=$(find test_results/queue_smoke -name "report.json" -type f -print0 | xargs -0 ls -t | head -n 1)
+          
+          if [ -f "$REPORT_FILE" ]; then
+            echo "Report found: $REPORT_FILE"
+            
+            # Extract validation status
+            PASSED=$(python -c "import json; data=json.load(open('$REPORT_FILE')); print(data['validation']['passed'])")
+            
+            if [ "$PASSED" = "True" ]; then
+              echo "✅ Smoke test validation PASSED"
+              exit 0
+            else
+              echo "❌ Smoke test validation FAILED"
+              echo "Check test results artifact for details"
+              exit 1
+            fi
+          else
+            echo "❌ No report file found"
+            exit 1
+          fi
+      
+      - name: Post summary comment
+        if: always()
+        run: |
+          REPORT_FILE=$(find test_results/queue_smoke -name "report.md" -type f -print0 | xargs -0 ls -t | head -n 1)
+          
+          if [ -f "$REPORT_FILE" ]; then
+            echo "## Smoke Test Results" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            cat "$REPORT_FILE" >> $GITHUB_STEP_SUMMARY
+          fi
