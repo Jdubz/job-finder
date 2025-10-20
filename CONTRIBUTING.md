@@ -68,6 +68,25 @@ pytest
 - **Tests**: Maintain test coverage above 80%
 - **Documentation**: Update docstrings and README as needed
 
+### Testing Naming Conventions
+
+All test files must follow pytest's discovery patterns:
+
+- **Test files**: Must start with `test_` (e.g., `test_ai_matcher.py`)
+- **Test classes**: Must start with `Test` (e.g., `class TestAIMatcher`)
+- **Test functions**: Must start with `test_` (e.g., `def test_analyze_match()`)
+
+For detailed guidelines and examples, see [Testing Naming Conventions](docs/testing/naming-conventions.md).
+
+To verify your tests will be discovered by pytest:
+```bash
+# Check if your tests are discovered
+pytest --collect-only
+
+# Generate test inventory report
+python scripts/testing/list_tests.py
+```
+
 ## Adding New Scrapers
 
 When adding support for a new job site:
