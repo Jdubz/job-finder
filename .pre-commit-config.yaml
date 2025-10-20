@@ -1,5 +1,5 @@
 # Pre-commit hooks for job-finder
-# Install: pip install pre-commit && pre-commit install
+# Install: pip install pre-commit && pre-commit install && pre-commit install --hook-type pre-push
 # Run manually: pre-commit run --all-files
 
 repos:
@@ -61,3 +61,12 @@ repos:
           - types-python-dateutil
         args: [--config-file=pyproject.toml]
         exclude: ^(tests/|venv/|\.venv/)
+
+  - repo: local
+    hooks:
+      - id: run-unit-tests-pre-push
+        name: Run unit tests before push
+        entry: make test
+        language: system
+        pass_filenames: false
+        stages: [push]
