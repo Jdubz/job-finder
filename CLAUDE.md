@@ -13,23 +13,39 @@ Job Finder is an AI-powered web scraping application that finds online job posti
 - **Application Prioritization**: Categorizes jobs as High/Medium/Low priority
 - **Customization Recommendations**: Provides specific guidance for tailoring applications
 
-### Integration with job-finder-FE Project
+### Project Management
 
-**IMPORTANT**: This tool is a **data pipeline** that feeds job matching data to the [job-finder-FE project](https://github.com/Jdubz/portfolio/).
+**IMPORTANT**: This repository is part of a multi-repository project managed centrally.
 
-- **No UI needed here**: All job review, analysis, and management happens in the job-finder-FE project's web interface
-- **This tool's purpose**: Scrape jobs, analyze matches, store results in Firestore
-- **job-finder-FE's purpose**: Display matched jobs, manage applications, generate tailored resumes
-- **Data flow**: job-finder (scraping + AI analysis) → Firestore → portfolio (UI + user interaction)
+- **Task Tracking**: ALL task tracking is done in [job-finder-app-manager](https://github.com/Jdubz/job-finder-app-manager)
+- **Worker Assignment**: Check `CLAUDE_WORKER_A.md` in the manager repo for your assigned tasks
+- **Workflow**: Work in dedicated worktree on your worker branch, submit PRs to `staging`
+- **Documentation**: Architecture and setup docs live here, project management lives in manager repo
+
+**This Repository's Purpose:**
+- Queue worker that processes jobs from Firestore
+- Scrapes job boards and analyzes matches with AI
+- Stores results in Firestore for frontend consumption
+- No UI - frontend lives in `job-finder-FE` repository
 
 **Shared Resources:**
 - **Firestore Collections**: `job-queue`, `job-matches`, `companies`, `job-sources`
 - **Google Cloud Logging**: Structured logs with environment labels for real-time monitoring (see [CLOUD_LOGGING_DESIGN.md](docs/CLOUD_LOGGING_DESIGN.md))
 
+**Integration:**
+- **Frontend**: [job-finder-FE](https://github.com/Jdubz/job-finder-FE) - React UI for job review and management
+- **Backend**: [job-finder-BE](https://github.com/Jdubz/job-finder-BE) - Firebase Cloud Functions API
+- **Shared Types**: [job-finder-shared-types](https://github.com/Jdubz/job-finder-shared-types) - TypeScript types for Firestore
+
 When considering improvements or new features:
+- ❌ **DO NOT** create tasks or roadmaps in this repo - use manager repo
 - ❌ **DO NOT** build a web UI, dashboard, or visualization in this project
 - ✅ **DO** focus on improving scraping, filtering, matching quality, and data structure
+<<<<<<< HEAD
 - ✅ **DO** ensure data is properly structured for consumption by the job-finder-FE project
+=======
+- ✅ **DO** ensure data is properly structured for consumption by the frontend
+>>>>>>> 66f46a9 (Clean up documentation: Remove task tracking, update project references)
 - ✅ **DO** use structured logging for visibility into worker operations
 
 ## Commands
