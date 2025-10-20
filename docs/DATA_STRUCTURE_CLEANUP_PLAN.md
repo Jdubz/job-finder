@@ -19,7 +19,7 @@ This document outlines a plan to clean up deprecated, legacy, and confusing fiel
 **Impact**:
 - Error-prone manual transformations in [firestore_storage.py](../src/job_finder/storage/firestore_storage.py)
 - Confusion when reading code (which convention applies where?)
-- TypeScript types in Portfolio must match Firestore (camelCase)
+- TypeScript types in job-finder-FE must match Firestore (camelCase)
 
 ---
 
@@ -31,12 +31,12 @@ This document outlines a plan to clean up deprecated, legacy, and confusing fiel
 - **Scrapers**: Populate with job metadata (department names from Greenhouse, requisition IDs from Workday)
 - **AI Matcher**: Overwrites with ATS keywords from `resume_intake_data["keywords_to_include"]`
 - **Documentation**: Says "populated by AI analysis" but scrapers also populate it
-- **Portfolio**: Reads from `resumeIntakeData.ats_keywords` for resume generation (ignores job-level `keywords`)
+- **job-finder-FE**: Reads from `resumeIntakeData.ats_keywords` for resume generation (ignores job-level `keywords`)
 
 **Impact**:
 - Misleading field name (what kind of keywords?)
 - Data loss (scraper metadata overwritten by AI)
-- Unused field (Portfolio doesn't read it)
+- Unused field (job-finder-FE doesn't read it)
 
 ---
 
@@ -84,7 +84,7 @@ This document outlines a plan to clean up deprecated, legacy, and confusing fiel
 
 **Impact**:
 - Unclear contracts between systems
-- Potential null reference errors in Portfolio
+- Potential null reference errors in job-finder-FE
 - No way to distinguish "not scraped" from "not available"
 
 ---
@@ -95,7 +95,7 @@ This document outlines a plan to clean up deprecated, legacy, and confusing fiel
 
 **Issues**:
 - Field `keywords_to_include` in resume intake is mapped to job-level `keywords` field
-- But Portfolio reads `resumeIntakeData.ats_keywords` instead
+- But job-finder-FE reads `resumeIntakeData.ats_keywords` instead
 - Documentation mentions `keywords_to_include` but code uses various names
 - Unclear if `ats_keywords` and `keywords_to_include` are the same thing
 
@@ -179,7 +179,7 @@ def from_firestore_fields(firestore_doc: Dict[str, Any]) -> Dict[str, Any]:
 **Option B - Split Fields**:
 - Keep `keywords` for scraper metadata (department, req ID, etc.)
 - Add new `ats_keywords` field populated by AI
-- Portfolio reads `ats_keywords` field directly (not from resumeIntakeData)
+- job-finder-FE reads `ats_keywords` field directly (not from resumeIntakeData)
 
 **Recommendation**: **Option A** - Rename to `ats_keywords` and deprecate scraper population.
 
@@ -188,7 +188,7 @@ def from_firestore_fields(firestore_doc: Dict[str, Any]) -> Dict[str, Any]:
 2. Update AI matcher to populate `ats_keywords` from `resume_intake_data["keywords_to_include"]`
 3. Remove keyword population from scrapers (or move to separate `source_metadata` field)
 4. Update Firestore schema to use `atsKeywords` (camelCase)
-5. Update Portfolio to read `job.atsKeywords` instead of `job.resumeIntakeData.ats_keywords`
+5. Update job-finder-FE to read `job.atsKeywords` instead of `job.resumeIntakeData.ats_keywords`
 
 **Impact**: Clear purpose, no confusion, single source of truth.
 
@@ -217,7 +217,7 @@ def from_firestore_fields(firestore_doc: Dict[str, Any]) -> Dict[str, Any]:
 }
 ```
 
-2. Add TypeScript types in Portfolio with explicit optional markers:
+2. Add TypeScript types in job-finder-FE with explicit optional markers:
 ```typescript
 interface JobListing {
   // Required fields
@@ -239,7 +239,7 @@ interface JobListing {
 }
 ```
 
-**Impact**: Clear contracts, better null handling in Portfolio, fewer bugs.
+**Impact**: Clear contracts, better null handling in job-finder-FE, fewer bugs.
 
 ---
 
@@ -315,7 +315,7 @@ grep -r "from job_finder.filters.job_filter" src/ tests/
 # NEW:
 # Note: This tool uses Firestore exclusively for storage.
 # SQLAlchemy/SQL storage is not planned as it doesn't align with
-# the Firebase-based architecture shared with the Portfolio project.
+# the Firebase-based architecture shared with the job-finder-FE project.
 ```
 
 **Impact**: Clearer codebase, no misleading TODOs.
@@ -358,7 +358,7 @@ grep -r "from job_finder.filters.job_filter" src/ tests/
 1. Remove `keywords`/`ats_keywords` from job-level fields
 2. Rename `keywords_to_include` → `ats_keywords` in resume intake structure
 3. Update AI prompts to only output `ats_keywords` in resume intake
-4. Update Portfolio to read `job.resumeIntakeData.atsKeywords` only
+4. Update job-finder-FE to read `job.resumeIntakeData.atsKeywords` only
 5. Update Firestore writes to not include job-level keywords field
 
 **Impact**: No duplication, single source of truth, clearer data flow.
@@ -372,8 +372,8 @@ grep -r "from job_finder.filters.job_filter" src/ tests/
 1. Scrapers return `None` for truly unavailable fields (`posted_date`, `salary`)
 2. Processing NEVER adds these fields if scraper didn't populate them
 3. Firestore writes preserve `None` as missing field (don't write field at all)
-4. Portfolio TypeScript types mark as optional: `postedDate?: string`
-5. Portfolio UI handles missing fields gracefully (show "Not listed" instead of error)
+4. job-finder-FE TypeScript types mark as optional: `postedDate?: string`
+5. job-finder-FE UI handles missing fields gracefully (show "Not listed" instead of error)
 
 **Example Scraper Code**:
 ```python
@@ -413,10 +413,10 @@ if posted_date_elem:
 ### Week 3: Structural Changes
 - [ ] Action 3.1: Consolidate resume intake data (remove job-level keywords)
 - [ ] Action 3.2: Standardize optional field handling
-- [ ] Update Portfolio project to match new data structures
+- [ ] Update job-finder-FE project to match new data structures
 
 ### Week 4: Verification & Documentation
-- [ ] End-to-end testing (job submission → scraping → analysis → Portfolio display)
+- [ ] End-to-end testing (job submission → scraping → analysis → job-finder-FE display)
 - [ ] Update CLAUDE.md with final data structure documentation
 - [ ] Update shared-types.md with authoritative type definitions
 - [ ] Create migration guide for any manual data updates needed
@@ -433,10 +433,10 @@ if posted_date_elem:
 ### Integration Tests
 - [ ] Test full job pipeline (scrape → filter → analyze → save)
 - [ ] Test Firestore write/read with new field structure
-- [ ] Test Portfolio reading new data structure
+- [ ] Test job-finder-FE reading new data structure
 
 ### E2E Tests
-- [ ] Submit job via Portfolio → verify appears in job-matches with correct fields
+- [ ] Submit job via job-finder-FE → verify appears in job-matches with correct fields
 - [ ] Verify resume generation uses resumeIntakeData.atsKeywords correctly
 - [ ] Verify missing optional fields don't cause errors
 
@@ -453,7 +453,7 @@ If any phase causes issues:
 3. **Phase 3 (Structural Changes)**:
    - Revert Firestore field structure changes
    - Restore job-level keywords field
-   - Revert Portfolio to read old structure
+   - Revert job-finder-FE to read old structure
 
 **Mitigation**: Use feature flags to gradually enable new structure:
 ```python
@@ -482,7 +482,7 @@ else:
 
 ### System Reliability
 - [ ] All E2E tests pass
-- [ ] Portfolio displays jobs correctly with new structure
+- [ ] job-finder-FE displays jobs correctly with new structure
 - [ ] Resume generation works with consolidated atsKeywords
 
 ### Documentation

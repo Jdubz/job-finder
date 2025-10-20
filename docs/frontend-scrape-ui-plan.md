@@ -1,8 +1,8 @@
-# Portfolio UI for Job Scraping - Design & Implementation Plan
+# job-finder-FE UI for Job Scraping - Design & Implementation Plan
 
 ## Overview
 
-This document outlines the UI features and implementation requirements for adding job scraping controls to the Portfolio web application. The UI will allow users to trigger on-demand scraping, monitor scraping status, and review scraping history.
+This document outlines the UI features and implementation requirements for adding job scraping controls to the job-finder-FE web application. The UI will allow users to trigger on-demand scraping, monitor scraping status, and review scraping history.
 
 ## Core Principles
 
@@ -766,7 +766,7 @@ components/
 
 ## Conclusion
 
-This UI will transform job scraping from a developer-only CLI tool into a user-friendly feature accessible to all Portfolio users. The phased approach allows for iterative development and validation at each stage.
+This UI will transform job scraping from a developer-only CLI tool into a user-friendly feature accessible to all job-finder-FE users. The phased approach allows for iterative development and validation at each stage.
 
 **Next Steps:**
 1. Review and approve this plan

@@ -161,7 +161,7 @@ class SourceDiscoveryConfig(BaseModel):
     Used when QueueItemType is SOURCE_DISCOVERY to discover and configure a new job source.
 
     Flow:
-    1. Portfolio submits URL for discovery
+    1. job-finder-FE submits URL for discovery
     2. Job-finder detects source type (greenhouse, workday, rss, generic)
     3. For known types: validate and create config
     4. For generic: use AI selector discovery

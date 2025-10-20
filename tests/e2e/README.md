@@ -1,6 +1,6 @@
 # E2E Test Suite
 
-End-to-end tests for the Portfolio + Job-Finder integration in the staging environment.
+End-to-end tests for the job-finder-FE + Job-Finder integration in the staging environment.
 
 **⚠️ IMPORTANT: These tests are for MANUAL execution only. They are NOT part of CI/CD pipelines.**
 

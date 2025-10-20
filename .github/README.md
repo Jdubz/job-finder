@@ -16,6 +16,6 @@ This directory contains GitHub Actions workflows for CI/CD automation.
 
 ## Firestore Indexes
 
-**Note**: Firestore indexes are managed in the [Portfolio project](https://github.com/Jdubz/portfolio/), not in this repository.
+**Note**: Firestore indexes are managed in the [job-finder-FE project](https://github.com/Jdubz/portfolio/), not in this repository.
 
 See [FIRESTORE_INDEXES.md](../FIRESTORE_INDEXES.md) for index requirements and management details.

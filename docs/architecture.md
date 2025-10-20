@@ -328,7 +328,7 @@ The original pipeline executes in five sequential stages:
 **Integration:**
 - Scrapers produce jobs to queue
 - Queue worker consumes and processes jobs
-- Portfolio project can submit jobs via API
+- job-finder-FE project can submit jobs via API
 - Real-time status updates in Firestore
 
 ---

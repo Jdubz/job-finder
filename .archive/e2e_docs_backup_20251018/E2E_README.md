@@ -1,6 +1,6 @@
 # Job-Finder E2E Tests
 
-End-to-end test suite for the Portfolio + Job-Finder integration.
+End-to-end test suite for the job-finder-FE + Job-Finder integration.
 
 ## Overview
 

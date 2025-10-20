@@ -1,10 +1,10 @@
-# Cloud Logging Architecture for Portfolio Integration
+# Cloud Logging Architecture for job-finder-FE Integration
 
 ## Overview
 
-This document describes the architecture for sharing structured logs between the job-finder worker and the Portfolio UI using **Google Cloud Logging**, enabling real-time monitoring and debugging from the web interface.
+This document describes the architecture for sharing structured logs between the job-finder worker and the job-finder-FE UI using **Google Cloud Logging**, enabling real-time monitoring and debugging from the web interface.
 
-**Type Safety:** Log structure is enforced via **@jdubz/job-finder-shared-types** npm package, ensuring consistency between Portfolio (TypeScript) and job-finder (Python).
+**Type Safety:** Log structure is enforced via **@jdubz/job-finder-shared-types** npm package, ensuring consistency between job-finder-FE (TypeScript) and job-finder (Python).
 
 ## Why Cloud Logging (Not Firestore)
 
@@ -69,7 +69,7 @@ All log entries should include these **standardized JSON fields**.
 
 **Type Definitions:** See [@jdubz/job-finder-shared-types](https://github.com/Jdubz/job-finder-shared-types/blob/main/src/logging.types.ts) for complete TypeScript definitions.
 
-**Portfolio Usage:**
+**job-finder-FE Usage:**
 ```typescript
 import {
   StructuredLogEntry,
@@ -128,13 +128,13 @@ import {
 - `ai` - AI model operations (match, analyze, extract)
 - `database` - Firestore operations (create, update, query)
 
-## Querying Logs from Portfolio
+## Querying Logs from job-finder-FE
 
 ### Cloud Logging API (Backend)
 
 **Option 1: Cloud Functions Proxy**
 ```typescript
-// Deploy Cloud Function that Portfolio calls
+// Deploy Cloud Function that job-finder-FE calls
 // functions/getLogs.ts
 import { Logging } from '@google-cloud/logging';
 
@@ -307,7 +307,7 @@ cloud_handler = CloudLoggingHandler(
 )
 ```
 
-## Portfolio UI Components
+## job-finder-FE UI Components
 
 ### 1. Worker Status Dashboard
 
@@ -408,7 +408,7 @@ function LiveActivityFeed() {
 
 **IAM Permissions:**
 ```yaml
-# Portfolio service account needs:
+# job-finder-FE service account needs:
 roles/logging.viewer  # Read logs
 roles/logging.privateLogViewer  # Access all log data
 
@@ -430,15 +430,15 @@ severity>=ERROR
 1. **Remove** `ActivityLogManager` class
 2. **Keep** `StructuredLogger` but enhance with JSON fields
 3. **Update** log methods to use `json_fields` extra parameter
-4. **Create** Cloud Function or Server Action for Portfolio log access
-5. **Build** Portfolio UI components using Cloud Logging API
+4. **Create** Cloud Function or Server Action for job-finder-FE log access
+5. **Build** job-finder-FE UI components using Cloud Logging API
 
 ## Next Steps
 
 1. ✅ Environment labels already implemented
 2. ⬜ Enhance StructuredLogger to use JSON structured logging
-3. ⬜ Create Cloud Function/Server Action for Portfolio log access
-4. ⬜ Build Portfolio UI components for worker monitoring
+3. ⬜ Create Cloud Function/Server Action for job-finder-FE log access
+4. ⬜ Build job-finder-FE UI components for worker monitoring
 5. ⬜ Set up log-based metrics for dashboard
 6. ⬜ Configure alerting policies for errors
 

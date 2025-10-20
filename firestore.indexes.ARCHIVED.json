@@ -1,5 +1,5 @@
 {
-  "_comment": "ARCHIVED: This file is no longer used. Firestore indexes are now managed in the Portfolio project.",
+  "_comment": "ARCHIVED: This file is no longer used. Firestore indexes are now managed in the job-finder-FE project.",
   "_see": "../portfolio/firestore.indexes.json",
   "_documentation": "./FIRESTORE_INDEXES.md",
 

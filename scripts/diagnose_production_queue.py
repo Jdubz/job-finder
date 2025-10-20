@@ -82,7 +82,7 @@ def diagnose_database(database_name: str = "portfolio"):
                     "   This is why queue items are not appearing in production!"
                 )
                 print()
-                print("   SOLUTION: Ensure Portfolio frontend is configured to write to")
+                print("   SOLUTION: Ensure job-finder-FE frontend is configured to write to")
                 print(f"   database '{database_name}' in production")
             else:
                 print("✅ job-queue collection exists and has items")

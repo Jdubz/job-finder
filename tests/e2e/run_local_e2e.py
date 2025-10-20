@@ -7,7 +7,7 @@ This allows testing the complete job-finder pipeline locally without touching
 staging or production data.
 
 Prerequisites:
-    1. Portfolio Firebase emulators must be running:
+    1. job-finder-FE Firebase emulators must be running:
        cd ~/path/to/portfolio && make firebase-emulators
 
     2. Emulators should be accessible on:

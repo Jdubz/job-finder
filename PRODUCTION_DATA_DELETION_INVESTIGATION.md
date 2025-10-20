@@ -29,14 +29,14 @@ def main():
     portfolio_db = FirestoreClient.get_client("portfolio")  # ⚠️ PRODUCTION
     staging_db = FirestoreClient.get_client("portfolio-staging")
 
-    print("\n### Portfolio Database ###")
+    print("\n### job-finder-FE Database ###")
     portfolio_issues = analyze_job_matches(portfolio_db, "portfolio")
 
-    print("\n\n### Portfolio-Staging Database ###")
+    print("\n\n### job-finder-FE-Staging Database ###")
     staging_issues = analyze_job_matches(staging_db, "portfolio-staging")
 
     # Clean up duplicates
-    print("\n### Cleaning Portfolio Database ###")
+    print("\n### Cleaning job-finder-FE Database ###")
     portfolio_deleted = cleanup_duplicates(portfolio_db, "portfolio")  # ⚠️ DELETES PRODUCTION DATA!
 ```
 
@@ -91,7 +91,7 @@ python scripts/database/cleanup_job_matches.py
 | Production Flag Required | ✅ YES - `--allow-production` | ❌ NO |
 | Database Separation | ✅ YES - Distinct clients | ❌ NO - Same function for both |
 | Read-Only Pattern | ✅ YES - Production read-only | ❌ NO - Full write access |
-| Prominent Warnings | ✅ YES - Error messages | ❌ NO - Just "Cleaning Portfolio Database" |
+| Prominent Warnings | ✅ YES - Error messages | ❌ NO - Just "Cleaning job-finder-FE Database" |
 
 **Verdict:** E2E tests are SAFE. Cleanup script is DANGEROUS.
 
@@ -108,7 +108,7 @@ python scripts/database/cleanup_job_matches.py
 
 2. **Output Shown:**
    ```
-   ### Cleaning Portfolio Database ###
+   ### Cleaning job-finder-FE Database ###
    Duplicate found: https://...
      Keeping: abc123 (score: 15.2)
      Deleting: 3 duplicates

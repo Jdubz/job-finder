@@ -272,7 +272,7 @@ Choose **one** of these methods:
 
 ### Option A: Firestore Profile (Recommended)
 
-Automatically syncs with Portfolio project database.
+Automatically syncs with job-finder-FE project database.
 
 **1. Configure in config.yaml:**
 ```yaml

@@ -70,7 +70,7 @@ This document tracks completed work, current technical debt, planned features, a
 - Stop list filtering
 - Retry mechanism (max 3 attempts)
 - Status tracking
-- Portfolio integration ready
+- job-finder-FE integration ready
 
 See **[Queue System Guide](queue-system.md)** for complete details.
 
@@ -221,7 +221,7 @@ Merge into single component:
 - Instant notifications for high-score jobs (>= 90)
 - Push notifications to mobile
 - SMS alerts (optional)
-- Integration with Portfolio project
+- Integration with job-finder-FE project
 
 **Technical Requirements:**
 - Real-time Firestore listeners

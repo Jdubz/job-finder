@@ -22,7 +22,7 @@ A real-time alerting system that runs hourly to detect perfect job matches using
                     ┌────────────────────────────┼───────────┐
                     │                            ▼           │
                     │        ┌─────────────────────────┐    │
-                    │        │   Portfolio Webhook     │    │
+                    │        │   job-finder-FE Webhook     │    │
                     │        │  /api/notifications     │    │
                     │        └──────────┬──────────────┘    │
                     │                   │                    │
@@ -396,7 +396,7 @@ if __name__ == "__main__":
     sys.exit(main())
 ```
 
-## Portfolio Integration
+## job-finder-FE Integration
 
 ### API Endpoint
 
@@ -614,7 +614,7 @@ def test_webhook_retry_logic():
 
 ### Week 2
 
-**Day 1-2: Portfolio API**
+**Day 1-2: job-finder-FE API**
 - [ ] Create `/api/notifications/job-alert` endpoint
 - [ ] Set up Firebase Cloud Messaging
 - [ ] Implement signature validation

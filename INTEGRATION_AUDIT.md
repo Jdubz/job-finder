@@ -1,4 +1,4 @@
-# Job-Finder ↔ Portfolio Integration Audit
+# Job-Finder ↔ job-finder-FE Integration Audit
 
 **Date:** 2025-10-16
 **Purpose:** Audit all features defined in shared-types and verify implementation in both projects
@@ -90,7 +90,7 @@ None identified. All features defined in shared-types are implemented.
 
 ---
 
-## 3. Portfolio Frontend Implementation
+## 3. job-finder-FE Frontend Implementation
 
 ### API Layer ✅
 
@@ -182,14 +182,14 @@ None identified. All features defined in shared-types are implemented.
 
 3. **Retry Queue Item API** ⚠️ Partially Implemented
    - **What's Complete:** Backend method `retry_item()` in QueueManager (2025-10-16)
-   - **What's Missing:** API endpoint in Portfolio to expose this functionality
+   - **What's Missing:** API endpoint in job-finder-FE to expose this functionality
    - **Needed:**
      - API endpoint: `POST /retry/:id` to call `queue_manager.retry_item(id)`
    - **Implementation:** Backend supports resetting failed items to pending status with error cleanup
 
 4. **Delete Queue Item API** ⚠️ Partially Implemented
    - **What's Complete:** Backend method `delete_item()` in QueueManager (2025-10-16)
-   - **What's Missing:** API endpoint in Portfolio to expose this functionality
+   - **What's Missing:** API endpoint in job-finder-FE to expose this functionality
    - **Needed:**
      - API endpoint: `DELETE /queue/:id` to call `queue_manager.delete_item(id)`
    - **Implementation:** Backend supports full item deletion from Firestore
@@ -201,9 +201,9 @@ None identified. All features defined in shared-types are implemented.
 ### User Submission Flow ✅
 
 ```
-User (Portfolio UI)
+User (job-finder-FE UI)
   ↓ POST /submit
-Portfolio API (manageJobQueue)
+job-finder-FE API (manageJobQueue)
   ↓ JobQueueService.submitJob()
 Firestore (job-queue collection)
   ↓ Firestore listener
@@ -213,7 +213,7 @@ AI Matching + Company Info
   ↓ JobStorage.save_match()
 Firestore (job-matches collection)
   ↓ Firestore listener
-Portfolio UI (JobApplicationsTab)
+job-finder-FE UI (JobApplicationsTab)
 ```
 
 **Status:** ✅ Fully functional
@@ -236,9 +236,9 @@ Firestore (job-queue collection)
 ### Configuration Flow ✅
 
 ```
-Portfolio UI (JobFinderConfigTab)
+job-finder-FE UI (JobFinderConfigTab)
   ↓ PUT /config/stop-list
-Portfolio API (manageJobQueue)
+job-finder-FE API (manageJobQueue)
   ↓ JobQueueService.updateStopList()
 Firestore (job-finder-config/stop-list)
   ↓ ConfigLoader.get_stop_list() [with cache]
@@ -313,7 +313,7 @@ Queue Processor
 ### Test Coverage
 
 - **Job-Finder:** 471 tests passing, 48% coverage
-- **Portfolio:** Tests exist for API layer (job-queue.spec.ts)
+- **job-finder-FE:** Tests exist for API layer (job-queue.spec.ts)
 
 ---
 
@@ -412,8 +412,8 @@ None.
 
 - **TypeScript as Source of Truth:** ✅ Python models mirror TypeScript exactly
 - **Firestore as Data Layer:** ✅ All state in Firestore, no local state
-- **Real-time Updates:** ✅ Portfolio uses Firestore listeners
-- **Separation of Concerns:** ✅ Job-finder (pipeline) + Portfolio (UI)
+- **Real-time Updates:** ✅ job-finder-FE uses Firestore listeners
+- **Separation of Concerns:** ✅ Job-finder (pipeline) + job-finder-FE (UI)
 - **Type Safety:** ✅ Shared types ensure consistency
 - **Error Handling:** ✅ Graceful degradation, retry logic
 
@@ -441,6 +441,6 @@ None.
 - Production Deployment: **100%** ✅
 
 **Next Priority:**
-1. Expose retry/delete backend methods via Portfolio API endpoints (1-2 hours)
+1. Expose retry/delete backend methods via job-finder-FE API endpoints (1-2 hours)
 2. Implement AI Settings and Queue Settings API endpoints (2-3 hours)
 3. Create UI tabs for AI/Queue settings configuration (4-6 hours)

@@ -2,13 +2,13 @@
 
 ## Overview
 
-This document outlines the UI requirements for adding companies to the job-finder queue and monitoring their processing status in the Portfolio project.
+This document outlines the UI requirements for adding companies to the job-finder queue and monitoring their processing status in the job-finder-FE project.
 
 **Backend Reference**: See [CLAUDE.md](../CLAUDE.md) for the granular company pipeline architecture.
 
 ## Data Flow
 ```
-Portfolio UI → Firestore (job-queue) → Job Finder Worker → Firestore (companies)
+job-finder-FE UI → Firestore (job-queue) → Job Finder Worker → Firestore (companies)
                                             ↓
                     UI monitors queue item status
 ```

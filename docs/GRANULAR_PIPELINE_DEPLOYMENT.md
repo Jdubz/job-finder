@@ -32,7 +32,7 @@ All code is implemented and tested:
 ### 3. Database Schema
 No schema changes required! The new fields are optional and backwards compatible.
 
-### 4. Portfolio Project Compatibility
+### 4. job-finder-FE Project Compatibility
 The portfolio project will see both legacy and granular items in the queue. No changes required.
 
 ## Deployment Options
@@ -90,7 +90,7 @@ python scripts/migrate_to_granular_pipeline.py --status pending --confirm
 python scripts/migrate_to_granular_pipeline.py --status all --confirm
 ```
 
-**Phase 4: Update Portfolio Integration**
+**Phase 4: Update job-finder-FE Integration**
 Update the portfolio project's job submission to create granular items:
 ```typescript
 // In portfolio project
@@ -322,7 +322,7 @@ Deployment is successful when:
 ✅ Cost reduction observed (monitor AI provider bills)
 ✅ Memory usage reduced (check Cloud Run metrics)
 ✅ No increase in failure rates
-✅ Portfolio project receives job matches normally
+✅ job-finder-FE project receives job matches normally
 ✅ Legacy items (if any) still processing correctly
 
 ## Support

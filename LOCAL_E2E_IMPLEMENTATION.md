@@ -102,7 +102,7 @@ Successfully implemented local E2E testing infrastructure that allows testing th
 ┌─────────────────────────────────────────────────────────┐
 │                  Local E2E Test Flow                    │
 │                                                         │
-│  Portfolio Project          Job-Finder Project         │
+│  job-finder-FE Project          Job-Finder Project         │
 │  ┌──────────────┐          ┌────────────┐              │
 │  │   Firebase   │          │ Job-Finder │              │
 │  │  Emulators   │ <──────  │  (Docker   │              │

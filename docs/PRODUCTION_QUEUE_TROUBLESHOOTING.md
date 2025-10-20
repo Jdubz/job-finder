@@ -25,15 +25,15 @@ View container logs directly in Google Cloud Console (no SSH required):
 ## Issue: Document Generation Requests Not Appearing in Job Queue
 
 ### Symptoms
-- Document generation requests from Portfolio UI don't create queue items
+- Document generation requests from job-finder-FE UI don't create queue items
 - `job-queue` collection is missing or empty in production database
-- No errors in Portfolio UI, but nothing happens
+- No errors in job-finder-FE UI, but nothing happens
 
 ### Root Cause
-**Database configuration mismatch** between Portfolio frontend and job-finder backend.
+**Database configuration mismatch** between job-finder-FE frontend and job-finder backend.
 
 ```
-Portfolio Frontend → writes to ??? (wrong database)
+job-finder-FE Frontend → writes to ??? (wrong database)
                            ↓
                    (should be "portfolio")
                            ↓
@@ -58,34 +58,34 @@ python scripts/setup_production_queue.py
 python scripts/diagnose_production_queue.py
 ```
 
-This creates the collection structure that Portfolio frontend needs to write to.
+This creates the collection structure that job-finder-FE frontend needs to write to.
 
-### 2. Fix Portfolio Frontend Configuration
+### 2. Fix job-finder-FE Frontend Configuration
 
-The Portfolio frontend must be configured to use the `portfolio` database in production.
+The job-finder-FE frontend must be configured to use the `portfolio` database in production.
 
-#### Check Portfolio Project Configuration
+#### Check job-finder-FE Project Configuration
 
-In your Portfolio project, look for Firestore initialization:
+In your job-finder-FE project, look for Firestore initialization:
 
 **❌ WRONG (using staging database):**
 ```typescript
-// Portfolio frontend code
+// job-finder-FE frontend code
 const db = getFirestore(app, 'portfolio-staging')  // WRONG in production!
 ```
 
 **✅ CORRECT (using production database):**
 ```typescript
-// Portfolio frontend code
+// job-finder-FE frontend code
 const db = getFirestore(app, 'portfolio')  // CORRECT for production
 ```
 
 #### Environment-Based Configuration
 
-Your Portfolio frontend should use environment variables:
+Your job-finder-FE frontend should use environment variables:
 
 ```typescript
-// Portfolio frontend - recommended approach
+// job-finder-FE frontend - recommended approach
 const dbName = process.env.NODE_ENV === 'production'
   ? 'portfolio'           // Production database
   : 'portfolio-staging'   // Development/staging database
@@ -95,7 +95,7 @@ const db = getFirestore(app, dbName)
 
 ### 3. Verify Firestore Security Rules
 
-In your Portfolio project's `firestore.rules`, ensure `job-queue` collection allows writes:
+In your job-finder-FE project's `firestore.rules`, ensure `job-queue` collection allows writes:
 
 ```
 rules_version = '2';
@@ -137,9 +137,9 @@ python scripts/diagnose_production_queue.py
 ✅ job-queue collection exists and has items
 ```
 
-### Step 2: Test from Portfolio UI
+### Step 2: Test from job-finder-FE UI
 
-1. Open Portfolio in production
+1. Open job-finder-FE in production
 2. Navigate to a job match
 3. Click "Generate Document" (or similar action)
 4. Check browser console for errors
@@ -177,11 +177,11 @@ Processing item: document_generation
 
 **Symptom:** Collection exists but stays empty when you trigger actions.
 
-**Cause:** Portfolio frontend is still writing to wrong database.
+**Cause:** job-finder-FE frontend is still writing to wrong database.
 
 **Solution:**
-1. Double-check Portfolio frontend database configuration
-2. Clear browser cache and reload Portfolio UI
+1. Double-check job-finder-FE frontend database configuration
+2. Clear browser cache and reload job-finder-FE UI
 3. Check browser console for errors
 
 ### Issue 2: Security rules blocking writes
@@ -193,7 +193,7 @@ Processing item: document_generation
 **Solution:**
 1. Update `firestore.rules` to allow `create` on `job-queue` collection
 2. Deploy rules: `firebase deploy --only firestore:rules`
-3. Retry from Portfolio UI
+3. Retry from job-finder-FE UI
 
 ### Issue 3: Items created but not processed
 
@@ -231,7 +231,7 @@ storage:
   database_name: "portfolio"  # Production database
 ```
 
-### Portfolio Frontend (separate project)
+### job-finder-FE Frontend (separate project)
 
 **Required configuration:**
 ```typescript
@@ -249,9 +249,9 @@ const db = getFirestore(app, dbName)
 
 - [ ] Run `setup_production_queue.py` to initialize collection
 - [ ] Run `diagnose_production_queue.py` - collection exists
-- [ ] Verify Portfolio frontend uses `portfolio` database in production
+- [ ] Verify job-finder-FE frontend uses `portfolio` database in production
 - [ ] Deploy Firestore security rules with `job-queue` write permissions
-- [ ] Test document generation from Portfolio UI
+- [ ] Test document generation from job-finder-FE UI
 - [ ] Run `diagnose_production_queue.py` - queue items appear
 - [ ] Check queue worker logs - items being processed
 - [ ] Verify documents are generated successfully
@@ -264,7 +264,7 @@ If issues persist after following this guide:
 
 1. **Check logs:**
    ```bash
-   # Portfolio frontend (browser console)
+   # job-finder-FE frontend (browser console)
    # Job finder backend
    docker logs job-finder-production --tail 100
    ```
@@ -286,4 +286,4 @@ If issues persist after following this guide:
 
 4. **Compare databases:**
    - Does `portfolio-staging` have a `job-queue` collection?
-   - If yes, that confirms Portfolio is writing to staging instead of production
+   - If yes, that confirms job-finder-FE is writing to staging instead of production

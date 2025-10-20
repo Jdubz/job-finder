@@ -139,7 +139,7 @@ QueueItemProcessor
   ↓
 job-matches collection
   ↓
-Portfolio UI
+job-finder-FE UI
 ```
 
 ## Troubleshooting

@@ -461,7 +461,7 @@ def setup_firestore_config(database_name: str = DATABASE_NAME):
     logger.info("=" * 70)
     logger.info("\nYou can now:")
     logger.info("1. Edit these configurations in Firestore Console")
-    logger.info("2. Or use the Portfolio web UI to manage them")
+    logger.info("2. Or use the job-finder-FE web UI to manage them")
     logger.info("3. Set scheduler-settings.enabled=true to ENABLE automated scraping")
     logger.info(
         f"4. View at: https://console.firebase.google.com/project/static-sites-257923/firestore/databases/{database_name}/data/~2Fjob-finder-config"

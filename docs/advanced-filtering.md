@@ -273,7 +273,7 @@ FilterRejection(
 4. Job type filtering
 5. Quality filters (spam detection, minimum length)
 
-### Phase 3: UI Integration (Portfolio)
+### Phase 3: UI Integration (job-finder-FE)
 1. Create `JobFiltersTab.tsx` for configuration UI
 2. Add filter statistics to queue dashboard
 3. Display rejection reasons in queue management

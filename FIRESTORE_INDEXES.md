@@ -2,9 +2,9 @@
 
 ## Important: Index Management
 
-**Firestore indexes for shared collections are managed in the Portfolio project.**
+**Firestore indexes for shared collections are managed in the job-finder-FE project.**
 
-This project shares the following Firestore collections with the Portfolio web application:
+This project shares the following Firestore collections with the job-finder-FE web application:
 - `job-queue`
 - `job-matches`
 - `job-sources`
@@ -17,9 +17,9 @@ All Firestore indexes are defined and deployed from:
 ../portfolio/firestore.indexes.json
 ```
 
-**Why Portfolio?**
-- Portfolio is the primary web application that users interact with
-- Firebase Functions are deployed from Portfolio
+**Why job-finder-FE?**
+- job-finder-FE is the primary web application that users interact with
+- Firebase Functions are deployed from job-finder-FE
 - Easier to manage frontend + backend + indexes in one place
 - Job-finder is a background worker that adapts to the shared schema
 
@@ -54,8 +54,8 @@ Used by: `FirestoreStorage.get_job_matches()` with status filter
 If you add a query that requires a new index:
 
 1. **Test locally:** Run the query and check Firebase Console for "missing index" errors
-2. **Update Portfolio:** Add the index to `../portfolio/firestore.indexes.json`
-3. **Deploy:** Indexes are deployed automatically when Portfolio is deployed
+2. **Update job-finder-FE:** Add the index to `../portfolio/firestore.indexes.json`
+3. **Deploy:** Indexes are deployed automatically when job-finder-FE is deployed
 4. **Document:** Update this file with the new index requirement
 
 ### Verifying Indexes
@@ -77,5 +77,5 @@ See `firestore.indexes.ARCHIVED.json` for reference.
 
 ### Related Documentation
 
-- Portfolio Index Analysis: `../portfolio/docs/FIRESTORE_INDEX_ANALYSIS.md`
+- job-finder-FE Index Analysis: `../portfolio/docs/FIRESTORE_INDEX_ANALYSIS.md`
 - Shared Types: `../shared-types/CONTEXT.md`
