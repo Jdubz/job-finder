@@ -602,7 +602,7 @@ tz_offset = detect_timezone(
 ## Related Documentation
 
 ### Core Documentation (in this repo)
-- **[CLAUDE.md](../CLAUDE.md)** - AI assistant context and overview
+- **[CLAUDE.md](../../CLAUDE.md)** - AI assistant context and overview
 - **[README.md](../../README.md)** - Getting started guide
 - **[docs/architecture.md](../architecture.md)** - System architecture
 - **[docs/queue-system.md](../queue-system.md)** - Queue system guide
