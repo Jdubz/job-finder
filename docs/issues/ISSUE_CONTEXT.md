@@ -142,7 +142,7 @@ job-finder-worker/
 - **Deployment**: Docker (Portainer on NAS)
 
 ### Key Libraries
-- **Web Scraping**: requests, BeautifulSoup4, lxml
+- **Web Scraping**: requests, beautifulsoup4, lxml
 - **AI/LLM**: anthropic, openai
 - **Cloud**: google-cloud-firestore, google-cloud-logging
 - **Testing**: pytest, pytest-cov
@@ -533,17 +533,17 @@ doc_id = intake.submit_company(
 ### Accessing Firestore
 
 ```python
-from job_finder.storage.firestore_client import FirestoreClient
+from job_finder.storage.firestore_storage import FirestoreStorage
 
 # Get Firestore client
-db = FirestoreClient.get_client(database_name="portfolio-staging")
+db = FirestoreStorage.get_client(database_name="portfolio-staging")
 
 # Query collection
 jobs = db.collection("job-queue").where("status", "==", "pending").limit(10).stream()
 
 for job in jobs:
     job_data = job.to_dict()
-    print(f"Job: {job_data['company_name']}")
+    print(f"Job: {job_data['company']}")
 ```
 
 ### Using AI Providers
@@ -602,7 +602,7 @@ tz_offset = detect_timezone(
 ## Related Documentation
 
 ### Core Documentation (in this repo)
-- **[CLAUDE.md](../CLAUDE.md)** - AI assistant context and overview
+- **[CLAUDE.md](../../CLAUDE.md)** - AI assistant context and overview
 - **[README.md](../../README.md)** - Getting started guide
 - **[docs/architecture.md](../architecture.md)** - System architecture
 - **[docs/queue-system.md](../queue-system.md)** - Queue system guide
