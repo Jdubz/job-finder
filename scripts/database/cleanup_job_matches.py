@@ -20,6 +20,7 @@ from typing import Dict, List
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 
 from job_finder.storage.firestore_client import FirestoreClient  # noqa: E402
+from job_finder.utils.url_utils import normalize_url  # noqa: E402
 
 
 def analyze_job_matches(db, database_name: str):  # type: ignore[no-untyped-def]
@@ -72,11 +73,13 @@ def analyze_job_matches(db, database_name: str):  # type: ignore[no-untyped-def]
         if not url:
             issues["missing_url"] += 1
         else:
-            # Track duplicates
-            if url in issues["duplicate_urls"]:
-                issues["duplicate_urls"][url].append(doc.id)
+            # Normalize URL for consistent duplicate detection
+            normalized_url = normalize_url(url)
+            # Track duplicates by normalized URL
+            if normalized_url in issues["duplicate_urls"]:
+                issues["duplicate_urls"][normalized_url].append(doc.id)
             else:
-                issues["duplicate_urls"][url] = [doc.id]
+                issues["duplicate_urls"][normalized_url] = [doc.id]
 
     # Count actual duplicates (URLs with >1 record)
     duplicate_count = sum(1 for ids in issues["duplicate_urls"].values() if len(ids) > 1)
@@ -117,15 +120,17 @@ def cleanup_duplicates(db, database_name: str):  # type: ignore[no-untyped-def]
     collection = db.collection("job-matches")
     docs = list(collection.stream())
 
-    # Group by URL
+    # Group by normalized URL (handles historical data with non-normalized URLs)
     jobs_by_url: Dict[str, List[tuple]] = {}
     for doc in docs:
         data = doc.to_dict()
         url = data.get("url")
         if url:
-            if url not in jobs_by_url:
-                jobs_by_url[url] = []
-            jobs_by_url[url].append((doc.id, data))
+            # Normalize URL to ensure consistent grouping
+            normalized_url = normalize_url(url)
+            if normalized_url not in jobs_by_url:
+                jobs_by_url[normalized_url] = []
+            jobs_by_url[normalized_url].append((doc.id, data))
 
     # Find and remove duplicates
     deleted_count = 0
