@@ -533,10 +533,10 @@ doc_id = intake.submit_company(
 ### Accessing Firestore
 
 ```python
-from job_finder.storage.firestore_client import FirestoreClient
+from job_finder.storage.firestore_storage import FirestoreStorage
 
 # Get Firestore client
-db = FirestoreClient.get_client(database_name="portfolio-staging")
+db = FirestoreStorage.get_client(database_name="portfolio-staging")
 
 # Query collection
 jobs = db.collection("job-queue").where("status", "==", "pending").limit(10).stream()
