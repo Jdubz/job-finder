@@ -1,6 +1,9 @@
 """Timezone detection and scoring utilities."""
 
+import logging
 from typing import Optional, Tuple
+
+logger = logging.getLogger(__name__)
 
 # Timezone offset from UTC
 TIMEZONES = {
@@ -225,11 +228,14 @@ def detect_timezone_for_job(
     job_description: str,
     company_size: Optional[str] = None,
     headquarters_location: str = "",
+    company_name: str = "",
+    company_info: str = "",
 ) -> Optional[float]:
     """
-    Detect timezone for a job with smart prioritization.
+    Detect timezone for a job with smart prioritization and company overrides.
 
     Priority:
+    0. Check timezone overrides for globally distributed companies (NEW)
     1. Team location mentioned in job description
     2. Job location
     3. Company headquarters (only for small/medium companies)
@@ -240,10 +246,38 @@ def detect_timezone_for_job(
         job_description: Job description (may contain team location info)
         company_size: Company size category ("large", "medium", "small")
         headquarters_location: Company headquarters location
+        company_name: Company name (for override lookup)
+        company_info: Company info/description (for pattern matching)
 
     Returns:
-        Timezone offset from UTC, or None if not detected or large global company
+        Timezone offset from UTC, or None if not detected or globally distributed company
     """
+    # Check for timezone overrides first (globally distributed companies)
+    if company_name:
+        try:
+            from job_finder.config.timezone_overrides import get_timezone_overrides
+
+            overrides = get_timezone_overrides()
+            override = overrides.get_override(company_name, company_info)
+
+            if override == "unknown":
+                logger.debug(
+                    f"Timezone override for {company_name}: returning None (globally distributed)"
+                )
+                return None
+            elif override:
+                # If override specifies a specific timezone, use it
+                timezone_offset = TIMEZONES.get(override.lower())
+                if timezone_offset is not None:
+                    logger.debug(
+                        f"Timezone override for {company_name}: {override} ({timezone_offset})"
+                    )
+                    return timezone_offset
+
+        except Exception as e:
+            # Don't fail job processing if override loading fails
+            logger.warning(f"Failed to check timezone overrides for {company_name}: {e}")
+
     # For large companies, skip HQ timezone unless specific team location is mentioned
     if company_size == "large":
         # Check job description for team-specific location mentions
