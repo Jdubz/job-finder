@@ -63,6 +63,7 @@ help: ## Show this help message
 	@echo "  $(GREEN)make test-e2e-local-verbose$(RESET)  Local E2E test with verbose logging"
 	@echo "  $(GREEN)make test-e2e-local-full$(RESET)  Full local E2E test (20+ jobs with emulators)"
 	@echo "  $(GREEN)make test-specific$(RESET) TEST=<name>  Run specific test file"
+	@echo "  $(GREEN)make smoke-queue$(RESET)        Run queue pipeline smoke test (validates full pipeline)"
 	@echo ""
 	@echo "$(CYAN)CODE QUALITY$(RESET)"
 	@echo "  $(GREEN)make lint$(RESET)               Run code linter (flake8)"
@@ -268,6 +269,12 @@ test-specific: ## Run specific test file (use TEST=filename)
 	fi
 	@echo "$(CYAN)Running test: $(TEST)$(RESET)"
 	@. $(VENV_DIR)/bin/activate && $(PYTEST) $(TEST_DIR)/$(TEST) -v
+
+smoke-queue: ## Run queue pipeline smoke test
+	@echo "$(CYAN)Running queue pipeline smoke test...$(RESET)"
+	@echo "$(GREEN)✓ Safe: Testing on portfolio-staging (not production)$(RESET)"
+	@. $(VENV_DIR)/bin/activate && $(PYTHON) $(SCRIPTS_DIR)/smoke/queue_pipeline_smoke.py --env staging
+	@echo "$(GREEN)✓ Smoke test complete. Check test_results/ for reports.$(RESET)"
 
 ## === Code Quality ===
 

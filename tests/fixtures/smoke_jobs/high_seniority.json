@@ -1,0 +1,11 @@
+{
+  "title": "Principal Software Engineer - Infrastructure",
+  "company": "CloudScale Systems",
+  "company_website": "https://cloudscale.example.com",
+  "location": "Remote (Global)",
+  "description": "We're seeking a Principal Engineer to lead our infrastructure engineering team. You'll architect and build large-scale distributed systems processing billions of events daily. This is a high-impact individual contributor role working with our CTO. Requirements: 10+ years of software engineering, 5+ years in infrastructure/distributed systems, deep expertise in system design and scalability, experience mentoring senior engineers. Tech stack: Go, Kubernetes, Kafka, PostgreSQL, Redis, AWS/GCP. Remote-first company with engineers worldwide.",
+  "url": "https://cloudscale.example.com/careers/principal-engineer-infra-999",
+  "posted_date": "2025-10-08",
+  "salary": "$200,000 - $280,000",
+  "test_case_notes": "High seniority position (Principal level). Tests seniority matching and experience level scoring. Should still match if user has sufficient experience, but may note seniority gap."
+}

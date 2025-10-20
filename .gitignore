@@ -81,3 +81,6 @@ Thumbs.db
 # Debug and test scripts in root (local development)
 /debug_*.py
 /test_*.py
+
+# Smoke test results
+test_results/

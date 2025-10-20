@@ -1,0 +1,11 @@
+{
+  "title": "Backend Engineer",
+  "company": "Bay Area Startup",
+  "company_website": "https://bayareastartup.example.com",
+  "location": "San Francisco, CA (On-site)",
+  "description": "Growing startup looking for a backend engineer to work on our payment processing platform. Must be in SF office 5 days a week. Tech stack: Python, FastAPI, PostgreSQL, Redis, AWS. Experience with payment systems a plus. Requirements: 4+ years backend development, strong Python skills, startup experience preferred.",
+  "url": "https://bayareastartup.example.com/careers/backend-eng-789",
+  "posted_date": "2025-10-18",
+  "salary": "$140,000 - $170,000",
+  "test_case_notes": "On-site only, non-Portland location. Should be filtered out or score lower due to location requirements unless remote preference is flexible."
+}
