@@ -102,7 +102,7 @@ class TestDuplicatePrevention:
         mock_query = MagicMock()
         mock_collection.where.return_value = mock_query
         mock_query.limit.return_value = mock_query
-        
+
         # Mock existing document
         mock_doc = Mock()
         mock_doc.id = "existing_doc_123"
@@ -178,9 +178,7 @@ class TestDuplicatePrevention:
         # Verify document created with user_id
         assert doc_id == "doc_user123"
 
-    def test_save_job_match_empty_url(
-        self, job_storage, sample_job, sample_match_result, mock_db
-    ):
+    def test_save_job_match_empty_url(self, job_storage, sample_job, sample_match_result, mock_db):
         """Test saving job with empty URL creates new document."""
         job_no_url = sample_job.copy()
         job_no_url["url"] = ""

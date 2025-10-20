@@ -2,7 +2,6 @@
 
 import hashlib
 import logging
-from typing import Optional
 from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
 
 logger = logging.getLogger(__name__)
@@ -132,7 +131,10 @@ def urls_are_equivalent(url1: str, url2: str) -> bool:
         >>> urls_are_equivalent("https://example.com/job/123", "https://example.com/job/123/")
         True
 
-        >>> urls_are_equivalent("https://example.com/job/123?utm_source=google", "https://example.com/job/123")
+        >>> urls_are_equivalent(
+        ...     "https://example.com/job/123?utm_source=google",
+        ...     "https://example.com/job/123"
+        ... )
         True
     """
     return normalize_url(url1) == normalize_url(url2)
@@ -155,7 +157,9 @@ def normalize_job_url(url: str) -> str:
         >>> normalize_job_url("https://boards.greenhouse.io/company/jobs/123?t=abc")
         "https://boards.greenhouse.io/company/jobs/123"
 
-        >>> normalize_job_url("https://example.myworkdayjobs.com/en-US/Careers/job/Software-Engineer_123/")
+        >>> normalize_job_url(
+        ...     "https://example.myworkdayjobs.com/en-US/Careers/job/Software-Engineer_123/"
+        ... )
         "https://example.myworkdayjobs.com/en-US/Careers/job/Software-Engineer_123"
     """
     return normalize_url(url)

@@ -112,7 +112,9 @@ class FirestoreJobStorage:
 
         return role.strip()
 
-    def _get_existing_job_id(self, normalized_url: str, user_id: Optional[str] = None) -> Optional[str]:
+    def _get_existing_job_id(
+        self, normalized_url: str, user_id: Optional[str] = None
+    ) -> Optional[str]:
         """
         Check if a job with the normalized URL already exists.
 

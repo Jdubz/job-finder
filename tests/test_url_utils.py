@@ -1,7 +1,5 @@
 """Tests for URL normalization utility."""
 
-import pytest
-
 from job_finder.utils.url_utils import (
     normalize_url,
     normalize_job_url,
