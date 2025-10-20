@@ -15,95 +15,92 @@ _logging_config: Optional[Dict] = None
 def _load_logging_config() -> Dict:
     """
     Load logging configuration from config/logging.yaml.
-    
+
     Returns:
         Dict with logging configuration, or default config if file not found.
     """
     global _logging_config
-    
+
     if _logging_config is not None:
         return _logging_config
-    
+
     # Try to load from config file
     config_path = Path(__file__).parent.parent.parent / "config" / "logging.yaml"
-    
+
     if config_path.exists():
         try:
-            with open(config_path, 'r') as f:
+            with open(config_path, "r") as f:
                 _logging_config = yaml.safe_load(f) or {}
         except Exception as e:
             print(f"⚠️  Failed to load logging config from {config_path}: {e}", file=sys.stderr)
             _logging_config = {}
     else:
         _logging_config = {}
-    
+
     # Apply defaults if keys are missing
     if "console" not in _logging_config:
         _logging_config["console"] = {}
     if "structured" not in _logging_config:
         _logging_config["structured"] = {}
-    
+
     _logging_config["console"].setdefault("max_company_name_length", 80)
     _logging_config["console"].setdefault("max_job_title_length", 60)
     _logging_config["console"].setdefault("max_url_length", 50)
     _logging_config["structured"].setdefault("include_display_fields", True)
     _logging_config["structured"].setdefault("preserve_full_values", True)
-    
+
     return _logging_config
 
 
-def format_company_name(
-    company_name: str,
-    max_length: Optional[int] = None
-) -> Tuple[str, str]:
+def format_company_name(company_name: str, max_length: Optional[int] = None) -> Tuple[str, str]:
     """
     Format a company name for logging with both full and display versions.
-    
+
     This function ensures that:
     1. Full company names are always preserved for structured logging
     2. Display-friendly truncated versions are provided for console output
     3. Unicode characters are handled safely
     4. Truncation uses ellipsis (...) for readability
-    
+
     Args:
         company_name: The full company name to format.
         max_length: Maximum length for display version. If None, uses config value.
-    
+
     Returns:
         Tuple of (full_name, display_name) where:
         - full_name: Complete untruncated company name
         - display_name: Truncated version with ellipsis if needed
-    
+
     Example:
         >>> format_company_name("Very Long Company Name That Exceeds Limit")
         ('Very Long Company Name That Exceeds Limit', 'Very Long Company Name That Exceed...')
     """
     if not company_name:
         return "", ""
-    
+
     # Always preserve full name
     full_name = company_name.strip()
-    
+
     # Get max length from config if not provided
     if max_length is None:
         config = _load_logging_config()
         max_length = config["console"]["max_company_name_length"]
-    
+
     # If max_length is 0 or negative, no truncation
     if max_length <= 0:
         return full_name, full_name
-    
+
     # If name is short enough, return as-is
     if len(full_name) <= max_length:
         return full_name, full_name
-    
+
     # Truncate with ellipsis
     # Reserve 3 characters for "..."
     if max_length <= 3:
         display_name = full_name[:max_length]
     else:
-        display_name = full_name[:max_length - 3] + "..."
-    
+        display_name = full_name[: max_length - 3] + "..."
+
     return full_name, display_name
 
 
@@ -298,20 +295,16 @@ class StructuredLogger:
             detail_str = ", ".join(f"{k}={v}" for k, v in details.items())
             message += f" | {detail_str}"
         self.logger.info(message)
-    
+
     def company_activity(
-        self, 
-        company_name: str, 
-        action: str, 
-        details: Optional[Dict] = None,
-        truncate: bool = True
+        self, company_name: str, action: str, details: Optional[Dict] = None, truncate: bool = True
     ) -> None:
         """
         Log company-related activity with smart truncation.
-        
+
         This method ensures full company names are preserved in structured logs
         while providing readable truncated versions for console output.
-        
+
         Args:
             company_name: Full company name
             action: Action being performed (e.g., "FETCH", "EXTRACT", "ANALYZE")
@@ -319,15 +312,15 @@ class StructuredLogger:
             truncate: Whether to use display truncation (default: True)
         """
         full_name, display_name = format_company_name(company_name)
-        
+
         # Use display name for console readability
         name_to_log = display_name if truncate else full_name
-        
+
         message = f"[COMPANY] {action} - {name_to_log}"
         if details:
             detail_str = ", ".join(f"{k}={v}" for k, v in details.items())
             message += f" | {detail_str}"
-        
+
         # Note: The actual full name is still available in structured logs
         # via the logging context if needed
         self.logger.info(message)
