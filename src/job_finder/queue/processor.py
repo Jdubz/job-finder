@@ -8,6 +8,7 @@ from typing import Any, Dict, Optional
 from job_finder.ai import AIJobMatcher, AITask, create_provider
 from job_finder.company_info_fetcher import CompanyInfoFetcher
 from job_finder.filters import StrikeFilterEngine
+from job_finder.logging_config import format_company_name
 from job_finder.profile.schema import Profile
 from job_finder.queue.config_loader import ConfigLoader
 from job_finder.queue.manager import QueueManager
@@ -844,7 +845,8 @@ class QueueItemProcessor:
             return
 
         company_name = item.company_name or "Unknown Company"
-        logger.info(f"COMPANY_FETCH: Fetching website content for {company_name}")
+        _, company_display = format_company_name(company_name)
+        logger.info(f"COMPANY_FETCH: Fetching website content for {company_display}")
 
         try:
             if not item.url:
@@ -904,8 +906,9 @@ class QueueItemProcessor:
                 is_company=True,
             )
 
+            _, company_display = format_company_name(company_name)
             logger.info(
-                f"COMPANY_FETCH complete: Fetched {len(html_content)} pages for {company_name}"
+                f"COMPANY_FETCH complete: Fetched {len(html_content)} pages for {company_display}"
             )
 
         except Exception as e:
@@ -929,7 +932,8 @@ class QueueItemProcessor:
         company_name = item.pipeline_state.get("company_name", "Unknown Company")
         html_content = item.pipeline_state.get("html_content", {})
 
-        logger.info(f"COMPANY_EXTRACT: Extracting company info for {company_name}")
+        _, company_display = format_company_name(company_name)
+        logger.info(f"COMPANY_EXTRACT: Extracting company info for {company_display}")
 
         try:
             # Combine all HTML content
@@ -966,9 +970,10 @@ class QueueItemProcessor:
                 is_company=True,
             )
 
+            _, company_display = format_company_name(company_name)
             logger.info(
                 f"COMPANY_EXTRACT complete: Extracted {len(extracted_info.get('about', ''))} chars "
-                f"about, {len(extracted_info.get('culture', ''))} chars culture for {company_name}"
+                f"about, {len(extracted_info.get('culture', ''))} chars culture for {company_display}"
             )
 
         except Exception as e:
@@ -995,7 +1000,8 @@ class QueueItemProcessor:
         extracted_info = item.pipeline_state.get("extracted_info", {})
         html_content = item.pipeline_state.get("html_content", {})
 
-        logger.info(f"COMPANY_ANALYZE: Analyzing {company_name}")
+        _, company_display = format_company_name(company_name)
+        logger.info(f"COMPANY_ANALYZE: Analyzing {company_display}")
 
         try:
             # Detect tech stack from company info
@@ -1032,7 +1038,8 @@ class QueueItemProcessor:
 
             # If job board found, spawn SOURCE_DISCOVERY
             if job_board_url:
-                logger.info(f"Found job board for {company_name}: {job_board_url}")
+                _, company_display = format_company_name(company_name)
+                logger.info(f"Found job board for {company_display}: {job_board_url}")
                 # Will be handled in COMPANY_SAVE step
 
             # Spawn next pipeline step (SAVE)
@@ -1070,7 +1077,8 @@ class QueueItemProcessor:
         extracted_info = item.pipeline_state.get("extracted_info", {})
         analysis_result = item.pipeline_state.get("analysis_result", {})
 
-        logger.info(f"COMPANY_SAVE: Saving {company_name}")
+        _, company_display = format_company_name(company_name)
+        logger.info(f"COMPANY_SAVE: Saving {company_display}")
 
         try:
             # Build complete company record
@@ -1087,7 +1095,8 @@ class QueueItemProcessor:
             # Save to companies collection
             company_id = self.companies_manager.save_company(company_info)
 
-            logger.info(f"Company saved: {company_name} (ID: {company_id})")
+            _, company_display = format_company_name(company_name)
+            logger.info(f"Company saved: {company_display} (ID: {company_id})")
 
             # If job board found, spawn SOURCE_DISCOVERY
             job_board_url = analysis_result.get("job_board_url")
@@ -1115,7 +1124,8 @@ class QueueItemProcessor:
                 )
 
                 self.queue_manager.add_item(source_item)
-                logger.info(f"Spawned SOURCE_DISCOVERY for {company_name}: {job_board_url}")
+                _, company_display = format_company_name(company_name)
+                logger.info(f"Spawned SOURCE_DISCOVERY for {company_display}: {job_board_url}")
 
             self.queue_manager.update_status(
                 item.id,
