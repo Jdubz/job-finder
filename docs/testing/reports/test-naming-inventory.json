@@ -1,0 +1,104 @@
+{
+  "collection": {
+    "collected_tests": 501,
+    "errors": 7,
+    "test_modules": [
+      "test_config_loader.py",
+      "test_integration.py",
+      "test_queue_manager.py",
+      "test_scrape_models.py",
+      "test_scraper_intake.py",
+      "test_ai_matcher.py",
+      "test_ai_model_selection.py",
+      "test_company_name_utils.py",
+      "test_company_size_utils.py",
+      "test_date_utils.py",
+      "test_firestore_client.py",
+      "test_greenhouse_scraper.py",
+      "test_job_type_filter.py",
+      "test_placeholder.py",
+      "test_profile_loader.py",
+      "test_profile_schema.py",
+      "test_role_preference_utils.py",
+      "test_source_type_detector.py",
+      "test_text_sanitizer.py",
+      "test_timezone_utils.py",
+      "test_url_utils.py"
+    ],
+    "error_modules": [
+      "tests/queue/test_granular_pipeline.py ____________",
+      "tests/queue/test_job_pipeline_comprehensive.py ________",
+      "tests/queue/test_processor.py ________________",
+      "tests/queue/test_source_discovery.py _____________",
+      "tests/test_company_pipeline.py ________________",
+      "tests/test_scrape_runner.py _________________",
+      "tests/test_search_orchestrator.py ______________"
+    ],
+    "warnings": []
+  },
+  "files": {
+    "pytest_pattern": [
+      "test_company_pipeline.py",
+      "test_text_sanitizer.py",
+      "test_timezone_utils.py",
+      "test_profile_loader.py",
+      "test_ai_model_selection.py",
+      "test_role_preference_utils.py",
+      "test_url_utils.py",
+      "test_search_orchestrator.py",
+      "test_scrape_runner.py",
+      "test_firestore_client.py",
+      "test_placeholder.py",
+      "test_source_type_detector.py",
+      "test_company_size_utils.py",
+      "test_ai_matcher.py",
+      "test_job_type_filter.py",
+      "test_date_utils.py",
+      "test_profile_schema.py",
+      "test_greenhouse_scraper.py",
+      "test_company_name_utils.py",
+      "queue/test_source_discovery.py",
+      "queue/test_processor.py",
+      "queue/test_job_pipeline_comprehensive.py",
+      "queue/test_config_loader.py",
+      "queue/test_scrape_models.py",
+      "queue/test_granular_pipeline.py",
+      "queue/test_queue_manager.py",
+      "queue/test_integration.py",
+      "queue/test_scraper_intake.py"
+    ],
+    "helper_files": [
+      "__init__.py",
+      "queue/__init__.py",
+      "e2e/scenarios/__init__.py",
+      "e2e/helpers/__init__.py"
+    ],
+    "e2e_runners": [
+      "e2e/data_collector.py",
+      "e2e/run_local_e2e.py",
+      "e2e/validate_decision_tree.py",
+      "e2e/results_analyzer.py",
+      "e2e/run_with_streaming.py",
+      "e2e/run_all_scenarios.py",
+      "e2e/queue_monitor.py",
+      "e2e/cleanup.py"
+    ],
+    "e2e_scenarios": [
+      "e2e/scenarios/scenario_03_company_source_discovery.py",
+      "e2e/scenarios/scenario_05_full_discovery_cycle.py",
+      "e2e/scenarios/scenario_02_filtered_job.py",
+      "e2e/scenarios/scenario_01_job_submission.py",
+      "e2e/scenarios/scenario_04_scrape_rotation.py"
+    ],
+    "e2e_helpers": [
+      "e2e/scenarios/base_scenario.py",
+      "e2e/helpers/firestore_helper.py",
+      "e2e/helpers/cleanup_helper.py",
+      "e2e/helpers/data_quality_monitor.py",
+      "e2e/helpers/log_streamer.py",
+      "e2e/helpers/queue_monitor.py"
+    ],
+    "other": []
+  },
+  "timestamp": "2025-10-20T07:30:47.043671"
+}

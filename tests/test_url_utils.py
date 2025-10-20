@@ -1,8 +1,11 @@
 """Tests for URL normalization utility."""
 
-import pytest
-
-from job_finder.utils.url_utils import normalize_url, get_url_hash, urls_are_equivalent
+from job_finder.utils.url_utils import (
+    normalize_url,
+    normalize_job_url,
+    get_url_hash,
+    urls_are_equivalent,
+)
 
 
 class TestNormalizeUrl:
@@ -112,3 +115,39 @@ class TestUrlsAreEquivalent:
         url1 = "https://example.com/job/123?id=456&search=dev"
         url2 = "https://EXAMPLE.COM/job/123/?search=dev&id=456&utm_source=test&utm_campaign=camp"
         assert urls_are_equivalent(url1, url2)
+
+
+class TestNormalizeJobUrl:
+    """Test job-specific URL normalization."""
+
+    def test_normalize_job_url_is_alias(self):
+        """Test that normalize_job_url is an alias for normalize_url."""
+        url = "https://example.com/jobs/123?utm_source=linkedin"
+        assert normalize_job_url(url) == normalize_url(url)
+
+    def test_normalize_greenhouse_url(self):
+        """Test normalization of Greenhouse job URLs."""
+        url1 = "https://boards.greenhouse.io/company/jobs/123?t=abc123"
+        url2 = "https://boards.greenhouse.io/company/jobs/123"
+        assert normalize_job_url(url1) == normalize_job_url(url2)
+
+    def test_normalize_workday_url(self):
+        """Test normalization of Workday job URLs."""
+        url1 = "https://example.myworkdayjobs.com/en-US/Careers/job/Software-Engineer_123/"
+        url2 = "https://example.myworkdayjobs.com/en-US/Careers/job/Software-Engineer_123"
+        assert normalize_job_url(url1) == normalize_job_url(url2)
+
+    def test_normalize_with_ref_param(self):
+        """Test removal of ref tracking parameter."""
+        url1 = "https://example.com/jobs/123?ref=social"
+        url2 = "https://example.com/jobs/123"
+        assert normalize_job_url(url1) == normalize_job_url(url2)
+
+    def test_normalize_preserves_job_params(self):
+        """Test that job-specific params are preserved."""
+        url = "https://example.com/jobs?category=engineering&location=remote"
+        normalized = normalize_job_url(url)
+        assert "category=engineering" in normalized
+        assert "location=remote" in normalized
+        # Should be sorted alphabetically
+        assert normalized.index("category") < normalized.index("location")

@@ -1,0 +1,35 @@
+# Logging configuration for job-finder-worker
+#
+# This file configures logging behavior including display formatting
+# for structured logs and console output.
+
+# Console display settings
+console:
+  # Maximum length for company names in console output
+  # Longer names will be truncated with ellipsis (...)
+  # Set to 0 to disable truncation
+  max_company_name_length: 80
+  
+  # Maximum length for job titles in console output
+  max_job_title_length: 60
+  
+  # Maximum length for URLs in console output
+  max_url_length: 50
+
+# Structured logging settings
+structured:
+  # Whether to include both full and display versions in structured logs
+  # When true, logs will have both 'company_name' (full) and 'company_name_display' (truncated)
+  include_display_fields: true
+  
+  # Whether to always include full values in structured output
+  # This ensures no data loss even when console output is truncated
+  preserve_full_values: true
+
+# Log levels per component (optional overrides)
+# Uncomment to set specific log levels for different components
+# components:
+#   queue_processor: INFO
+#   company_fetcher: DEBUG
+#   scrapers: INFO
+#   ai_matcher: INFO

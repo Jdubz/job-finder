@@ -39,9 +39,12 @@ line-length = 100
 target-version = ['py39']
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
-python_files = "test_*.py"
-python_functions = "test_*"
+# pytest test discovery configuration
+# See docs/testing/naming-conventions.md for details
+testpaths = ["tests"]                    # Only search for tests in tests/ directory
+python_files = "test_*.py"               # Only collect files starting with test_
+python_classes = "Test*"                 # Only collect classes starting with Test (capital T)
+python_functions = "test_*"              # Only collect functions starting with test_
 addopts = "-v --cov=src/job_finder --cov-report=html --cov-report=term"
 
 [tool.mypy]

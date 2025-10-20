@@ -1,0 +1,52 @@
+File Path,Category,Pytest Discoverable,Status
+queue/test_config_loader.py,Pytest Test,Yes,✅ Follows Convention
+queue/test_granular_pipeline.py,Pytest Test,Yes,✅ Follows Convention
+queue/test_integration.py,Pytest Test,Yes,✅ Follows Convention
+queue/test_job_pipeline_comprehensive.py,Pytest Test,Yes,✅ Follows Convention
+queue/test_processor.py,Pytest Test,Yes,✅ Follows Convention
+queue/test_queue_manager.py,Pytest Test,Yes,✅ Follows Convention
+queue/test_scrape_models.py,Pytest Test,Yes,✅ Follows Convention
+queue/test_scraper_intake.py,Pytest Test,Yes,✅ Follows Convention
+queue/test_source_discovery.py,Pytest Test,Yes,✅ Follows Convention
+test_ai_matcher.py,Pytest Test,Yes,✅ Follows Convention
+test_ai_model_selection.py,Pytest Test,Yes,✅ Follows Convention
+test_company_name_utils.py,Pytest Test,Yes,✅ Follows Convention
+test_company_pipeline.py,Pytest Test,Yes,✅ Follows Convention
+test_company_size_utils.py,Pytest Test,Yes,✅ Follows Convention
+test_date_utils.py,Pytest Test,Yes,✅ Follows Convention
+test_firestore_client.py,Pytest Test,Yes,✅ Follows Convention
+test_greenhouse_scraper.py,Pytest Test,Yes,✅ Follows Convention
+test_job_type_filter.py,Pytest Test,Yes,✅ Follows Convention
+test_placeholder.py,Pytest Test,Yes,✅ Follows Convention
+test_profile_loader.py,Pytest Test,Yes,✅ Follows Convention
+test_profile_schema.py,Pytest Test,Yes,✅ Follows Convention
+test_role_preference_utils.py,Pytest Test,Yes,✅ Follows Convention
+test_scrape_runner.py,Pytest Test,Yes,✅ Follows Convention
+test_search_orchestrator.py,Pytest Test,Yes,✅ Follows Convention
+test_source_type_detector.py,Pytest Test,Yes,✅ Follows Convention
+test_text_sanitizer.py,Pytest Test,Yes,✅ Follows Convention
+test_timezone_utils.py,Pytest Test,Yes,✅ Follows Convention
+test_url_utils.py,Pytest Test,Yes,✅ Follows Convention
+__init__.py,Helper,N/A,✅ Standard Helper
+e2e/helpers/__init__.py,Helper,N/A,✅ Standard Helper
+e2e/scenarios/__init__.py,Helper,N/A,✅ Standard Helper
+queue/__init__.py,Helper,N/A,✅ Standard Helper
+e2e/cleanup.py,E2E Runner,No,✅ Not a Pytest Test
+e2e/data_collector.py,E2E Runner,No,✅ Not a Pytest Test
+e2e/queue_monitor.py,E2E Runner,No,✅ Not a Pytest Test
+e2e/results_analyzer.py,E2E Runner,No,✅ Not a Pytest Test
+e2e/run_all_scenarios.py,E2E Runner,No,✅ Not a Pytest Test
+e2e/run_local_e2e.py,E2E Runner,No,✅ Not a Pytest Test
+e2e/run_with_streaming.py,E2E Runner,No,✅ Not a Pytest Test
+e2e/validate_decision_tree.py,E2E Runner,No,✅ Not a Pytest Test
+e2e/scenarios/scenario_01_job_submission.py,E2E Scenario,No,✅ Not a Pytest Test
+e2e/scenarios/scenario_02_filtered_job.py,E2E Scenario,No,✅ Not a Pytest Test
+e2e/scenarios/scenario_03_company_source_discovery.py,E2E Scenario,No,✅ Not a Pytest Test
+e2e/scenarios/scenario_04_scrape_rotation.py,E2E Scenario,No,✅ Not a Pytest Test
+e2e/scenarios/scenario_05_full_discovery_cycle.py,E2E Scenario,No,✅ Not a Pytest Test
+e2e/helpers/cleanup_helper.py,E2E Helper,No,✅ Not a Pytest Test
+e2e/helpers/data_quality_monitor.py,E2E Helper,No,✅ Not a Pytest Test
+e2e/helpers/firestore_helper.py,E2E Helper,No,✅ Not a Pytest Test
+e2e/helpers/log_streamer.py,E2E Helper,No,✅ Not a Pytest Test
+e2e/helpers/queue_monitor.py,E2E Helper,No,✅ Not a Pytest Test
+e2e/scenarios/base_scenario.py,E2E Helper,No,✅ Not a Pytest Test
