@@ -188,7 +188,12 @@ class AIJobMatcher:
         job_location = job.get("location", "")
         headquarters_location = ""  # Would come from company data if available
         job_timezone = detect_timezone_for_job(
-            job_location, job_description, company_size, headquarters_location
+            job_location=job_location,
+            job_description=job_description,
+            company_size=company_size,
+            headquarters_location=headquarters_location,
+            company_name=company_name,
+            company_info=company_info,
         )
         timezone_adj, timezone_desc = calculate_timezone_score_adjustment(
             job_timezone, self.user_timezone
