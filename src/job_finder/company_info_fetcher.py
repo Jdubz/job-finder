@@ -8,6 +8,8 @@ from typing import Any, Dict, Optional
 import requests
 from bs4 import BeautifulSoup
 
+from job_finder.logging_config import format_company_name
+
 logger = logging.getLogger(__name__)
 
 
@@ -50,7 +52,8 @@ class CompanyInfoFetcher:
                 'founded': str (optional)
             }
         """
-        logger.info(f"Fetching company info for {company_name}")
+        _, company_display = format_company_name(company_name)
+        logger.info(f"Fetching company info for {company_display}")
 
         result = {
             "name": company_name,
@@ -64,7 +67,7 @@ class CompanyInfoFetcher:
         }
 
         if not company_website:
-            logger.warning(f"No website provided for {company_name}")
+            logger.warning(f"No website provided for {company_display}")
             return result
 
         try:
@@ -94,17 +97,20 @@ class CompanyInfoFetcher:
                 extracted = self._extract_company_info(content, company_name)
                 result.update(extracted)
 
+                _, company_display = format_company_name(company_name)
                 logger.info(
-                    f"Extracted company info for {company_name}: "
+                    f"Extracted company info for {company_display}: "
                     f"{len(result['about'])} chars about, "
                     f"{len(result['culture'])} chars culture"
                 )
             else:
-                logger.warning(f"Could not fetch any content for {company_name}")
+                _, company_display = format_company_name(company_name)
+                logger.warning(f"Could not fetch any content for {company_display}")
 
         except (requests.RequestException, ValueError, AttributeError) as e:
             # HTTP, parsing, or data errors - return empty result
-            logger.error(f"Error fetching company info for {company_name}: {e}")
+            _, company_display = format_company_name(company_name)
+            logger.error(f"Error fetching company info for {company_display}: {e}")
         except Exception as e:
             # Unexpected errors - log with traceback
             logger.error(
