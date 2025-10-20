@@ -54,10 +54,10 @@ A Python-based web scraper that finds online job postings relevant to your exper
 
 4. **Set up your profile** (choose one option):
 
-   **Option A: Use Firestore (recommended if you have the portfolio project)**
+   **Option A: Use Firestore (recommended if you have the job-finder-FE frontend)**
    ```bash
    # Download your Firebase service account key from Firebase Console
-   # Place it in a secure location (e.g., ~/.firebase/portfolio-key.json)
+   # Place it in a secure location (e.g., ~/.firebase/job-finder-key.json)
 
    # In .env, set:
    # GOOGLE_APPLICATION_CREDENTIALS=/path/to/serviceAccountKey.json
@@ -66,7 +66,7 @@ A Python-based web scraper that finds online job postings relevant to your exper
    # profile:
    #   source: "firestore"
    #   firestore:
-   #     database_name: "portfolio"
+   #     database_name: "job-finder"
    #     name: "Your Name"
    #     email: "your.email@example.com"
    ```
@@ -239,7 +239,7 @@ job-finder/
 ## How It Works
 
 1. **Profile Loading**:
-   - **Option A**: Load directly from Firestore database (automatically syncs with portfolio project)
+   - **Option A**: Load directly from Firestore database (automatically syncs with job-finder-FE frontend)
    - **Option B**: Load from JSON file (manual profile creation)
 2. **Job Scraping**: Scrapers collect job postings from configured job boards
 3. **Basic Filtering**: Traditional filters remove obviously irrelevant jobs (wrong location, missing keywords)
@@ -257,7 +257,7 @@ job-finder/
 
 ## Firestore Integration
 
-If you have the portfolio project with Firestore, you can load profile data directly from your database:
+If you have the job-finder-FE frontend with Firestore, you can load profile data directly from your database:
 
 **Collections Used:**
 - `experience-entries`: Work experience data
@@ -265,7 +265,7 @@ If you have the portfolio project with Firestore, you can load profile data dire
 
 **Benefits:**
 - No manual data export/import needed
-- Profile automatically stays in sync with portfolio
+- Profile automatically stays in sync with job-finder-FE frontend
 - Single source of truth for your professional data
 
 **Setup:**
@@ -330,7 +330,7 @@ Comprehensive documentation is available in the [`docs/`](docs/) directory:
 - **[Local Testing](docs/guides/local-testing.md)** - Docker local testing guide
 
 ### Integration & Planning
-- **[Portfolio Integration](docs/integrations/portfolio.md)** - Integrate with Portfolio web application
+- **[Frontend Integration](docs/integrations/frontend.md)** - Integrate with job-finder-FE frontend application
 - **[Next Steps](docs/next-steps.md)** - Roadmap, technical debt, and planned features
 
 See **[docs/README.md](docs/README.md)** for complete documentation navigation.

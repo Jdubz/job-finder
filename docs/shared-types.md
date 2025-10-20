@@ -18,7 +18,7 @@ The job-finder and portfolio projects share type definitions through the `@jdubz
     ├── src/queue.types.ts          # Queue-related types
     └── dist/                        # Compiled JavaScript + TypeScript definitions
 
-Portfolio (TypeScript)
+job-finder-FE (TypeScript)
     └── imports @jdubz/job-finder-shared-types directly via npm
 
 Job-finder (Python)
@@ -29,7 +29,7 @@ Job-finder (Python)
 
 1. **Type Safety**: TypeScript provides compile-time type checking
 2. **Documentation**: JSDoc comments and interfaces serve as schema documentation
-3. **Portfolio Integration**: Portfolio is TypeScript and imports types directly
+3. **job-finder-FE Integration**: job-finder-FE is TypeScript and imports types directly
 4. **Single Definition**: One place to define the contract between projects
 
 ## Type Mapping
@@ -342,8 +342,8 @@ Test that Python writes data that TypeScript can read:
 
 1. Python writes queue item to Firestore
 2. Check Firestore console - verify field names match TypeScript
-3. Portfolio reads queue item - verify no errors
-4. Portfolio updates status - Python reads updated status
+3. job-finder-FE reads queue item - verify no errors
+4. job-finder-FE updates status - Python reads updated status
 
 ## Troubleshooting
 
@@ -395,7 +395,7 @@ data = item.to_firestore()  # Handles datetime conversion
 - **Queue Types (TypeScript):** https://github.com/Jdubz/job-finder-shared-types/blob/main/src/queue.types.ts
 - **Python Models:** `/home/jdubz/Development/job-finder/src/job_finder/queue/models.py`
 - **Context Document:** `/home/jdubz/Development/job-finder/.claude/context.md`
-- **Portfolio Integration:** `/home/jdubz/Development/job-finder/docs/integrations/portfolio.md`
+- **job-finder-FE Integration:** `/home/jdubz/Development/job-finder/docs/integrations/portfolio.md`
 
 ---
 

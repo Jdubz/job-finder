@@ -66,11 +66,11 @@ def main():
     print("=" * 70)
 
     # Explore portfolio database
-    print("\n1. Portfolio Database (used by Portfolio app)")
+    print("\n1. job-finder-FE Database (used by job-finder-FE app)")
     explore_collections("portfolio")
 
     # Explore portfolio-staging database
-    print("\n2. Portfolio-Staging Database (used by Job Finder)")
+    print("\n2. job-finder-FE-Staging Database (used by Job Finder)")
     explore_collections("portfolio-staging")
 
 

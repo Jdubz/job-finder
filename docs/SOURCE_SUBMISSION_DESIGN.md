@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document outlines the design for allowing the Portfolio project to submit new job scraping sources for discovery and ingestion.
+This document outlines the design for allowing the job-finder-FE project to submit new job scraping sources for discovery and ingestion.
 
 ## Use Cases
 
@@ -10,19 +10,19 @@ This document outlines the design for allowing the Portfolio project to submit n
 **Scenario**: User finds an interesting company and wants to track their job postings.
 
 **Flow**:
-1. User enters company name + career page URL in Portfolio UI
-2. Portfolio creates SOURCE_DISCOVERY queue item
+1. User enters company name + career page URL in job-finder-FE UI
+2. job-finder-FE creates SOURCE_DISCOVERY queue item
 3. Job-finder fetches page, uses AI to discover selectors
 4. Job-finder validates selectors and creates job-source
 5. Source is ready for automated scraping
-6. Portfolio notifies user of success/failure
+6. job-finder-FE notifies user of success/failure
 
 ### 2. User Submits Specific Job Board
 **Scenario**: User wants to track a specific Greenhouse/Workday board.
 
 **Flow**:
 1. User enters job board URL (e.g., `https://boards.greenhouse.io/stripe`)
-2. Portfolio detects board type (Greenhouse) and creates SOURCE_DISCOVERY item
+2. job-finder-FE detects board type (Greenhouse) and creates SOURCE_DISCOVERY item
 3. Job-finder validates the board exists and is scrapable
 4. Job-finder creates job-source with appropriate config
 5. Source is ready for automated scraping
@@ -32,7 +32,7 @@ This document outlines the design for allowing the Portfolio project to submit n
 
 **Flow**:
 1. User enters RSS feed URL
-2. Portfolio creates SOURCE_DISCOVERY item with type hint "rss"
+2. job-finder-FE creates SOURCE_DISCOVERY item with type hint "rss"
 3. Job-finder validates feed format
 4. Job-finder creates job-source with RSS config
 5. Source is ready for automated scraping
@@ -114,7 +114,7 @@ interface QueueItem {
                 │                           │
                 ▼                           ▼
       ┌──────────────────┐        ┌──────────────────┐
-      │ Notify Portfolio │        │ Notify Portfolio │
+      │ Notify job-finder-FE │        │ Notify job-finder-FE │
       │ (source_id)      │        │ (error details)  │
       └──────────────────┘        └──────────────────┘
 ```
@@ -275,11 +275,11 @@ def detect_source_type(url: str) -> str:
    - Examples of source submission
    - Troubleshooting guide
 
-## Portfolio Integration
+## job-finder-FE Integration
 
 ### Submitting a Source
 
-**From Portfolio (TypeScript):**
+**From job-finder-FE (TypeScript):**
 
 ```typescript
 import { QueueItem } from '@jdubz/job-finder-shared-types'

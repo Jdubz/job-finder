@@ -11,7 +11,7 @@ version: '3.8'
 # - Validates actual AI integration and match quality
 #
 # Prerequisites:
-#   1. Portfolio Firebase emulators must be running (make firebase-emulators in portfolio repo)
+#   1. job-finder-FE Firebase emulators must be running (make firebase-emulators in portfolio repo)
 #   2. Emulators should be accessible on host network
 #   3. AI API keys must be set in environment (.env file)
 #

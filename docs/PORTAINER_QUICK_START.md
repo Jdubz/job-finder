@@ -231,8 +231,8 @@ docker exec job-finder-production env
 
 After successful deployment:
 
-1. ✅ **Configure Portfolio Frontend** - See `docs/PORTFOLIO_FRONTEND_CONFIG.md`
-2. ✅ **Test Queue Processing** - Submit test job from Portfolio UI
+1. ✅ **Configure job-finder-FE Frontend** - See `docs/FRONTEND_CONFIG.md`
+2. ✅ **Test Queue Processing** - Submit test job from job-finder-FE UI
 3. ✅ **Set Up Monitoring** - Configure Watchtower notifications (optional)
 4. ✅ **Review Logs Regularly** - Check for errors daily
 
@@ -270,4 +270,4 @@ You should now have:
 
 **Total setup time:** ~5 minutes 🚀
 
-Next step: Configure your Portfolio frontend to submit queue items to the correct database!
+Next step: Configure your job-finder-FE frontend to submit queue items to the correct database!

@@ -245,7 +245,7 @@ Possible extensions:
 3. **Cost budget enforcement** - Auto-disable if daily budget exceeded
 4. **Dynamic frequency** - Adjust based on match success rate
 5. **Notification system** - Alert when disabled/errors occur
-6. **Web UI** - Manage settings via Portfolio web app
+6. **Web UI** - Manage settings via job-finder-FE web app
 
 ## Related Systems
 

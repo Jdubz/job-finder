@@ -599,7 +599,7 @@ User submits URL → Auto-detect source type
 ### Check Queue Item Status
 
 ```typescript
-// In Portfolio project
+// In job-finder-FE project
 const unsubscribe = onSnapshot(
   doc(db, 'job-queue', queueItemId),
   (snapshot) => {

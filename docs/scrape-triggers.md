@@ -10,7 +10,7 @@ Job scraping is now a queue-based operation. Instead of running scrapers directl
 - ✅ **Configurable** - Each scrape can have unique settings
 - ✅ **Audit trail** - All scrapes logged in queue with results
 - ✅ **No duplicate scrapes** - Prevents multiple pending scrapes
-- ✅ **Works everywhere** - CLI, Portfolio UI (future), cron jobs
+- ✅ **Works everywhere** - CLI, job-finder-FE UI (future), cron jobs
 
 ## Architecture
 
@@ -140,9 +140,9 @@ python scripts/trigger_scrape.py --force
 - `max_sources` omitted → default to 20
 - `--no-source-limit` → unlimited sources (until target_matches or all sources done)
 
-### 3. From Portfolio UI (Future)
+### 3. From job-finder-FE UI (Future)
 
-The Portfolio web app will have a "Run Custom Scrape" button that:
+The job-finder-FE web app will have a "Run Custom Scrape" button that:
 1. Shows form with scrape settings
 2. Creates SCRAPE queue item in Firestore
 3. Displays real-time status as queue worker processes it
@@ -336,7 +336,7 @@ Full audit trail in Firestore
 - ✅ Single worker handles everything
 - ✅ Full audit trail
 - ✅ Easy to monitor
-- ✅ Portfolio UI integration ready
+- ✅ job-finder-FE UI integration ready
 
 ## Troubleshooting
 

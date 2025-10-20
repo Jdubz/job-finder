@@ -6,7 +6,7 @@ Complete source submission interface for the job-finder queue system.
 
 ## What Is This?
 
-The **source submission interface** allows your Portfolio frontend to submit job boards, RSS feeds, APIs, and career pages for automated scraping. The job-finder backend will:
+The **source submission interface** allows your job-finder-FE frontend to submit job boards, RSS feeds, APIs, and career pages for automated scraping. The job-finder backend will:
 
 1. **Detect** the source type (Greenhouse, Workday, RSS, etc.)
 2. **Configure** the source automatically
@@ -18,7 +18,7 @@ The **source submission interface** allows your Portfolio frontend to submit job
 
 ## Quick Start
 
-### TypeScript (Portfolio Frontend)
+### TypeScript (job-finder-FE Frontend)
 
 ```typescript
 import { addDoc, collection, Timestamp } from 'firebase/firestore'
@@ -140,7 +140,7 @@ Job-finder processes item
      ↓
 Queue item updated (status: success/failed)
      ↓
-Portfolio monitors and shows result
+job-finder-FE monitors and shows result
 ```
 
 ---

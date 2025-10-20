@@ -1,20 +1,20 @@
-# Portfolio Project Integration Guide
+# Frontend Integration Guide
 
 **Date:** 2025-10-16
 **Queue Implementation:** Phase 1 Complete
-**Target:** Portfolio web application integration
+**Target:** job-finder-FE frontend application integration
 
 ---
 
 ## Overview
 
-This guide provides step-by-step instructions for integrating the job-finder queue system with the Portfolio web application. The queue enables asynchronous job processing, allowing users to submit jobs via the Portfolio UI for background analysis.
+This guide provides step-by-step instructions for integrating the job-finder queue system with the job-finder-FE frontend application. The queue enables asynchronous job processing, allowing users to submit jobs via the frontend UI for background analysis.
 
 ## Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                    Portfolio Web App                     │
+│                    job-finder-FE Frontend                     │
 │  - User submits job URL via form                         │
 │  - API validates and writes to Firestore                 │
 │  - UI polls for job status updates                       │
@@ -616,7 +616,7 @@ export default function SubmitJobPage() {
    python scripts/workers/queue_worker.py
    ```
 
-2. **Access the submission form** in Portfolio:
+2. **Access the submission form** in job-finder-FE:
    - Navigate to `/jobs/submit`
    - Sign in if not already authenticated
 
@@ -1007,6 +1007,6 @@ For questions or issues:
 1. Check queue worker logs: `/app/logs/queue_worker.log`
 2. Review Firestore documents in Firebase Console
 3. Verify all environment variables are set correctly
-4. Ensure both services (Portfolio + Queue Worker) are running
+4. Ensure both services (job-finder-FE + Queue Worker) are running
 
 **Documentation Location:** `job-finder/QUEUE_IMPLEMENTATION_SUMMARY.md`

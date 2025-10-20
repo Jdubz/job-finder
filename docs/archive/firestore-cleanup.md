@@ -13,8 +13,8 @@ This document summarizes the Firestore data cleanup performed to remove duplicat
 
 Explored both `portfolio` and `portfolio-staging` databases to understand collection usage and identify issues.
 
-**Portfolio Database (Production):**
-- `companies` (2 docs) - Used by Portfolio app
+**job-finder-FE Database (Production):**
+- `companies` (2 docs) - Used by job-finder-FE app
 - `contact-submissions` (13 docs) - Contact form submissions
 - `experience-blurbs` (6 docs) - Profile content sections
 - `experience-entries` (7 docs) - Work experience entries
@@ -22,7 +22,7 @@ Explored both `portfolio` and `portfolio-staging` databases to understand collec
 - `job-listings` (25 docs) - Job source configurations
 - `job-matches` (31 docs) - Matched jobs for display
 
-**Portfolio-Staging Database (Job Finder):**
+**job-finder-FE-Staging Database (Job Finder):**
 - `companies` (21 docs) - Company data with scoring
 - `job-listings` (51 docs) - Job source configurations
 - `job-matches` (92 docs) - Matched jobs from scraper
@@ -36,7 +36,7 @@ Explored both `portfolio` and `portfolio-staging` databases to understand collec
 2. `experience-blurbs` (6 docs) - Duplicate from portfolio
 3. `experience-entries` (7 docs) - Duplicate from portfolio
 
-**Reason**: These collections are owned by the Portfolio app and should only exist in the `portfolio` database, not in `portfolio-staging`.
+**Reason**: These collections are owned by the job-finder-FE app and should only exist in the `portfolio` database, not in `portfolio-staging`.
 
 **Backup location**: `/home/jdubz/Development/legacy-data/`
 - `portfolio-staging_contact-submissions.json` (9.6K)
@@ -59,7 +59,7 @@ Explored both `portfolio` and `portfolio-staging` databases to understand collec
 
 ### 4. Removed Duplicate Job Postings
 
-**Portfolio Database:**
+**job-finder-FE Database:**
 - Duplicates found: 3
 - Records deleted: 3
 - Example duplicates:
@@ -67,7 +67,7 @@ Explored both `portfolio` and `portfolio-staging` databases to understand collec
   - Novafy - Microsoft Power Platform
   - Edari - ServiceNow Engineer
 
-**Portfolio-Staging Database:**
+**job-finder-FE-Staging Database:**
 - Duplicates found: 13
 - Records deleted: 13
 - Primarily MongoDB and We Work Remotely job postings
@@ -83,11 +83,11 @@ Explored both `portfolio` and `portfolio-staging` databases to understand collec
 
 While we've cleaned up duplicates, some data quality issues remain that require the company info fetcher to resolve:
 
-### Portfolio Database
+### job-finder-FE Database
 - **Empty company info**: 21 jobs (68%)
 - **Missing/Unknown locations**: 4 jobs (13%)
 
-### Portfolio-Staging Database
+### job-finder-FE-Staging Database
 - **Empty company info**: 40 jobs (43%)
 - **Missing/Unknown locations**: 4 jobs (4%)
 
@@ -99,7 +99,7 @@ These issues occur when:
 ## Database Structure Recommendations
 
 ### Current State
-- **portfolio** database: Production data for Portfolio web app
+- **portfolio** database: Production data for job-finder-FE web app
 - **portfolio-staging** database: Staging/dev data for Job Finder pipeline
 
 ### Shared Collections (Present in Both)
@@ -111,7 +111,7 @@ These issues occur when:
 - `job-queue` - Processing queue
 - `queue-config` - Queue configuration
 
-### Portfolio Exclusive Collections (portfolio only)
+### job-finder-FE Exclusive Collections (portfolio only)
 - `contact-submissions` - Contact form data
 - `experience-blurbs` - Profile content
 - `experience-entries` - Work experience
