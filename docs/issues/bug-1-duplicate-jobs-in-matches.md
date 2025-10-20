@@ -1,8 +1,9 @@
 # BUG-1 — Duplicate Jobs in Matches
 
-**Priority**: P1 (High Impact)  
-**Status**: In Progress  
-**Owner**: Worker A  
+**Priority**: P1 (High Impact)
+**Status**: Ready for Staging Verification
+**Owner**: Worker A
+**Updated**: 2025-10-20 19:00 UTC  
 
 ## Summary
 
@@ -24,11 +25,11 @@ Job matches are being duplicated in the `job-matches` Firestore collection despi
    - Checks if job exists in job-matches collection
    - Uses normalized URLs for comparison
 
-3. **Gap in Save Pipeline**: The `save_job_match()` method in `firestore_storage.py`:
+3. **Gap in Save Pipeline** ~~(FIXED 2025-10-20)~~: The `save_job_match()` method in `firestore_storage.py`:
    - ✅ Normalizes URL before saving
-   - ❌ Does NOT check if URL already exists before creating new document
-   - ❌ No structured logging for duplicate detection
-   - **Result**: Duplicates can be created if the same job goes through the pipeline multiple times
+   - ✅ **NOW CHECKS** if URL already exists before creating new document (lines 178-186)
+   - ✅ **NOW INCLUDES** structured logging for duplicate detection with [DB:DUPLICATE] tag
+   - **Result**: Duplicates are now prevented at save time
 
 ### Root Cause
 
@@ -100,14 +101,14 @@ Document:
 ## Implementation Tasks
 
 - [x] Document current duplicate behavior
-- [ ] Add duplicate check in `save_job_match` method
-- [ ] Add `normalize_job_url` alias function
-- [ ] Add structured logging for duplicates
-- [ ] Add tests for duplicate prevention
-- [ ] Update cleanup script documentation
-- [ ] Create operations documentation
-- [ ] Run cleanup on staging database
-- [ ] Verify with DATA-QA-1 smoke test
+- [x] Add duplicate check in `save_job_match` method
+- [x] Add `normalize_job_url` alias function
+- [x] Add structured logging for duplicates
+- [x] Add tests for duplicate prevention (13 tests passing)
+- [x] Update cleanup script documentation
+- [x] Create operations documentation (docs/operations/duplicate-prevention.md)
+- [ ] Run cleanup on staging database (script ready, pending execution)
+- [ ] Verify with DATA-QA-1 smoke test (tracked in separate issue)
 
 ## Testing Strategy
 
@@ -140,14 +141,14 @@ Document:
 ## Acceptance Criteria
 
 - [x] `normalize_job_url` utility implemented (alias)
-- [ ] `save_job_match` checks for duplicates before creating
-- [ ] Structured logs show duplicate detection with [DB:DUPLICATE] tag
-- [ ] All unit tests pass
-- [ ] All integration tests pass
-- [ ] Cleanup script executed on staging
-- [ ] Operations documentation created
-- [ ] No duplicate jobs in staging after cleanup
-- [ ] New job submissions don't create duplicates
+- [x] `save_job_match` checks for duplicates before creating
+- [x] Structured logs show duplicate detection with [DB:DUPLICATE] tag
+- [x] All unit tests pass (13/13 duplicate prevention tests, 22/22 URL utils tests)
+- [x] All integration tests pass
+- [ ] Cleanup script executed on staging (ready for execution)
+- [x] Operations documentation created (docs/operations/duplicate-prevention.md)
+- [ ] No duplicate jobs in staging after cleanup (pending cleanup execution)
+- [ ] New job submissions don't create duplicates (pending staging verification)
 
 ## Related Documentation
 

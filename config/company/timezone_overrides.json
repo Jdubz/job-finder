@@ -1,0 +1,87 @@
+{
+  "$schema": "../../schemas/timezone_overrides.schema.json",
+  "version": "1.0.0",
+  "last_updated": "2025-10-20",
+  "description": "Companies that should not receive timezone penalties for remote roles due to globally distributed teams",
+  "overrides": [
+    {
+      "company_name": "GitLab",
+      "timezone": "unknown",
+      "reason": "All-remote company with globally distributed teams",
+      "source": "manual",
+      "added_date": "2025-10-20"
+    },
+    {
+      "company_name": "Zapier",
+      "timezone": "unknown",
+      "reason": "All-remote company with globally distributed teams",
+      "source": "manual",
+      "added_date": "2025-10-20"
+    },
+    {
+      "company_name": "Automattic",
+      "timezone": "unknown",
+      "reason": "All-remote company with globally distributed teams (WordPress.com, Tumblr)",
+      "source": "manual",
+      "added_date": "2025-10-20"
+    },
+    {
+      "company_name": "Toptal",
+      "timezone": "unknown",
+      "reason": "All-remote talent network with global operations",
+      "source": "manual",
+      "added_date": "2025-10-20"
+    },
+    {
+      "company_name": "InVision",
+      "timezone": "unknown",
+      "reason": "Remote-first company with distributed teams",
+      "source": "manual",
+      "added_date": "2025-10-20"
+    },
+    {
+      "company_name": "Basecamp",
+      "timezone": "unknown",
+      "reason": "Remote-first company with distributed teams",
+      "source": "manual",
+      "added_date": "2025-10-20"
+    },
+    {
+      "company_name": "Doist",
+      "timezone": "unknown",
+      "reason": "All-remote company (Todoist) with globally distributed teams",
+      "source": "manual",
+      "added_date": "2025-10-20"
+    },
+    {
+      "company_name": "Buffer",
+      "timezone": "unknown",
+      "reason": "All-remote company with globally distributed teams",
+      "source": "manual",
+      "added_date": "2025-10-20"
+    },
+    {
+      "company_name": "HashiCorp",
+      "timezone": "unknown",
+      "reason": "Remote-friendly with distributed engineering teams",
+      "source": "manual",
+      "added_date": "2025-10-20"
+    },
+    {
+      "company_name": "Stripe",
+      "timezone": "unknown",
+      "reason": "Global payment platform with distributed teams across timezones",
+      "source": "manual",
+      "added_date": "2025-10-20"
+    }
+  ],
+  "patterns": [
+    {
+      "regex": ".*\\bRemote-First\\b.*",
+      "timezone": "unknown",
+      "reason": "Companies self-identifying as remote-first",
+      "source": "pattern",
+      "added_date": "2025-10-20"
+    }
+  ]
+}

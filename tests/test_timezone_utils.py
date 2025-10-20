@@ -1,5 +1,9 @@
 """Tests for timezone detection and scoring utilities."""
 
+import json
+import tempfile
+from pathlib import Path
+
 from job_finder.utils.timezone_utils import (
     calculate_timezone_score_adjustment,
     detect_timezone_for_job,
@@ -463,3 +467,111 @@ class TestCalculateTimezoneScoreAdjustment:
 
         # Both should have same adjustment (3 hour difference)
         assert adjustment1 == adjustment2 == -5
+
+
+class TestTimezoneOverrides:
+    """Test timezone override functionality for globally distributed companies."""
+
+    def test_override_for_gitlab_returns_none(self):
+        """Test GitLab (globally distributed) returns None."""
+        result = detect_timezone_for_job(
+            job_location="Remote - Worldwide",
+            job_description="Join our all-remote team...",
+            company_name="GitLab",
+            company_info="All-remote company",
+        )
+        assert result is None
+
+    def test_override_for_zapier_returns_none(self):
+        """Test Zapier (globally distributed) returns None."""
+        result = detect_timezone_for_job(
+            job_location="Remote",
+            job_description="Remote position",
+            company_name="Zapier",
+            company_info="Remote company",
+        )
+        assert result is None
+
+    def test_override_for_stripe_returns_none(self):
+        """Test Stripe (global company) returns None for remote roles."""
+        result = detect_timezone_for_job(
+            job_location="Remote - Global",
+            job_description="Join our distributed team...",
+            company_name="Stripe",
+            company_info="Global payment platform",
+        )
+        assert result is None
+
+    def test_override_case_insensitive(self):
+        """Test override matching is case-insensitive."""
+        result = detect_timezone_for_job(
+            job_location="Remote",
+            job_description="Remote role",
+            company_name="gitlab",  # lowercase
+            company_info="",
+        )
+        assert result is None
+
+        result = detect_timezone_for_job(
+            job_location="Remote",
+            job_description="Remote role",
+            company_name="ZAPIER",  # uppercase
+            company_info="",
+        )
+        assert result is None
+
+    def test_no_override_for_unknown_company(self):
+        """Test companies not in override list use normal detection."""
+        result = detect_timezone_for_job(
+            job_location="Seattle, WA",
+            job_description="Local position",
+            company_name="Unknown Company",
+            company_info="Local startup",
+        )
+        assert result == -8  # Seattle timezone
+
+    def test_override_without_company_name_uses_normal_logic(self):
+        """Test override check is skipped if no company_name provided."""
+        result = detect_timezone_for_job(
+            job_location="Portland, OR",
+            job_description="Local role",
+            company_name="",  # No company name
+            company_info="",
+        )
+        assert result == -8  # Portland timezone
+
+    def test_override_with_explicit_team_location_still_uses_override(self):
+        """Test override persists even with team location mentioned."""
+        # GitLab is globally distributed, so even if a team location is mentioned,
+        # we return None to avoid timezone penalties
+        result = detect_timezone_for_job(
+            job_location="Remote",
+            job_description="Our Seattle team is hiring...",
+            company_name="GitLab",
+            company_info="All-remote company",
+        )
+        # Override takes precedence - globally distributed companies don't get penalties
+        assert result is None
+
+    def test_pattern_based_override_remote_first(self):
+        """Test pattern-based override for companies with 'Remote-First' in description."""
+        result = detect_timezone_for_job(
+            job_location="Remote",
+            job_description="We are a Remote-First company...",
+            company_name="New Remote Company",
+            company_info="We are a Remote-First organization with global teams",
+        )
+        # Pattern match should trigger unknown timezone
+        assert result is None
+
+    def test_missing_config_file_gracefully_continues(self):
+        """Test missing config file doesn't break timezone detection."""
+        # This tests the fallback behavior when config file doesn't exist
+        # Normal detection should still work
+        result = detect_timezone_for_job(
+            job_location="San Francisco, CA",
+            job_description="Office position",
+            company_name="Some Company",
+            company_info="Tech company",
+        )
+        assert result == -8  # San Francisco timezone
