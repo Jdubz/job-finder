@@ -543,7 +543,7 @@ jobs = db.collection("job-queue").where("status", "==", "pending").limit(10).str
 
 for job in jobs:
     job_data = job.to_dict()
-    print(f"Job: {job_data['company_name']}")
+    print(f"Job: {job_data['company']}")
 ```
 
 ### Using AI Providers
