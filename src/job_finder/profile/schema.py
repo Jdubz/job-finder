@@ -98,7 +98,7 @@ class Profile(BaseModel):
     location: Optional[str] = Field(None, description="Current location")
     linkedin_url: Optional[HttpUrl] = Field(None, description="LinkedIn profile URL")
     github_url: Optional[HttpUrl] = Field(None, description="GitHub profile URL")
-    portfolio_url: Optional[HttpUrl] = Field(None, description="Portfolio website URL")
+    portfolio_url: Optional[HttpUrl] = Field(None, description="job-finder-FE website URL")
 
     # Professional Summary
     summary: Optional[str] = Field(None, description="Professional summary/bio")

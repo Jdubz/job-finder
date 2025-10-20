@@ -27,7 +27,7 @@ New to Job Finder? Start here:
 ## Specialized Guides
 
 ### Integration Guides
-- **[Portfolio Integration](integrations/portfolio.md)** - Integrate with Portfolio web application
+- **[job-finder-FE Integration](integrations/portfolio.md)** - Integrate with job-finder-FE web application
 
 ### Configuration Guides
 - **[Environment Configuration](guides/environments.md)** - Multi-environment setup (staging/production)
@@ -95,7 +95,7 @@ docs/
 │   └── cloud-logging.md       # Cloud logging setup
 │
 ├── integrations/              # Integration guides
-│   └── portfolio.md           # Portfolio project integration
+│   └── portfolio.md           # job-finder-FE project integration
 │
 └── archive/                   # Historical documentation
     ├── firestore-cleanup.md   # Database optimization notes

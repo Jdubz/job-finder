@@ -1,4 +1,4 @@
-"""E2E test scenarios for Portfolio + Job-Finder integration."""
+"""E2E test scenarios for job-finder-FE + Job-Finder integration."""
 
 from .base_scenario import BaseE2EScenario, TestResult, TestStatus
 from .scenario_01_job_submission import JobSubmissionScenario

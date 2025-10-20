@@ -92,8 +92,8 @@ docker logs job-finder-production --tail 20
    - Database configuration fixes
    - Security rules setup
 
-5. **[PORTFOLIO_FRONTEND_CONFIG.md](docs/PORTFOLIO_FRONTEND_CONFIG.md)**
-   - Portfolio frontend setup
+5. **[FRONTEND_CONFIG.md](docs/FRONTEND_CONFIG.md)**
+   - job-finder-FE frontend setup
    - Environment-based database selection
    - Firestore security rules
 
@@ -303,7 +303,7 @@ Supported:
 ### Queue Items Not Processing
 
 1. Check database name: `docker exec job-finder-staging env | grep DATABASE`
-2. Verify Portfolio frontend configuration
+2. Verify job-finder-FE frontend configuration
 3. Run diagnostic script
 4. Check Firestore security rules
 
@@ -431,7 +431,7 @@ STORAGE_DATABASE_NAME=portfolio
 - **[CLAUDE.md](CLAUDE.md)** - Project overview and architecture
 - **[docs/setup.md](docs/setup.md)** - Local development setup
 - **[docs/queue-system.md](docs/queue-system.md)** - Queue processing details
-- **[docs/integrations/portfolio.md](docs/integrations/portfolio.md)** - Portfolio integration
+- **[docs/integrations/portfolio.md](docs/integrations/portfolio.md)** - job-finder-FE integration
 
 ---
 

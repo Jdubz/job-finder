@@ -16,7 +16,7 @@
 - [Monitoring](#monitoring)
 - [Troubleshooting](#troubleshooting)
 - [Performance](#performance)
-- [Portfolio Integration](#portfolio-integration)
+- [job-finder-FE Integration](#portfolio-integration)
 
 ---
 
@@ -382,7 +382,7 @@ The system loads profiles from the new `content-items` schema:
 
 - **Type: company** - Work experience entries
 - **Type: skill-group** - Categorized skills
-- **Type: project** - Portfolio projects
+- **Type: project** - job-finder-FE projects
 
 ```python
 from job_finder.profile.firestore_loader import FirestoreProfileLoader
@@ -626,11 +626,11 @@ deploy:
 
 ---
 
-## Portfolio Integration
+## job-finder-FE Integration
 
 ### Overview
 
-The queue system enables the Portfolio web application to submit jobs for background processing.
+The queue system enables the job-finder-FE web application to submit jobs for background processing.
 
 ### Implementation Steps
 
@@ -651,7 +651,7 @@ The queue system enables the Portfolio web application to submit jobs for backgr
    - Real-time status polling
    - Result display
 
-See **[Portfolio Integration Guide](integrations/portfolio.md)** for complete implementation details.
+See **[job-finder-FE Integration Guide](integrations/portfolio.md)** for complete implementation details.
 
 ---
 

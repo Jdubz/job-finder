@@ -210,7 +210,7 @@ class TestEndToEndScenarios:
         Test complete user submission workflow.
 
         Scenario:
-        1. User submits job via Portfolio UI
+        1. User submits job via job-finder-FE UI
         2. Job is added to queue
         3. Queue worker picks it up
         4. Job is processed and saved

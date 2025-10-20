@@ -163,7 +163,7 @@ self._process_granular_job(item)
 2. **src/job_finder/profile/firestore_loader.py**:
 ```python
 # OLD: education=[],  # TODO: Add education collection if available
-# NEW: education=[],  # Not currently stored in Portfolio Firestore
+# NEW: education=[],  # Not currently stored in job-finder-FE Firestore
 ```
 
 3. **src/job_finder/main.py**:
@@ -361,13 +361,13 @@ for job in jobs:
 
 **Before**:
 ```python
-# Portfolio UI
+# job-finder-FE UI
 const keywords = job.keywords || [];  // Job-level field
 ```
 
 **After**:
 ```python
-# Portfolio UI
+# job-finder-FE UI
 const keywords = job.resumeIntakeData?.atsKeywords || [];  // From AI analysis
 ```
 
@@ -399,7 +399,7 @@ const keywords = job.resumeIntakeData?.atsKeywords || [];  // From AI analysis
 
 ## Next Steps
 
-1. **Portfolio Project Integration**:
+1. **job-finder-FE Project Integration**:
    - Update UI to read `resumeIntakeData.atsKeywords` instead of `job.keywords`
    - Verify job display with new optional field handling
 
@@ -408,7 +408,7 @@ const keywords = job.resumeIntakeData?.atsKeywords || [];  // From AI analysis
    - Migrate any stuck monolithic items if needed
 
 3. **Documentation**:
-   - Update Portfolio README to reference new data structure
+   - Update job-finder-FE README to reference new data structure
    - Add TypeScript type definitions matching new structure
 
 ---

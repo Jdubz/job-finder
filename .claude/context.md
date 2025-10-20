@@ -5,7 +5,7 @@ AI-powered Python web scraper that finds and analyzes job postings matching your
 
 ## Related Projects
 
-### Portfolio
+### job-finder-FE
 **Location:** `/home/jdubz/Development/portfolio`
 **Purpose:** Professional portfolio website with AI resume generation and job management UI
 **Language:** TypeScript/React (Gatsby + Firebase)
@@ -65,7 +65,7 @@ All queue-related types are defined in the shared-types GitHub repository and mu
 **TypeScript (Authoritative):**
 - Repository: https://github.com/Jdubz/job-finder-shared-types
 - Package: `@jdubz/job-finder-shared-types`
-- Used by: Portfolio (TypeScript imports directly from npm package)
+- Used by: job-finder-FE (TypeScript imports directly from npm package)
 - Purpose: Single source of truth for all type definitions
 
 **Python (Derived):**
@@ -114,24 +114,24 @@ Python models in `src/job_finder/profile/schema.py`:
 ## Cross-Repository Workflows
 
 ### Profile Data Sync
-1. **Portfolio:** User updates experience via `/experience` page
-2. **Portfolio:** Data saved to Firestore `experience-entries` collection
+1. **job-finder-FE:** User updates experience via `/experience` page
+2. **job-finder-FE:** Data saved to Firestore `experience-entries` collection
 3. **Job-finder:** `FirestoreProfileLoader` automatically reads latest data on next run
 4. **Job-finder:** AI uses updated profile for matching
 
 **No manual sync needed** - profile stays current automatically.
 
 ### Job Queue Processing
-1. **Portfolio:** User submits job URL via web form OR scraper finds new job
-2. **Portfolio/Scraper:** Write entry to `job-queue` collection with status `pending`
+1. **job-finder-FE:** User submits job URL via web form OR scraper finds new job
+2. **job-finder-FE/Scraper:** Write entry to `job-queue` collection with status `pending`
 3. **Job-finder:** Queue processor (`queue/processor.py`) polls for pending jobs every 60s
 4. **Job-finder:** Processes job (scrape, analyze, score) and writes to `job-matches`
 5. **Job-finder:** Updates queue item status to `success`/`failed`/`skipped`
-6. **Portfolio:** UI polls queue status and displays results
+6. **job-finder-FE:** UI polls queue status and displays results
 
 ### Configuration Updates
-1. **Portfolio:** Admin updates stop list or AI settings via `/admin/config` page
-2. **Portfolio:** Settings saved to `job-finder-config` collection
+1. **job-finder-FE:** Admin updates stop list or AI settings via `/admin/config` page
+2. **job-finder-FE:** Settings saved to `job-finder-config` collection
 3. **Job-finder:** Reads latest config on each processing cycle
 4. **Job-finder:** Immediately applies new exclusions and thresholds
 
@@ -187,13 +187,13 @@ profile:
 - Test that scraped jobs appear in portfolio UI
 - Update portfolio's configuration UI if needed
 
-### Testing with Portfolio
+### Testing with job-finder-FE
 ```bash
-# Terminal 1: Portfolio Firebase emulators
+# Terminal 1: job-finder-FE Firebase emulators
 cd /home/jdubz/Development/portfolio
 make firebase-emulators
 
-# Terminal 2: Portfolio web server (view results)
+# Terminal 2: job-finder-FE web server (view results)
 cd /home/jdubz/Development/portfolio
 make dev
 
@@ -214,7 +214,7 @@ python -m job_finder.main
 - Queue System: `/home/jdubz/Development/job-finder/docs/queue-system.md`
 - Setup Guide: `/home/jdubz/Development/job-finder/docs/setup.md`
 
-### Portfolio Docs
+### job-finder-FE Docs
 - Main: `/home/jdubz/Development/portfolio/CLAUDE.md`
 - Context: `/home/jdubz/Development/portfolio/.claude/context.md`
 - Integration Guide: `/home/jdubz/Development/portfolio/PORTFOLIO_INTEGRATION_GUIDE.md`
@@ -226,7 +226,7 @@ python -m job_finder.main
 - Queue Types: https://github.com/Jdubz/job-finder-shared-types/blob/main/src/queue.types.ts
 
 ### Integration Docs
-- Portfolio Integration: `/home/jdubz/Development/job-finder/docs/integrations/portfolio.md`
+- job-finder-FE Integration: `/home/jdubz/Development/job-finder/docs/integrations/portfolio.md`
 - Queue Implementation: `/home/jdubz/Development/portfolio/PORTFOLIO_INTEGRATION_GUIDE.md`
 
 ## Module Purpose
@@ -241,7 +241,7 @@ python -m job_finder.main
 - Write results to Firestore
 - Process queue entries from portfolio
 
-**Portfolio's role:**
+**job-finder-FE's role:**
 - Display matched jobs in web interface
 - Allow users to submit jobs for analysis
 - Manage application tracking

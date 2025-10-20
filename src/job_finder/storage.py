@@ -52,7 +52,7 @@ class JobStorage:
         """Save jobs to database."""
         # Note: SQLAlchemy/SQL database storage is not planned.
         # This tool uses Firestore exclusively for storage to align with
-        # the Firebase-based architecture shared with the Portfolio project.
+        # the Firebase-based architecture shared with the job-finder-FE project.
         raise NotImplementedError(
             "SQL database storage not supported. Use Firestore via FirestoreJobStorage."
         )

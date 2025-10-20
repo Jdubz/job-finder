@@ -1,8 +1,8 @@
-# Portfolio Frontend Configuration for Production Queue
+# job-finder-FE Frontend Configuration for Production Queue
 
 ## Required Configuration
 
-To fix the queue submission issue, update your Portfolio project with this configuration.
+To fix the queue submission issue, update your job-finder-FE project with this configuration.
 
 ---
 
@@ -10,7 +10,7 @@ To fix the queue submission issue, update your Portfolio project with this confi
 
 ### Current Issue ❌
 
-Your Portfolio frontend is likely using a hardcoded database name:
+Your job-finder-FE frontend is likely using a hardcoded database name:
 
 ```typescript
 // ❌ WRONG - hardcoded staging database
@@ -108,7 +108,7 @@ export async function submitDocumentGenerationRequest(
 
 ## 4. Firestore Security Rules
 
-### Update Portfolio's `firestore.rules`
+### Update job-finder-FE's `firestore.rules`
 
 Ensure authenticated users can create queue items:
 
@@ -148,10 +148,10 @@ firebase deploy --only firestore:rules
 
 ### Check Database Configuration in Browser Console
 
-Add this to your Portfolio app for debugging:
+Add this to your job-finder-FE app for debugging:
 
 ```typescript
-// In your Portfolio app, add this temporary debug code
+// In your job-finder-FE app, add this temporary debug code
 console.log('Firestore Database:', db._databaseId.database)
 
 // Should log:
@@ -161,7 +161,7 @@ console.log('Firestore Database:', db._databaseId.database)
 
 ### Test Queue Submission
 
-1. Open Portfolio in production
+1. Open job-finder-FE in production
 2. Open browser console (F12)
 3. Trigger document generation
 4. Look for console logs:
@@ -188,7 +188,7 @@ console.log('Firestore Database:', db._databaseId.database)
 
 ### After Deploying to Production
 
-- [ ] Clear browser cache and reload Portfolio
+- [ ] Clear browser cache and reload job-finder-FE
 - [ ] Check browser console - verify database name is "portfolio"
 - [ ] Test document generation
 - [ ] Verify queue item appears in Firestore console
@@ -198,10 +198,10 @@ console.log('Firestore Database:', db._databaseId.database)
 
 ## 7. Debugging Tips
 
-### Check Which Database Portfolio is Using
+### Check Which Database job-finder-FE is Using
 
 ```typescript
-// Add this to your Portfolio app temporarily
+// Add this to your job-finder-FE app temporarily
 import { db } from '@/lib/firebase'
 
 console.log('Using Firestore database:', db._databaseId.database)
@@ -234,7 +234,7 @@ async function createQueueItem(data: any) {
 1. Go to Firebase Console → Firestore Database
 2. Switch to `portfolio` database (top dropdown)
 3. Look for `job-queue` collection
-4. Trigger document generation from Portfolio UI
+4. Trigger document generation from job-finder-FE UI
 5. Refresh Firestore console - new item should appear
 
 ---
@@ -282,7 +282,7 @@ firebase deploy --only firestore:rules
 
 ## Summary
 
-The fix requires **three changes in your Portfolio project**:
+The fix requires **three changes in your job-finder-FE project**:
 
 1. **Update Firestore initialization** - use environment-based database selection
 2. **Set environment variables** - `NEXT_PUBLIC_FIREBASE_DATABASE=portfolio` for production

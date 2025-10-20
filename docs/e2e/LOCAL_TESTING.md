@@ -25,7 +25,7 @@ Local E2E testing uses Firebase emulators running in the portfolio project to pr
 │  ┌─────────────┐       ┌──────────────┐                   │
 │  │  Job-Finder │ ───── │   Firebase   │                   │
 │  │  (Docker or │       │   Emulators  │                   │
-│  │   Python)   │       │  (Portfolio) │                   │
+│  │   Python)   │       │  (job-finder-FE) │                   │
 │  └─────────────┘       └──────────────┘                   │
 │         │                      │                            │
 │         │                      ├─ Firestore: localhost:8080│
@@ -42,7 +42,7 @@ Local E2E testing uses Firebase emulators running in the portfolio project to pr
 
 ## Prerequisites
 
-### 1. Portfolio Firebase Emulators Running
+### 1. job-finder-FE Firebase Emulators Running
 
 The portfolio project must have Firebase emulators running on your local machine.
 

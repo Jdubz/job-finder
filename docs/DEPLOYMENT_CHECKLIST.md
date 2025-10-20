@@ -252,7 +252,7 @@ This checklist provides step-by-step verification procedures for deploying the g
   - [ ] No increase in error rate
   - [ ] Cost per job as expected
 
-#### Phase A5: Update Portfolio Integration
+#### Phase A5: Update job-finder-FE Integration
 
 - [ ] Update portfolio job submission code
   ```typescript
@@ -395,7 +395,7 @@ This checklist provides step-by-step verification procedures for deploying the g
        doc.reference.delete()
    ```
 
-4. **Revert Portfolio Changes**
+4. **Revert job-finder-FE Changes**
    ```bash
    # In portfolio project
    git revert <commit-with-granular-changes>
@@ -431,7 +431,7 @@ Deployment is successful when ALL criteria met:
 
 ### Quality Success
 - [ ] ✅ Match quality maintained (score distribution similar)
-- [ ] ✅ Portfolio project receiving matches normally
+- [ ] ✅ job-finder-FE project receiving matches normally
 - [ ] ✅ No complaints from portfolio users
 - [ ] ✅ Data integrity verified (no missing fields)
 
