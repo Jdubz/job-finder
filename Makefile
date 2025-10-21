@@ -33,7 +33,7 @@ CYAN := \033[36m
 .DEFAULT_GOAL := help
 
 # Mark targets that don't create files
-.PHONY: help setup install dev-install clean test test-coverage test-e2e test-e2e-full test-e2e-local test-e2e-local-verbose test-e2e-local-full lint format type-check \
+.PHONY: help setup install dev-install dev dev-stop dev-status dev-logs clean test test-coverage test-e2e test-e2e-full test-e2e-local test-e2e-local-verbose test-e2e-local-full lint format type-check \
         run search docker-build docker-push docker-run docker-up docker-down docker-logs \
         db-explore db-cleanup db-merge-companies db-setup-listings db-setup-config worker scheduler \
         deploy-staging deploy-production clean-cache clean-all
@@ -333,6 +333,25 @@ docker-down: ## Stop docker-compose services
 
 docker-logs: ## View docker-compose logs
 	$(DOCKER_COMPOSE) -f docker-compose.dev.yml logs -f
+## === Standard Development Aliases (for consistency with other repos) ===
+
+dev: docker-dev ## Alias for docker-dev (standard target)
+
+dev-stop: docker-down ## Alias for docker-down (standard target)
+
+dev-status: ## Check if worker Docker container is running
+	@echo "$(CYAN)Checking worker Docker container status...$(RESET)"
+	@if docker ps --filter "name=job-finder" --filter "status=running" | grep -q "job-finder"; then \
+		echo "$(GREEN)✓ Worker container is running$(RESET)"; \
+		docker ps --filter "name=job-finder" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"; \
+	else \
+		echo "$(YELLOW)⚠ Worker container is not running$(RESET)"; \
+		echo "  Start with: make dev"; \
+	fi
+
+dev-logs: docker-logs ## Alias for docker-logs (standard target)
+
+## === Docker Development ===
 
 docker-dev: ## Build and run development environment
 	@echo "$(CYAN)Building and running development environment...$(RESET)"
@@ -443,9 +462,6 @@ clean-all: clean-cache ## Remove cache, venv, and build artifacts
 	@echo "$(YELLOW)Run 'make setup' to reinstall$(RESET)"
 
 ## === Development Shortcuts ===
-
-dev: setup lint test ## Setup, lint, and test (good for CI)
-	@echo "$(GREEN)✓ Development checks passed$(RESET)"
 
 quick-test: ## Run quick tests without coverage
 	@. $(VENV_DIR)/bin/activate && $(PYTEST) $(TEST_DIR) -x --tb=short
