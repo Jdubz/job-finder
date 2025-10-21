@@ -1,0 +1,110 @@
+# Development mode - uses Firebase Emulators and mounts local source code
+#
+# PREREQUISITES:
+#   1. Start Firebase Emulators in job-finder-BE:
+#      cd ../job-finder-BE/functions && npm run emulators:start
+#   2. Ensure emulators are running on host at:
+#      - Firestore: localhost:8080
+#      - Auth: localhost:9099
+#      - Functions: localhost:5001
+#
+# Usage:
+#   Start:   docker-compose -f docker-compose.dev.yml up
+#   Rebuild: docker-compose -f docker-compose.dev.yml up --build
+#   Shell:   docker-compose -f docker-compose.dev.yml exec job-finder bash
+#   Logs:    docker-compose -f docker-compose.dev.yml logs -f
+
+services:
+  job-finder:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    image: job-finder:dev
+    container_name: job-finder-dev
+
+    environment:
+      # API Keys - will read from your shell environment or .env file
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+
+      # Firebase Emulator Configuration
+      # Use host.docker.internal to connect to emulators on host machine
+      - FIRESTORE_EMULATOR_HOST=host.docker.internal:8080
+      - FIREBASE_AUTH_EMULATOR_HOST=host.docker.internal:9099
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/credentials/static-sites-257923-firebase-adminsdk.json
+
+      # Environment Configuration
+      - ENVIRONMENT=development
+
+      # Database Names - Emulator uses (default)
+      - PROFILE_DATABASE_NAME=(default)
+      - STORAGE_DATABASE_NAME=(default)
+
+      # Config path - USE DEV CONFIG
+      - CONFIG_PATH=/app/config/config.dev.yaml
+      - LOG_FILE=/app/logs/dev.log
+
+      # Python configuration for development
+      - PYTHONUNBUFFERED=1
+      - PYTHONDONTWRITEBYTECODE=1
+      - PYTHONPATH=/app
+
+      # Timezone
+      - TZ=America/Los_Angeles
+
+    volumes:
+      # Mount source code for live editing (READ-WRITE)
+      - ./src:/app/src:rw
+      - ./scripts:/app/scripts:rw
+      - ./tests:/app/tests:rw
+      
+      # Mount entry points
+      - ./run_job_search.py:/app/run_job_search.py:rw
+      - ./run_search.py:/app/run_search.py:rw
+
+      # Mount credentials (READ-ONLY)
+      - ./.firebase:/app/credentials:ro
+
+      # Mount config (READ-WRITE for easy editing)
+      - ./config:/app/config:rw
+
+      # Mount logs directory for output
+      - ./logs:/app/logs
+
+      # Mount data directory
+      - ./data:/app/data
+
+    # Run the worker in development mode
+    command: >
+      /bin/bash -c "
+      echo '=== Job Finder Development Mode ===' &&
+      echo '  Using Firebase Emulators' &&
+      echo '  Firestore: host.docker.internal:8080' &&
+      echo '  Auth: host.docker.internal:9099' &&
+      echo '  Config: /app/config/config.dev.yaml' &&
+      echo '' &&
+      echo 'Checking emulator connectivity...' &&
+      curl -s http://host.docker.internal:8080 > /dev/null && echo '✓ Firestore emulator connected' || echo '✗ Firestore emulator not reachable - start emulators first!' &&
+      curl -s http://host.docker.internal:9099 > /dev/null && echo '✓ Auth emulator connected' || echo '✗ Auth emulator not reachable - start emulators first!' &&
+      echo '' &&
+      echo 'Source code mounted from local directory - edit files to reload' &&
+      echo 'Logs will appear below...' &&
+      echo '' &&
+      python run_job_search.py || echo 'Job search failed - container staying alive for debugging' &&
+      echo '' &&
+      echo '=== Job search complete. Container staying running for debugging. ===' &&
+      echo 'Commands:' &&
+      echo '  View logs: docker-compose -f docker-compose.dev.yml logs -f' &&
+      echo '  Enter shell: docker-compose -f docker-compose.dev.yml exec job-finder bash' &&
+      echo '  Restart: docker-compose -f docker-compose.dev.yml restart' &&
+      echo '  Stop: docker-compose -f docker-compose.dev.yml down' &&
+      tail -f /dev/null
+      "
+
+    # Use host network mode for easier emulator connectivity
+    # Alternatively, use extra_hosts to map host.docker.internal
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+    stdin_open: true
+    tty: true

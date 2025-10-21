@@ -1,0 +1,121 @@
+# Development Configuration for Job Finder
+# This config uses Firebase Emulators running on the host machine
+# Start emulators first: cd ../job-finder-BE/functions && npm run emulators:start
+
+# User Profile - Loaded from emulator Firestore
+profile:
+  source: "firestore"  # Load from emulator Firestore
+
+  firestore:
+    database_name: "(default)"  # Emulator uses default database
+    user_id: null
+    name: "Test User"
+    email: "test@example.com"
+
+  # Fallback values if Firestore profile not found
+  keywords:
+    - python
+    - software engineer
+    - backend developer
+    - full stack
+    - react
+    - typescript
+
+  experience_years: 5
+
+  preferred_locations:
+    - remote
+    - Portland, OR
+
+  excluded_keywords:
+    - junior
+    - intern
+    - entry level
+
+# Job Sites to Scrape
+sites:
+  linkedin:
+    enabled: false  # Disable external scraping in dev mode
+    url: "https://www.linkedin.com/jobs/search"
+
+  indeed:
+    enabled: false  # Disable external scraping in dev mode
+    url: "https://www.indeed.com"
+
+# Scraping Settings
+scraping:
+  delay_between_requests: 1  # Faster in dev mode
+  max_pages_per_site: 2  # Fewer pages in dev
+  timeout: 10
+
+# Output Settings
+output:
+  format: firestore
+  file_path: data/jobs.json
+
+# Firestore Storage - EMULATOR
+storage:
+  database_name: "(default)"  # Emulator default database
+  collection_name: "job-matches"
+
+# Job Search Settings
+search:
+  remote_only: true
+  max_jobs: 5  # Fewer jobs in dev mode
+
+# Scheduler Settings
+scheduler:
+  target_matches: 3  # Lower target for dev
+  max_sources_per_run: 5  # Fewer sources in dev
+
+# AI Settings - Lower thresholds for dev testing
+ai:
+  enabled: true
+  provider: "claude"
+  model: "claude-3-5-haiku-20241022"
+  min_match_score: 60  # Lower threshold for dev/testing
+
+  # Timezone scoring
+  user_timezone: -8  # Pacific Time
+
+  # Company preferences
+  prefer_large_companies: true
+
+  # Temperature for AI responses (0.0-1.0)
+  temperature: 0.3
+
+# Queue Configuration - EMULATOR
+queue:
+  enabled: true  # Enable queue processing in dev
+  mode: "worker"  # worker or cron
+
+  # Queue collection in emulator Firestore
+  collection_name: "job-queue"
+
+  # Polling settings
+  poll_interval: 5  # seconds - faster polling in dev
+  batch_size: 5  # Process fewer items at once
+
+  # Worker settings
+  max_retries: 2  # Fewer retries in dev
+  retry_delay: 5  # seconds
+
+# Cloud Logging - DISABLED in dev (use console logs)
+cloud_logging:
+  enabled: false  # Don't send logs to Google Cloud in dev
+  log_name: "job-finder-dev"
+
+# Development Mode Settings
+development:
+  debug: true  # Enable debug logging
+  verbose: true  # Verbose output
+  dry_run: false  # Set to true to skip actual writes
+
+  # Mock external services
+  mock_scraping: true  # Use mock job data instead of real scraping
+  mock_ai: false  # Set to true to skip AI calls and use mock responses
+
+# Emulator Connection Info (for reference)
+# These are set via environment variables in docker-compose.dev.yml:
+# - FIRESTORE_EMULATOR_HOST=host.docker.internal:8080
+# - FIREBASE_AUTH_EMULATOR_HOST=host.docker.internal:9099
