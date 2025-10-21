@@ -76,9 +76,11 @@ help: ## Show this help message
 	@echo "  $(GREEN)make docker-build$(RESET)       Build Docker image"
 	@echo "  $(GREEN)make docker-push$(RESET)        Push image to registry"
 	@echo "  $(GREEN)make docker-run$(RESET)         Run container locally"
-	@echo "  $(GREEN)make docker-up$(RESET)          Start docker-compose services"
+	@echo "  $(GREEN)make docker-up$(RESET)          Start development services (requires emulators)"
 	@echo "  $(GREEN)make docker-down$(RESET)        Stop docker-compose services"
 	@echo "  $(GREEN)make docker-logs$(RESET)        View docker-compose logs"
+	@echo "  $(GREEN)make docker-dev$(RESET)         Build and run development environment"
+	@echo "  $(GREEN)make docker-dev-shell$(RESET)   Enter development container shell"
 	@echo ""
 	@echo "$(CYAN)DATABASE UTILITIES$(RESET)"
 	@echo "  $(GREEN)make db-explore$(RESET)         Explore Firestore collections"
@@ -318,26 +320,31 @@ docker-run: ## Run container locally
 	@echo "$(CYAN)Running Docker container...$(RESET)"
 	$(DOCKER) run --rm --env-file $(ENV_FILE) $(DOCKER_IMAGE):latest
 
-docker-up: ## Start docker-compose services
-	@echo "$(CYAN)Starting Docker Compose services...$(RESET)"
-	$(DOCKER_COMPOSE) up -d
-	@echo "$(GREEN)✓ Services started$(RESET)"
+docker-up: ## Start docker-compose development services
+	@echo "$(CYAN)Starting Docker Compose development services...$(RESET)"
+	@echo "$(YELLOW)Prerequisites: Firebase emulators must be running in job-finder-BE$(RESET)"
+	$(DOCKER_COMPOSE) -f docker-compose.dev.yml up
+	@echo "$(GREEN)✓ Development services started$(RESET)"
 
 docker-down: ## Stop docker-compose services
 	@echo "$(CYAN)Stopping Docker Compose services...$(RESET)"
-	$(DOCKER_COMPOSE) down
+	$(DOCKER_COMPOSE) -f docker-compose.dev.yml down
 	@echo "$(GREEN)✓ Services stopped$(RESET)"
 
 docker-logs: ## View docker-compose logs
-	$(DOCKER_COMPOSE) logs -f
+	$(DOCKER_COMPOSE) -f docker-compose.dev.yml logs -f
 
-docker-local-build: ## Build and run locally with docker-compose
-	@echo "$(CYAN)Building and running locally...$(RESET)"
-	$(DOCKER_COMPOSE) -f docker-compose.local-build.yml up --build
+docker-dev: ## Build and run development environment
+	@echo "$(CYAN)Building and running development environment...$(RESET)"
+	@echo "$(YELLOW)Prerequisites:$(RESET)"
+	@echo "  1. Firebase emulators running in job-finder-BE"
+	@echo "  2. Emulators at localhost:8080 (Firestore) and localhost:9099 (Auth)"
+	@echo ""
+	$(DOCKER_COMPOSE) -f docker-compose.dev.yml up --build
 
-docker-local-prod: ## Run production image locally
-	@echo "$(CYAN)Running production image locally...$(RESET)"
-	$(DOCKER_COMPOSE) -f docker-compose.local-prod.yml up
+docker-dev-shell: ## Enter development container shell
+	@echo "$(CYAN)Entering development container shell...$(RESET)"
+	$(DOCKER_COMPOSE) -f docker-compose.dev.yml exec job-finder bash
 
 ## === Database Utilities ===
 
