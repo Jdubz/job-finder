@@ -856,7 +856,7 @@ class QueueItemProcessor:
         update_data = {
             "pipeline_state": updated_state,
             "pipeline_stage": next_stage,
-            "status": "pending",  # Requeue for processing
+            "status": QueueStatus.PENDING.value,  # Requeue for processing
             "updated_at": gcloud_firestore.SERVER_TIMESTAMP,
         }
 
