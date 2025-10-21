@@ -128,6 +128,7 @@ class JSONFormatter(logging.Formatter):
             "severity": severity,
             "timestamp": datetime.utcfromtimestamp(record.created).isoformat() + "Z",
             "environment": self.environment,
+            "service": "worker",
         }
 
         # Check if record has structured fields (from StructuredLogger)
@@ -166,7 +167,7 @@ def setup_logging(
 
     Args:
         log_level: Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL).
-        log_file: Path to log file. If None, uses logs/job_finder.log.
+        log_file: Path to log file. If None, uses centralized /logs/worker.log.
         enable_cloud_logging: Enable Google Cloud Logging integration.
 
     Environment Variables:
@@ -181,7 +182,15 @@ def setup_logging(
         enable_cloud_logging = True
 
     log_level = os.getenv("LOG_LEVEL", log_level).upper()
-    log_file = os.getenv("LOG_FILE", log_file or "logs/job_finder.log")
+    # Default to centralized log directory
+    if log_file is None and "LOG_FILE" not in os.environ:
+        # Calculate path to centralized logs directory (repository root)
+        # worker is at: job-finder-app-manager/job-finder-worker/src/job_finder/
+        # logs are at: job-finder-app-manager/logs/
+        centralized_logs = Path(__file__).parent.parent.parent.parent / "logs" / "worker.log"
+        log_file = str(centralized_logs)
+    else:
+        log_file = os.getenv("LOG_FILE", log_file)
     environment = os.getenv("ENVIRONMENT", "development")
 
     # Create logs directory if it doesn't exist
