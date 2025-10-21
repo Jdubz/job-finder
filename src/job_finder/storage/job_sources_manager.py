@@ -4,6 +4,7 @@ import logging
 from typing import Any, Dict, List, Optional
 
 from google.cloud import firestore as gcloud_firestore
+from google.cloud.firestore_v1.base_query import FieldFilter
 
 from .firestore_client import FirestoreClient
 
@@ -169,14 +170,16 @@ class JobSourcesManager:
             raise RuntimeError("Firestore not initialized")
 
         try:
-            query = self.db.collection(self.collection_name).where("enabled", "==", True)
+            query = self.db.collection(self.collection_name).where(
+                filter=FieldFilter("enabled", "==", True)
+            )
 
             if source_type:
-                query = query.where("sourceType", "==", source_type)
+                query = query.where(filter=FieldFilter("sourceType", "==", source_type))
 
             if tags:
                 # Firestore array-contains only supports single value
-                query = query.where("tags", "array-contains", tags[0])
+                query = query.where(filter=FieldFilter("tags", "array-contains", tags[0]))
 
             docs = query.stream()
 
@@ -244,7 +247,9 @@ class JobSourcesManager:
             raise RuntimeError("Firestore not initialized")
 
         try:
-            query = self.db.collection(self.collection_name).where("companyId", "==", company_id)
+            query = self.db.collection(self.collection_name).where(
+                filter=FieldFilter("companyId", "==", company_id)
+            )
 
             docs = query.stream()
 

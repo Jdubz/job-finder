@@ -29,11 +29,29 @@ YELLOW := \033[33m
 BLUE := \033[34m
 CYAN := \033[36m
 
+# ============================================================================
+# DEPRECATION NOTICE
+# ============================================================================
+# 📢 New workflow available: dev-monitor Scripts Panel
+#
+# For build, test, and quality commands, use the dev-monitor UI:
+#   http://localhost:5174 → Scripts tab
+#
+# Benefits:
+#   ✅ One-click execution across all repos
+#   ✅ Real-time output streaming
+#   ✅ Execution history tracking
+#   ✅ No context switching between terminals
+#
+# These Makefiles will remain functional for backward compatibility
+# and local development commands (dev, docker-*, db-*).
+# ============================================================================
+
 # Default target
 .DEFAULT_GOAL := help
 
 # Mark targets that don't create files
-.PHONY: help setup install dev-install clean test test-coverage test-e2e test-e2e-full test-e2e-local test-e2e-local-verbose test-e2e-local-full lint format type-check \
+.PHONY: help setup install dev-install dev dev-stop dev-status dev-logs clean test test-coverage test-e2e test-e2e-full test-e2e-local test-e2e-local-verbose test-e2e-local-full lint format type-check \
         run search docker-build docker-push docker-run docker-up docker-down docker-logs \
         db-explore db-cleanup db-merge-companies db-setup-listings db-setup-config worker scheduler \
         deploy-staging deploy-production clean-cache clean-all
@@ -42,6 +60,10 @@ CYAN := \033[36m
 
 help: ## Show this help message
 	@echo "$(BOLD)Job Finder - Development Commands$(RESET)"
+	@echo ""
+	@echo "$(YELLOW)💡 NEW: Use dev-monitor Scripts Panel for better experience!$(RESET)"
+	@echo "   Start dev-monitor: cd ../dev-monitor && make dev"
+	@echo "   Access UI: http://localhost:5174"
 	@echo ""
 	@echo "$(CYAN)SETUP & INSTALLATION$(RESET)"
 	@echo "  $(GREEN)make setup$(RESET)              Create virtual environment and install all dependencies"
@@ -76,9 +98,11 @@ help: ## Show this help message
 	@echo "  $(GREEN)make docker-build$(RESET)       Build Docker image"
 	@echo "  $(GREEN)make docker-push$(RESET)        Push image to registry"
 	@echo "  $(GREEN)make docker-run$(RESET)         Run container locally"
-	@echo "  $(GREEN)make docker-up$(RESET)          Start docker-compose services"
+	@echo "  $(GREEN)make docker-up$(RESET)          Start development services (requires emulators)"
 	@echo "  $(GREEN)make docker-down$(RESET)        Stop docker-compose services"
 	@echo "  $(GREEN)make docker-logs$(RESET)        View docker-compose logs"
+	@echo "  $(GREEN)make docker-dev$(RESET)         Build and run development environment"
+	@echo "  $(GREEN)make docker-dev-shell$(RESET)   Enter development container shell"
 	@echo ""
 	@echo "$(CYAN)DATABASE UTILITIES$(RESET)"
 	@echo "  $(GREEN)make db-explore$(RESET)         Explore Firestore collections"
@@ -145,6 +169,7 @@ scheduler: ## Start job scheduler for automated searches
 ## === Testing ===
 
 test: ## Run all tests
+	@echo "$(YELLOW)💡 Tip: Use dev-monitor Scripts Panel: http://localhost:5174 → Test Worker$(RESET)"
 	@echo "$(CYAN)Running tests...$(RESET)"
 	@. $(VENV_DIR)/bin/activate && $(PYTEST) $(TEST_DIR) -v
 
@@ -279,16 +304,19 @@ smoke-queue: ## Run queue pipeline smoke test
 ## === Code Quality ===
 
 lint: ## Run code linter (flake8)
+	@echo "$(YELLOW)💡 Tip: Use dev-monitor Scripts Panel: http://localhost:5174 → Lint Worker$(RESET)"
 	@echo "$(CYAN)Running linter...$(RESET)"
 	@. $(VENV_DIR)/bin/activate && $(FLAKE8) $(SRC_DIR) $(TEST_DIR)
 	@echo "$(GREEN)✓ Linting passed$(RESET)"
 
 format: ## Format code with black
+	@echo "$(YELLOW)💡 Tip: Use dev-monitor Scripts Panel: http://localhost:5174 → Format Worker$(RESET)"
 	@echo "$(CYAN)Formatting code...$(RESET)"
 	@. $(VENV_DIR)/bin/activate && $(BLACK) $(SRC_DIR) $(TEST_DIR) $(SCRIPTS_DIR) *.py
 	@echo "$(GREEN)✓ Code formatted$(RESET)"
 
 format-check: ## Check formatting without changes
+	@echo "$(YELLOW)💡 Tip: Use dev-monitor Scripts Panel: http://localhost:5174 → Lint Worker$(RESET)"
 	@echo "$(CYAN)Checking code formatting...$(RESET)"
 	@. $(VENV_DIR)/bin/activate && $(BLACK) --check $(SRC_DIR) $(TEST_DIR) $(SCRIPTS_DIR) *.py
 	@echo "$(GREEN)✓ Formatting check passed$(RESET)"
@@ -318,26 +346,50 @@ docker-run: ## Run container locally
 	@echo "$(CYAN)Running Docker container...$(RESET)"
 	$(DOCKER) run --rm --env-file $(ENV_FILE) $(DOCKER_IMAGE):latest
 
-docker-up: ## Start docker-compose services
-	@echo "$(CYAN)Starting Docker Compose services...$(RESET)"
-	$(DOCKER_COMPOSE) up -d
-	@echo "$(GREEN)✓ Services started$(RESET)"
+docker-up: ## Start docker-compose development services
+	@echo "$(CYAN)Starting Docker Compose development services...$(RESET)"
+	@echo "$(YELLOW)Prerequisites: Firebase emulators must be running in job-finder-BE$(RESET)"
+	$(DOCKER_COMPOSE) -f docker-compose.dev.yml up
+	@echo "$(GREEN)✓ Development services started$(RESET)"
 
 docker-down: ## Stop docker-compose services
 	@echo "$(CYAN)Stopping Docker Compose services...$(RESET)"
-	$(DOCKER_COMPOSE) down
+	$(DOCKER_COMPOSE) -f docker-compose.dev.yml down
 	@echo "$(GREEN)✓ Services stopped$(RESET)"
 
 docker-logs: ## View docker-compose logs
-	$(DOCKER_COMPOSE) logs -f
+	$(DOCKER_COMPOSE) -f docker-compose.dev.yml logs -f
+## === Standard Development Aliases (for consistency with other repos) ===
 
-docker-local-build: ## Build and run locally with docker-compose
-	@echo "$(CYAN)Building and running locally...$(RESET)"
-	$(DOCKER_COMPOSE) -f docker-compose.local-build.yml up --build
+dev: docker-dev ## Alias for docker-dev (standard target)
 
-docker-local-prod: ## Run production image locally
-	@echo "$(CYAN)Running production image locally...$(RESET)"
-	$(DOCKER_COMPOSE) -f docker-compose.local-prod.yml up
+dev-stop: docker-down ## Alias for docker-down (standard target)
+
+dev-status: ## Check if worker Docker container is running
+	@echo "$(CYAN)Checking worker Docker container status...$(RESET)"
+	@if docker ps --filter "name=job-finder" --filter "status=running" | grep -q "job-finder"; then \
+		echo "$(GREEN)✓ Worker container is running$(RESET)"; \
+		docker ps --filter "name=job-finder" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"; \
+	else \
+		echo "$(YELLOW)⚠ Worker container is not running$(RESET)"; \
+		echo "  Start with: make dev"; \
+	fi
+
+dev-logs: docker-logs ## Alias for docker-logs (standard target)
+
+## === Docker Development ===
+
+docker-dev: ## Build and run development environment
+	@echo "$(CYAN)Building and running development environment...$(RESET)"
+	@echo "$(YELLOW)Prerequisites:$(RESET)"
+	@echo "  1. Firebase emulators running in job-finder-BE"
+	@echo "  2. Emulators at localhost:8080 (Firestore) and localhost:9099 (Auth)"
+	@echo ""
+	$(DOCKER_COMPOSE) -f docker-compose.dev.yml up --build
+
+docker-dev-shell: ## Enter development container shell
+	@echo "$(CYAN)Entering development container shell...$(RESET)"
+	$(DOCKER_COMPOSE) -f docker-compose.dev.yml exec job-finder bash
 
 ## === Database Utilities ===
 
@@ -436,9 +488,6 @@ clean-all: clean-cache ## Remove cache, venv, and build artifacts
 	@echo "$(YELLOW)Run 'make setup' to reinstall$(RESET)"
 
 ## === Development Shortcuts ===
-
-dev: setup lint test ## Setup, lint, and test (good for CI)
-	@echo "$(GREEN)✓ Development checks passed$(RESET)"
 
 quick-test: ## Run quick tests without coverage
 	@. $(VENV_DIR)/bin/activate && $(PYTEST) $(TEST_DIR) -x --tb=short

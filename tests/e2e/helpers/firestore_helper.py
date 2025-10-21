@@ -40,15 +40,22 @@ class FirestoreHelper:
         Returns:
             Document ID of created item
         """
+        import uuid
+
         data = {
             "type": "job",
-            "sub_task": "scrape",
+            # NOTE: No sub_task field - using decision tree routing
             "url": url,
             "company_name": company_name,
             "source": source,
             "status": "pending",
             "created_at": datetime.now(timezone.utc),
             "updated_at": datetime.now(timezone.utc),
+            # Loop prevention fields
+            "tracking_id": str(uuid.uuid4()),
+            "ancestry_chain": [],
+            "spawn_depth": 0,
+            "max_spawn_depth": 10,
             **kwargs,
         }
 

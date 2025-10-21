@@ -141,12 +141,14 @@ class TestDuplicatePrevention:
 
         # Verify normalized URL used for query (without tracking params)
         mock_collection.where.assert_called()
-        call_args = mock_collection.where.call_args[0]
-        assert call_args[0] == "url"
-        assert call_args[1] == "=="
+        # With new filter syntax: where(filter=FieldFilter("url", "==", value))
+        call_kwargs = mock_collection.where.call_args[1]
+        filter_obj = call_kwargs["filter"]
+        assert filter_obj.field_path == "url"
+        assert filter_obj.op_string == "=="
         # Should be normalized (no tracking params)
-        assert "utm_source" not in call_args[2]
-        assert "ref" not in call_args[2]
+        assert "utm_source" not in filter_obj.value
+        assert "ref" not in filter_obj.value
 
         # Verify existing ID returned
         assert doc_id == "existing_normalized"
@@ -220,8 +222,10 @@ class TestDuplicatePrevention:
         doc_id = job_storage.save_job_match(job_uppercase, sample_match_result)
 
         # Verify normalized to lowercase
-        call_args = mock_collection.where.call_args[0]
-        assert "example.com" in call_args[2].lower()
+        # With new filter syntax: where(filter=FieldFilter("url", "==", value))
+        call_kwargs = mock_collection.where.call_args[1]
+        filter_obj = call_kwargs["filter"]
+        assert "example.com" in filter_obj.value.lower()
 
         # Verify existing ID returned
         assert doc_id == "existing_lowercase"
@@ -248,8 +252,10 @@ class TestDuplicatePrevention:
         doc_id = job_storage.save_job_match(job_trailing_slash, sample_match_result)
 
         # Verify normalized without trailing slash
-        call_args = mock_collection.where.call_args[0]
-        assert not call_args[2].endswith("/")
+        # With new filter syntax: where(filter=FieldFilter("url", "==", value))
+        call_kwargs = mock_collection.where.call_args[1]
+        filter_obj = call_kwargs["filter"]
+        assert not filter_obj.value.endswith("/")
 
         # Verify existing ID returned
         assert doc_id == "existing_no_slash"

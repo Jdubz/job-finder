@@ -4,6 +4,8 @@ import logging
 from datetime import datetime
 from typing import Any, Dict, Optional
 
+from google.cloud.firestore_v1.base_query import FieldFilter
+
 from job_finder.utils.company_name_utils import normalize_company_name
 
 from .firestore_client import FirestoreClient
@@ -41,7 +43,7 @@ class CompaniesManager:
             normalized_name = normalize_company_name(company_name)
             docs = (
                 self.db.collection(self.collection_name)
-                .where("name_normalized", "==", normalized_name)
+                .where(filter=FieldFilter("name_normalized", "==", normalized_name))
                 .limit(1)
                 .stream()
             )

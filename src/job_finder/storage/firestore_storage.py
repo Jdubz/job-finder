@@ -4,6 +4,7 @@ import logging
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from google.cloud import firestore as gcloud_firestore
+from google.cloud.firestore_v1.base_query import FieldFilter
 
 from job_finder.storage.firestore_client import FirestoreClient
 from job_finder.utils.url_utils import normalize_url
@@ -129,10 +130,12 @@ class FirestoreJobStorage:
             return None
 
         try:
-            query = self.db.collection("job-matches").where("url", "==", normalized_url)
+            query = self.db.collection("job-matches").where(
+                filter=FieldFilter("url", "==", normalized_url)
+            )
 
             if user_id:
-                query = query.where("userId", "==", user_id)
+                query = query.where(filter=FieldFilter("userId", "==", user_id))
 
             query = query.limit(1)
             docs = list(query.stream())
@@ -356,13 +359,13 @@ class FirestoreJobStorage:
             query = self.db.collection("job-matches")
 
             if user_id:
-                query = query.where("userId", "==", user_id)
+                query = query.where(filter=FieldFilter("userId", "==", user_id))
 
             if status:
-                query = query.where("status", "==", status)
+                query = query.where(filter=FieldFilter("status", "==", status))
 
             if min_score:
-                query = query.where("matchScore", ">=", min_score)
+                query = query.where(filter=FieldFilter("matchScore", ">=", min_score))
 
             # Order by match score descending
             query = query.order_by("matchScore", direction=gcloud_firestore.Query.DESCENDING)
@@ -409,10 +412,12 @@ class FirestoreJobStorage:
             # Normalize URL for consistent comparison
             normalized_url = normalize_url(job_url)
 
-            query = self.db.collection("job-matches").where("url", "==", normalized_url)
+            query = self.db.collection("job-matches").where(
+                filter=FieldFilter("url", "==", normalized_url)
+            )
 
             if user_id:
-                query = query.where("userId", "==", user_id)
+                query = query.where(filter=FieldFilter("userId", "==", user_id))
 
             query = query.limit(1)
             docs = list(query.stream())
@@ -459,10 +464,12 @@ class FirestoreJobStorage:
             for i in range(0, len(normalized_urls), chunk_size):
                 chunk = normalized_urls[i : i + chunk_size]
 
-                query = self.db.collection("job-matches").where("url", "in", chunk)
+                query = self.db.collection("job-matches").where(
+                    filter=FieldFilter("url", "in", chunk)
+                )
 
                 if user_id:
-                    query = query.where("userId", "==", user_id)
+                    query = query.where(filter=FieldFilter("userId", "==", user_id))
 
                 docs = query.stream()
 
