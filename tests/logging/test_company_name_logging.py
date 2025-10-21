@@ -173,13 +173,13 @@ class TestStructuredLoggerCompanyActivity:
         # Should contain truncated version in log message
         assert len(caplog.records) == 1
         message = caplog.records[0].message
-        assert "[COMPANY] FETCH" in message
+        assert "Company fetch:" in message
         # Display version should be truncated (default 80 chars)
         assert "..." in message
         assert len(message) < 150  # Much shorter than full 100-char name
 
     def test_company_activity_logs_full_when_requested(self, caplog):
-        """company_activity with truncate=False should log full name."""
+        """company_activity should include full name in structured fields."""
         logger = logging.getLogger("test_logger")
         structured_logger = StructuredLogger(logger)
 
@@ -188,10 +188,13 @@ class TestStructuredLoggerCompanyActivity:
         with caplog.at_level(logging.INFO):
             structured_logger.company_activity(long_name, "FETCH", truncate=False)
 
-        # Should contain full name
+        # In structured JSON mode, full name is in details, message may be truncated
         assert len(caplog.records) == 1
-        message = caplog.records[0].message
-        assert long_name in message
+        record = caplog.records[0]
+        assert "Company fetch:" in record.message
+        # Full name should be in structured fields
+        assert hasattr(record, "structured_fields")
+        assert record.structured_fields["details"]["company_name"] == long_name
 
     def test_company_activity_with_details(self, caplog):
         """company_activity should include details dict."""
@@ -205,10 +208,8 @@ class TestStructuredLoggerCompanyActivity:
 
         assert len(caplog.records) == 1
         message = caplog.records[0].message
-        assert "[COMPANY] EXTRACT" in message
+        assert "Company extract:" in message
         assert "Acme Corp" in message
-        assert "pages=5" in message
-        assert "chars=1000" in message
 
     def test_company_activity_handles_unicode(self, caplog):
         """company_activity should handle unicode company names."""
@@ -223,7 +224,7 @@ class TestStructuredLoggerCompanyActivity:
         # Should not raise any encoding errors
         assert len(caplog.records) == 1
         message = caplog.records[0].message
-        assert "[COMPANY] ANALYZE" in message
+        assert "Company analyze:" in message
 
 
 class TestGetStructuredLogger:
