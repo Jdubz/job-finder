@@ -29,6 +29,24 @@ YELLOW := \033[33m
 BLUE := \033[34m
 CYAN := \033[36m
 
+# ============================================================================
+# DEPRECATION NOTICE
+# ============================================================================
+# 📢 New workflow available: dev-monitor Scripts Panel
+#
+# For build, test, and quality commands, use the dev-monitor UI:
+#   http://localhost:5174 → Scripts tab
+#
+# Benefits:
+#   ✅ One-click execution across all repos
+#   ✅ Real-time output streaming
+#   ✅ Execution history tracking
+#   ✅ No context switching between terminals
+#
+# These Makefiles will remain functional for backward compatibility
+# and local development commands (dev, docker-*, db-*).
+# ============================================================================
+
 # Default target
 .DEFAULT_GOAL := help
 
@@ -42,6 +60,10 @@ CYAN := \033[36m
 
 help: ## Show this help message
 	@echo "$(BOLD)Job Finder - Development Commands$(RESET)"
+	@echo ""
+	@echo "$(YELLOW)💡 NEW: Use dev-monitor Scripts Panel for better experience!$(RESET)"
+	@echo "   Start dev-monitor: cd ../dev-monitor && make dev"
+	@echo "   Access UI: http://localhost:5174"
 	@echo ""
 	@echo "$(CYAN)SETUP & INSTALLATION$(RESET)"
 	@echo "  $(GREEN)make setup$(RESET)              Create virtual environment and install all dependencies"
@@ -147,6 +169,7 @@ scheduler: ## Start job scheduler for automated searches
 ## === Testing ===
 
 test: ## Run all tests
+	@echo "$(YELLOW)💡 Tip: Use dev-monitor Scripts Panel: http://localhost:5174 → Test Worker$(RESET)"
 	@echo "$(CYAN)Running tests...$(RESET)"
 	@. $(VENV_DIR)/bin/activate && $(PYTEST) $(TEST_DIR) -v
 
@@ -281,16 +304,19 @@ smoke-queue: ## Run queue pipeline smoke test
 ## === Code Quality ===
 
 lint: ## Run code linter (flake8)
+	@echo "$(YELLOW)💡 Tip: Use dev-monitor Scripts Panel: http://localhost:5174 → Lint Worker$(RESET)"
 	@echo "$(CYAN)Running linter...$(RESET)"
 	@. $(VENV_DIR)/bin/activate && $(FLAKE8) $(SRC_DIR) $(TEST_DIR)
 	@echo "$(GREEN)✓ Linting passed$(RESET)"
 
 format: ## Format code with black
+	@echo "$(YELLOW)💡 Tip: Use dev-monitor Scripts Panel: http://localhost:5174 → Format Worker$(RESET)"
 	@echo "$(CYAN)Formatting code...$(RESET)"
 	@. $(VENV_DIR)/bin/activate && $(BLACK) $(SRC_DIR) $(TEST_DIR) $(SCRIPTS_DIR) *.py
 	@echo "$(GREEN)✓ Code formatted$(RESET)"
 
 format-check: ## Check formatting without changes
+	@echo "$(YELLOW)💡 Tip: Use dev-monitor Scripts Panel: http://localhost:5174 → Lint Worker$(RESET)"
 	@echo "$(CYAN)Checking code formatting...$(RESET)"
 	@. $(VENV_DIR)/bin/activate && $(BLACK) --check $(SRC_DIR) $(TEST_DIR) $(SCRIPTS_DIR) *.py
 	@echo "$(GREEN)✓ Formatting check passed$(RESET)"
