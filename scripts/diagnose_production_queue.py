@@ -78,9 +78,7 @@ def diagnose_database(database_name: str = "portfolio"):
 
             if total_count == 0:
                 print("⚠️  job-queue collection is EMPTY or DOES NOT EXIST")
-                print(
-                    "   This is why queue items are not appearing in production!"
-                )
+                print("   This is why queue items are not appearing in production!")
                 print()
                 print("   SOLUTION: Ensure job-finder-FE frontend is configured to write to")
                 print(f"   database '{database_name}' in production")
@@ -111,9 +109,7 @@ def diagnose_database(database_name: str = "portfolio"):
 
             if not recent_items:
                 print("⚠️  No queue items in last 7 days")
-                print(
-                    "   If you expect document generation requests, this confirms"
-                )
+                print("   If you expect document generation requests, this confirms")
                 print("   they are not being written to this database")
             else:
                 print(f"✅ Found {len(recent_items)} recent queue items:")

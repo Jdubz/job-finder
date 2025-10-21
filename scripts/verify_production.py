@@ -13,10 +13,7 @@ import logging
 from datetime import datetime
 from google.cloud import firestore
 
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s'
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 
@@ -35,7 +32,7 @@ def verify_production(database_name: str):
         "job-matches",
         "companies",
         "job-sources",
-        "job-finder-config"
+        "job-finder-config",
     ]
 
     logger.info("\n1. Verifying collection access...")
@@ -57,7 +54,7 @@ def verify_production(database_name: str):
         "failed": 0,
         "filtered": 0,
         "skipped": 0,
-        "total": 0
+        "total": 0,
     }
 
     for doc in db.collection("job-queue").stream():
@@ -125,9 +122,9 @@ def verify_production(database_name: str):
     logger.info(f"  Companies: {companies_count}")
     logger.info(f"  Job sources: {sources_count} ({enabled_sources} enabled)")
 
-    if queue_stats['total'] == 0 and matches_count == 2:
+    if queue_stats["total"] == 0 and matches_count == 2:
         logger.info("\n✅ Production is clean and ready for fresh data!")
-    elif queue_stats['processing'] > 0:
+    elif queue_stats["processing"] > 0:
         logger.warning("\n⚠️  Queue has items processing - wait for completion")
     else:
         logger.info("\n✅ Production appears healthy")
@@ -136,9 +133,7 @@ def verify_production(database_name: str):
 def main():
     parser = argparse.ArgumentParser(description="Verify production database")
     parser.add_argument(
-        "--database",
-        required=True,
-        help="Firestore database name (e.g., 'portfolio')"
+        "--database", required=True, help="Firestore database name (e.g., 'portfolio')"
     )
 
     args = parser.parse_args()

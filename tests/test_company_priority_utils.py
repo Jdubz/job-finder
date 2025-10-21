@@ -62,9 +62,7 @@ class TestCalculateCompanyPriority:
     def test_portland_office_via_parameter(self):
         """Test Portland office bonus via parameter."""
         company_data = {}
-        score, tier = calculate_company_priority(
-            company_data, has_portland_office=True
-        )
+        score, tier = calculate_company_priority(company_data, has_portland_office=True)
         assert score == 50
         assert tier == "C"
 
@@ -259,9 +257,7 @@ class TestCalculateCompanyPriority:
         """Test that no profile means no tech score."""
         company_data = {}
         tech_stack = ["Python", "JavaScript"]
-        score, tier = calculate_company_priority(
-            company_data, profile=None, tech_stack=tech_stack
-        )
+        score, tier = calculate_company_priority(company_data, profile=None, tech_stack=tech_stack)
         assert score == 0
         assert tier == "D"
 

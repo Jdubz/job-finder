@@ -70,9 +70,7 @@ class TestSourceHealthTracker:
         assert "health.healthScore" in update_data
         assert "health.averageJobsPerScrape" in update_data
 
-    def test_update_after_successful_scrape_empty_health(
-        self, source_health_tracker, mock_db
-    ):
+    def test_update_after_successful_scrape_empty_health(self, source_health_tracker, mock_db):
         """Test updating health when no previous health data exists."""
         # Mock source document with no health field
         mock_doc = Mock()
@@ -97,9 +95,7 @@ class TestSourceHealthTracker:
         assert update_data["health.failureCount"] == 0
         assert update_data["health.totalJobsFound"] == 5
 
-    def test_update_after_successful_scrape_source_not_found(
-        self, source_health_tracker, mock_db
-    ):
+    def test_update_after_successful_scrape_source_not_found(self, source_health_tracker, mock_db):
         """Test handling when source document doesn't exist."""
         # Mock source document not existing
         mock_doc = Mock()
@@ -118,9 +114,7 @@ class TestSourceHealthTracker:
         # Verify update was NOT called
         mock_doc_ref.update.assert_not_called()
 
-    def test_update_after_successful_scrape_none_data(
-        self, source_health_tracker, mock_db
-    ):
+    def test_update_after_successful_scrape_none_data(self, source_health_tracker, mock_db):
         """Test handling when source data is None."""
         # Mock source document with None data
         mock_doc = Mock()
@@ -145,8 +139,8 @@ class TestSourceHealthTracker:
     ):
         """Test exception handling during update."""
         # Mock exception during get
-        mock_db.collection.return_value.document.return_value.get.side_effect = (
-            Exception("Test error")
+        mock_db.collection.return_value.document.return_value.get.side_effect = Exception(
+            "Test error"
         )
 
         # Call method - should not raise
@@ -212,9 +206,7 @@ class TestSourceHealthTracker:
 
         update_data = mock_doc_ref.update.call_args[0][0]
         # Average = (50 + 20) / (5 + 1) = 70 / 6 = 11.67
-        assert update_data["health.averageJobsPerScrape"] == pytest.approx(
-            11.67, rel=0.01
-        )
+        assert update_data["health.averageJobsPerScrape"] == pytest.approx(11.67, rel=0.01)
 
     def test_update_after_failed_scrape(self, source_health_tracker, mock_db):
         """Test updating health after failed scrape."""
@@ -250,9 +242,7 @@ class TestSourceHealthTracker:
         assert update_data["health.lastScrapeError"] == "Connection timeout"
         assert "health.healthScore" in update_data
 
-    def test_update_after_failed_scrape_health_score(
-        self, source_health_tracker, mock_db
-    ):
+    def test_update_after_failed_scrape_health_score(self, source_health_tracker, mock_db):
         """Test health score calculation after failure."""
         # Mock source with one failure
         mock_doc = Mock()
@@ -280,9 +270,7 @@ class TestSourceHealthTracker:
         # Health = 0.833 * 0.9 = 0.75
         assert update_data["health.healthScore"] == pytest.approx(0.75, rel=0.01)
 
-    def test_update_after_failed_scrape_source_not_found(
-        self, source_health_tracker, mock_db
-    ):
+    def test_update_after_failed_scrape_source_not_found(self, source_health_tracker, mock_db):
         """Test handling when source document doesn't exist."""
         # Mock source document not existing
         mock_doc = Mock()
@@ -300,13 +288,11 @@ class TestSourceHealthTracker:
         # Verify update was NOT called
         mock_doc_ref.update.assert_not_called()
 
-    def test_update_after_failed_scrape_exception_handling(
-        self, source_health_tracker, mock_db
-    ):
+    def test_update_after_failed_scrape_exception_handling(self, source_health_tracker, mock_db):
         """Test exception handling during failure update."""
         # Mock exception during get
-        mock_db.collection.return_value.document.return_value.get.side_effect = (
-            Exception("Test error")
+        mock_db.collection.return_value.document.return_value.get.side_effect = Exception(
+            "Test error"
         )
 
         # Call method - should not raise
@@ -374,9 +360,7 @@ class TestCompanyScrapeTracker:
         # Verify frequency is 0
         assert frequency == 0.0
 
-    def test_get_scrape_frequency_exception_handling(
-        self, company_scrape_tracker, mock_db
-    ):
+    def test_get_scrape_frequency_exception_handling(self, company_scrape_tracker, mock_db):
         """Test exception handling during frequency calculation."""
         # Mock exception during query
         mock_db.collection.side_effect = Exception("Test error")
@@ -401,9 +385,7 @@ class TestCompanyScrapeTracker:
         mock_db.collection.return_value = mock_companies_collection
 
         # Use patch to intercept get_scrape_frequency
-        with patch.object(
-            company_scrape_tracker, "get_scrape_frequency"
-        ) as mock_freq:
+        with patch.object(company_scrape_tracker, "get_scrape_frequency") as mock_freq:
             mock_freq.side_effect = lambda cid: (
                 0.067 if cid == "company-1" else 0.033
             )  # 2/30 and 1/30
@@ -432,9 +414,7 @@ class TestCompanyScrapeTracker:
         # Verify empty dict
         assert counts == {}
 
-    def test_get_company_scrape_counts_exception_handling(
-        self, company_scrape_tracker, mock_db
-    ):
+    def test_get_company_scrape_counts_exception_handling(self, company_scrape_tracker, mock_db):
         """Test exception handling during get all counts."""
         # Mock exception during query
         mock_db.collection.side_effect = Exception("Test error")

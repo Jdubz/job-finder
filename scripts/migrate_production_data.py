@@ -21,10 +21,7 @@ from typing import Dict, List, Any, Optional
 
 from google.cloud import firestore
 
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s'
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 
@@ -71,19 +68,27 @@ class ProductionDataMigrator:
 
                 # Check if job-level keywords field exists
                 if "keywords" in data:
-                    logger.info(f"  [{doc.id}] Found job-level 'keywords' field: {data['keywords']}")
+                    logger.info(
+                        f"  [{doc.id}] Found job-level 'keywords' field: {data['keywords']}"
+                    )
 
                     # Check if atsKeywords exists in resumeIntakeData
                     if "resumeIntakeData" in data and "atsKeywords" in data["resumeIntakeData"]:
-                        logger.info(f"  [{doc.id}] resumeIntakeData.atsKeywords exists: {data['resumeIntakeData']['atsKeywords']}")
+                        logger.info(
+                            f"  [{doc.id}] resumeIntakeData.atsKeywords exists: {data['resumeIntakeData']['atsKeywords']}"
+                        )
                         # Safe to remove job-level keywords
                         updates["keywords"] = firestore.DELETE_FIELD
                     else:
-                        logger.warning(f"  [{doc.id}] WARNING: No atsKeywords in resumeIntakeData, keeping keywords for now")
+                        logger.warning(
+                            f"  [{doc.id}] WARNING: No atsKeywords in resumeIntakeData, keeping keywords for now"
+                        )
 
                 # Verify resumeIntakeData exists
                 if "resumeIntakeData" not in data:
-                    logger.warning(f"  [{doc.id}] WARNING: Missing resumeIntakeData (old job match?)")
+                    logger.warning(
+                        f"  [{doc.id}] WARNING: Missing resumeIntakeData (old job match?)"
+                    )
 
                 # Apply updates
                 if updates:
@@ -141,11 +146,13 @@ class ProductionDataMigrator:
                         logger.info(f"  [{doc.id}] [DRY RUN] Would convert to JOB_SCRAPE")
                     else:
                         # Update to use granular pipeline
-                        doc.reference.update({
-                            "sub_task": "scrape",
-                            "pipeline_state": {},
-                            "updated_at": firestore.SERVER_TIMESTAMP
-                        })
+                        doc.reference.update(
+                            {
+                                "sub_task": "scrape",
+                                "pipeline_state": {},
+                                "updated_at": firestore.SERVER_TIMESTAMP,
+                            }
+                        )
                         logger.info(f"  [{doc.id}] Converted to granular pipeline (JOB_SCRAPE)")
 
                     self.stats["queue_items_migrated"] += 1
@@ -165,7 +172,9 @@ class ProductionDataMigrator:
         logger.info(f"\n2. Cleaning up stale queue items (older than {delete_stale_days} days)...")
         cutoff_date = datetime.now() - timedelta(days=delete_stale_days)
 
-        stale_items = collection.where("status", "in", ["success", "failed", "skipped", "filtered"]).stream()
+        stale_items = collection.where(
+            "status", "in", ["success", "failed", "skipped", "filtered"]
+        ).stream()
 
         stale_count = 0
         for doc in stale_items:
@@ -176,10 +185,14 @@ class ProductionDataMigrator:
                 stale_count += 1
 
                 if self.dry_run:
-                    logger.info(f"  [{doc.id}] [DRY RUN] Would delete stale {data.get('status')} item from {completed_at}")
+                    logger.info(
+                        f"  [{doc.id}] [DRY RUN] Would delete stale {data.get('status')} item from {completed_at}"
+                    )
                 else:
                     doc.reference.delete()
-                    logger.info(f"  [{doc.id}] Deleted stale {data.get('status')} item from {completed_at}")
+                    logger.info(
+                        f"  [{doc.id}] Deleted stale {data.get('status')} item from {completed_at}"
+                    )
 
                 self.stats["queue_items_deleted"] += 1
 
@@ -249,7 +262,9 @@ class ProductionDataMigrator:
         logger.info("=" * 60)
 
         if not self.dry_run:
-            response = input("\n⚠️  WARNING: This will modify production data. Type 'yes' to continue: ")
+            response = input(
+                "\n⚠️  WARNING: This will modify production data. Type 'yes' to continue: "
+            )
             if response.lower() != "yes":
                 logger.info("Migration cancelled.")
                 return
@@ -278,26 +293,22 @@ class ProductionDataMigrator:
 def main():
     parser = argparse.ArgumentParser(description="Migrate production Firestore data")
     parser.add_argument(
-        "--database",
-        required=True,
-        help="Firestore database name (e.g., 'portfolio')"
+        "--database", required=True, help="Firestore database name (e.g., 'portfolio')"
     )
     parser.add_argument(
         "--dry-run",
         action="store_true",
         default=False,
-        help="Preview changes without executing (default: False, will execute)"
+        help="Preview changes without executing (default: False, will execute)",
     )
     parser.add_argument(
-        "--execute",
-        action="store_true",
-        help="Execute migration (opposite of --dry-run)"
+        "--execute", action="store_true", help="Execute migration (opposite of --dry-run)"
     )
     parser.add_argument(
         "--clean-stale-days",
         type=int,
         default=30,
-        help="Delete stale queue items older than N days (default: 30)"
+        help="Delete stale queue items older than N days (default: 30)",
     )
 
     args = parser.parse_args()
@@ -305,10 +316,7 @@ def main():
     # Determine dry_run mode
     dry_run = not args.execute if args.execute else args.dry_run
 
-    migrator = ProductionDataMigrator(
-        database_name=args.database,
-        dry_run=dry_run
-    )
+    migrator = ProductionDataMigrator(database_name=args.database, dry_run=dry_run)
 
     migrator.run_migration(clean_stale_days=args.clean_stale_days)
 

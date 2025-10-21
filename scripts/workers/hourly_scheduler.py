@@ -264,11 +264,11 @@ def run_hourly_scrape(config: Dict[str, Any]) -> Dict[str, Any]:
 
     # Initialize config loader first to get scheduler settings
     config_loader = ConfigLoader(database_name=storage_db)
-    
+
     # Load scheduler settings from Firestore
     logger.info("\n⚙️  Loading scheduler settings from Firestore...")
     scheduler_settings = config_loader.get_scheduler_settings()
-    
+
     # Check if scheduler settings exist
     if scheduler_settings is None:
         logger.error("❌ Scheduler settings not found in Firestore!")
@@ -277,18 +277,20 @@ def run_hourly_scrape(config: Dict[str, Any]) -> Dict[str, Any]:
         logger.error(f"   Database: {storage_db}")
         logger.error(f"   Expected document: job-finder-config/scheduler-settings")
         return {"status": "error", "reason": "scheduler_settings_missing"}
-    
+
     # Check if scheduler is enabled
     if not scheduler_settings.get("enabled", True):
-        logger.info("🚫 Scheduler is DISABLED in Firestore config (scheduler-settings.enabled=false)")
+        logger.info(
+            "🚫 Scheduler is DISABLED in Firestore config (scheduler-settings.enabled=false)"
+        )
         logger.info("   To enable: Update job-finder-config/scheduler-settings in Firestore")
         return {"status": "skipped", "reason": "scheduler_disabled"}
-    
+
     logger.info(f"✓ Scheduler is enabled")
     logger.info(f"  Target matches: {scheduler_settings.get('target_matches', 5)}")
     logger.info(f"  Max sources: {scheduler_settings.get('max_sources', 10)}")
     logger.info(f"  Min match score: {scheduler_settings.get('min_match_score', 80)}")
-    
+
     # Check if within daytime hours (using settings from Firestore)
     if not is_daytime_hours(scheduler_settings):
         daytime_hours = scheduler_settings.get("daytime_hours", {"start": 6, "end": 22})
@@ -342,7 +344,7 @@ def run_hourly_scrape(config: Dict[str, Any]) -> Dict[str, Any]:
     # Get scheduler settings from Firestore (already loaded above)
     max_sources = scheduler_settings.get("max_sources", 10)
     target_matches = scheduler_settings.get("target_matches", 5)
-    
+
     # Override min_match_score if specified in scheduler settings
     scheduler_min_score = scheduler_settings.get("min_match_score")
     if scheduler_min_score is not None:

@@ -70,7 +70,7 @@ class TestFetchCulturePages:
     def test_fetch_logs_info(self, scraper, caplog):
         """Test that fetch logs info about implementation."""
         import logging
-        
+
         caplog.set_level(logging.INFO)
         scraper._fetch_culture_pages("https://example.com")
         assert "to be implemented" in caplog.text.lower()

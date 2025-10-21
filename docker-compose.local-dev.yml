@@ -1,0 +1,97 @@
+version: '3.8'
+
+# Local Development with Hot-Reload and Real AI
+#
+# This setup provides:
+#   - Source code hot-reload (changes reflected immediately)
+#   - Real AI API calls (no mocks)
+#   - Firebase emulator connection
+#   - Log streaming to dev-monitor
+#
+# Prerequisites:
+#   1. Firebase emulators running (port 8080, 9099)
+#   2. ANTHROPIC_API_KEY environment variable set
+#   3. Dev-monitor logs directory exists
+#
+# Usage:
+#   docker-compose -f docker-compose.local-dev.yml up --build
+
+services:
+  job-finder-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: job-finder:local-dev
+    container_name: job-finder-local-dev
+
+    # Use host network for Firebase emulator access
+    network_mode: host
+
+    environment:
+      # Firebase Emulator Connection
+      - FIRESTORE_EMULATOR_HOST=localhost:8080
+      - FIREBASE_AUTH_EMULATOR_HOST=localhost:9099
+
+      # Firebase Credentials (required even for emulator)
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/credentials/static-sites-257923-firebase-adminsdk.json
+
+      # Environment Configuration
+      - ENVIRONMENT=local-dev
+
+      # Database Configuration (emulator default database)
+      - PROFILE_DATABASE_NAME=(default)
+      - STORAGE_DATABASE_NAME=(default)
+
+      # API Keys - REAL AI CALLS (NO MOCKS)
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+
+      # Queue Mode - Enable queue worker
+      - ENABLE_QUEUE_MODE=true
+      - ENABLE_CRON=false
+
+      # Logging Configuration
+      - ENABLE_CLOUD_LOGGING=false
+      - LOG_LEVEL=DEBUG
+      - CONFIG_PATH=/app/config/config.yaml
+      - LOG_FILE=/app/logs/queue_worker.log
+
+      # Development Mode
+      - PYTHONUNBUFFERED=1
+      - PYTHONDONTWRITEBYTECODE=1
+
+    volumes:
+      # HOT-RELOAD: Mount source code for live updates
+      - ./src:/app/src
+      - ./tests:/app/tests
+
+      # Mount config (read-only)
+      - ./config:/app/config:ro
+
+      # Mount credentials
+      - ./.firebase:/app/credentials:ro
+
+      # Logs to dev-monitor directory
+      - ../dev-monitor/logs:/app/logs
+
+      # Test results
+      - ./test_results:/app/test_results
+
+    # Run queue worker directly (no cron)
+    command: python -m job_finder.queue.worker
+
+    # Auto-restart on failure
+    restart: unless-stopped
+
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+    stdin_open: true
+    tty: true

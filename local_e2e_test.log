@@ -1,0 +1,108 @@
+2025-10-21 14:54:53,038 - tests.e2e.scenarios.base_scenario - INFO - [JobSubmissionScenario] Setting up scenario...
+2025-10-21 14:54:53,108 - job_finder.storage.firestore_client - INFO - Initialized Firebase Admin SDK
+2025-10-21 14:54:53,139 - job_finder.storage.firestore_client - INFO - Connected to Firestore database: (default) in project static-sites-257923
+2025-10-21 14:54:53,139 - job_finder.storage.firestore_client - INFO - Created new Firestore client for database: (default)
+2025-10-21 14:54:53,139 - tests.e2e.scenarios.base_scenario - INFO - [JobSubmissionScenario] Test dependencies initialized
+2025-10-21 14:54:53,139 - tests.e2e.helpers.firestore_helper - DEBUG - Creating queue item: https://boards.greenhouse.io/cloudflare/jobs/7270583
+2025-10-21 14:54:53,152 - tests.e2e.helpers.firestore_helper - INFO - Created queue item: TKBoqoTgL5Nh3RSb9L52
+2025-10-21 14:54:53,152 - tests.e2e.scenarios.base_scenario - INFO - [JobSubmissionScenario] Created queue item: TKBoqoTgL5Nh3RSb9L52
+2025-10-21 14:54:53,152 - tests.e2e.helpers.queue_monitor - INFO - Waiting for TKBoqoTgL5Nh3RSb9L52 to reach stage: scrape (timeout: 60.0s)
+2025-10-21 14:54:53,154 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 0.0s)
+2025-10-21 14:54:54,161 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 1.0s)
+2025-10-21 14:54:55,167 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 2.0s)
+2025-10-21 14:54:56,173 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 3.0s)
+2025-10-21 14:54:57,178 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 4.0s)
+2025-10-21 14:54:58,182 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 5.0s)
+2025-10-21 14:54:59,187 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 6.0s)
+2025-10-21 14:55:00,191 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 7.0s)
+2025-10-21 14:55:01,196 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 8.0s)
+2025-10-21 14:55:02,201 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 9.0s)
+2025-10-21 14:55:03,205 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 10.1s)
+2025-10-21 14:55:04,211 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 11.1s)
+2025-10-21 14:55:05,216 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 12.1s)
+2025-10-21 14:55:06,220 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 13.1s)
+2025-10-21 14:55:07,225 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 14.1s)
+2025-10-21 14:55:08,230 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 15.1s)
+2025-10-21 14:55:09,236 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 16.1s)
+2025-10-21 14:55:10,241 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 17.1s)
+2025-10-21 14:55:11,245 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 18.1s)
+2025-10-21 14:55:12,250 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 19.1s)
+2025-10-21 14:55:13,255 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 20.1s)
+2025-10-21 14:55:14,258 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 21.1s)
+2025-10-21 14:55:15,263 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 22.1s)
+2025-10-21 14:55:16,268 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 23.1s)
+2025-10-21 14:55:17,274 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 24.1s)
+2025-10-21 14:55:18,278 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 25.1s)
+2025-10-21 14:55:19,282 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 26.1s)
+2025-10-21 14:55:20,285 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 27.1s)
+2025-10-21 14:55:21,290 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 28.1s)
+2025-10-21 14:55:22,294 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 29.1s)
+2025-10-21 14:55:23,297 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 30.1s)
+2025-10-21 14:55:24,301 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 31.1s)
+2025-10-21 14:55:25,306 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 32.2s)
+2025-10-21 14:55:26,310 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 33.2s)
+2025-10-21 14:55:27,315 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 34.2s)
+2025-10-21 14:55:28,320 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 35.2s)
+2025-10-21 14:55:29,325 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 36.2s)
+2025-10-21 14:55:30,330 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 37.2s)
+2025-10-21 14:55:31,334 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 38.2s)
+2025-10-21 14:55:32,338 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 39.2s)
+2025-10-21 14:55:33,341 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 40.2s)
+2025-10-21 14:55:34,345 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 41.2s)
+2025-10-21 14:55:35,350 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 42.2s)
+2025-10-21 14:55:36,355 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 43.2s)
+2025-10-21 14:55:37,359 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 44.2s)
+2025-10-21 14:55:38,363 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 45.2s)
+2025-10-21 14:55:39,366 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 46.2s)
+2025-10-21 14:55:40,370 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 47.2s)
+2025-10-21 14:55:41,373 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 48.2s)
+2025-10-21 14:55:42,377 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 49.2s)
+2025-10-21 14:55:43,382 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 50.2s)
+2025-10-21 14:55:44,385 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: processing (elapsed: 51.2s)
+2025-10-21 14:55:45,391 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: success (elapsed: 52.2s)
+2025-10-21 14:55:46,396 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: success (elapsed: 53.2s)
+2025-10-21 14:55:47,400 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: success (elapsed: 54.2s)
+2025-10-21 14:55:48,405 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: success (elapsed: 55.3s)
+2025-10-21 14:55:49,411 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: success (elapsed: 56.3s)
+2025-10-21 14:55:50,416 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: success (elapsed: 57.3s)
+2025-10-21 14:55:51,421 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: success (elapsed: 58.3s)
+2025-10-21 14:55:52,425 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: success (elapsed: 59.3s)
+2025-10-21 14:55:53,425 - tests.e2e.scenarios.base_scenario - ERROR - [JobSubmissionScenario] Error in scenario: Timeout waiting for TKBoqoTgL5Nh3RSb9L52 to reach stage 'scrape' (waited 60.3s, last stage: None)
+2025-10-21 14:55:53,425 - tests.e2e.scenarios.base_scenario - WARNING - [JobSubmissionScenario] Cleanup failed: 'CleanupHelper' object is not callable
+================================================================================
+RUNNING 1 E2E SCENARIO(S)
+Database: (default)
+Cleanup: True
+================================================================================
+
+Running: job_submission
+--------------------------------------------------------------------------------
+[JobSubmissionScenario] Running scenario: JobSubmissionScenario
+[JobSubmissionScenario] Test run ID: e2e_test_693e3ca5
+[JobSubmissionScenario] ----------------------------------------------------------------------
+[JobSubmissionScenario] [1/4] Setup...
+[JobSubmissionScenario] [2/4] Execute...
+[JobSubmissionScenario] Submitting job: https://boards.greenhouse.io/cloudflare/jobs/7270583
+[JobSubmissionScenario] Queue item created: TKBoqoTgL5Nh3RSb9L52
+[JobSubmissionScenario] Waiting for job scraping...
+[JobSubmissionScenario] ✗ JobSubmissionScenario ERROR: Timeout waiting for TKBoqoTgL5Nh3RSb9L52 to reach stage 'scrape' (waited 60.3s, last stage: None)
+[JobSubmissionScenario] [4/4] Cleanup...
+[JobSubmissionScenario] ----------------------------------------------------------------------
+================================================================================
+TEST SUMMARY
+================================================================================
+
+Total scenarios: 1
+  ✓ Passed:  0
+  ✗ Failed:  0
+  ⚠ Errors:  1
+  ⊝ Skipped: 0
+
+Total duration: 60.39s
+
+Detailed Results:
+--------------------------------------------------------------------------------
+⚠ JobSubmissionScenario: error (60.39s)
+  Message: Unexpected error: Timeout waiting for TKBoqoTgL5Nh3RSb9L52 to reach stage 'scrape' (waited 60.3s, last stage: None)
+  Error: Timeout waiting for TKBoqoTgL5Nh3RSb9L52 to reach stage 'scrape' (waited 60.3s, last stage: None)
+================================================================================
