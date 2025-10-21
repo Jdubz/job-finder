@@ -22,7 +22,7 @@ COPY . .
 # Set Python environment variables for development
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONPATH=/app
+    PYTHONPATH=/app/src:/app
 
 # Default command (can be overridden in docker-compose)
 CMD ["python", "run_job_search.py"]

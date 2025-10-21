@@ -47,7 +47,7 @@ services:
       # Python configuration for development
       - PYTHONUNBUFFERED=1
       - PYTHONDONTWRITEBYTECODE=1
-      - PYTHONPATH=/app
+      - PYTHONPATH=/app/src:/app
 
       # Timezone
       - TZ=America/Los_Angeles
