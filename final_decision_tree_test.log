@@ -1,0 +1,132 @@
+2025-10-21 15:26:53,673 - tests.e2e.scenarios.base_scenario - INFO - [JobSubmissionScenario] Setting up scenario...
+2025-10-21 15:26:53,741 - job_finder.storage.firestore_client - INFO - Initialized Firebase Admin SDK
+2025-10-21 15:26:53,771 - job_finder.storage.firestore_client - INFO - Connected to Firestore database: (default) in project static-sites-257923
+2025-10-21 15:26:53,771 - job_finder.storage.firestore_client - INFO - Created new Firestore client for database: (default)
+2025-10-21 15:26:53,771 - tests.e2e.scenarios.base_scenario - INFO - [JobSubmissionScenario] Test dependencies initialized
+2025-10-21 15:26:53,771 - tests.e2e.helpers.firestore_helper - DEBUG - Creating queue item: https://boards.greenhouse.io/cloudflare/jobs/7270583
+2025-10-21 15:26:53,784 - tests.e2e.helpers.firestore_helper - INFO - Created queue item: HvdqdW3khWEjbkgJJWTP
+2025-10-21 15:26:53,784 - tests.e2e.scenarios.base_scenario - INFO - [JobSubmissionScenario] Created queue item: HvdqdW3khWEjbkgJJWTP
+2025-10-21 15:26:53,784 - tests.e2e.helpers.queue_monitor - INFO - Waiting for HvdqdW3khWEjbkgJJWTP to reach stage: scrape (timeout: 60.0s)
+2025-10-21 15:26:53,787 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 0.0s)
+2025-10-21 15:26:54,790 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 1.0s)
+2025-10-21 15:26:55,794 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 2.0s)
+2025-10-21 15:26:56,798 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 3.0s)
+2025-10-21 15:26:57,801 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 4.0s)
+2025-10-21 15:26:58,804 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 5.0s)
+2025-10-21 15:26:59,808 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 6.0s)
+2025-10-21 15:27:00,812 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 7.0s)
+2025-10-21 15:27:01,815 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 8.0s)
+2025-10-21 15:27:02,818 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 9.0s)
+2025-10-21 15:27:03,822 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 10.0s)
+2025-10-21 15:27:04,826 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 11.0s)
+2025-10-21 15:27:05,830 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 12.0s)
+2025-10-21 15:27:06,834 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 13.0s)
+2025-10-21 15:27:07,839 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 14.1s)
+2025-10-21 15:27:08,842 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 15.1s)
+2025-10-21 15:27:09,845 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 16.1s)
+2025-10-21 15:27:10,849 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 17.1s)
+2025-10-21 15:27:11,853 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 18.1s)
+2025-10-21 15:27:12,856 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 19.1s)
+2025-10-21 15:27:13,860 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 20.1s)
+2025-10-21 15:27:14,864 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 21.1s)
+2025-10-21 15:27:15,869 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 22.1s)
+2025-10-21 15:27:16,873 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 23.1s)
+2025-10-21 15:27:17,878 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 24.1s)
+2025-10-21 15:27:18,882 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 25.1s)
+2025-10-21 15:27:19,886 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 26.1s)
+2025-10-21 15:27:20,891 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 27.1s)
+2025-10-21 15:27:21,894 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 28.1s)
+2025-10-21 15:27:22,898 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 29.1s)
+2025-10-21 15:27:23,901 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 30.1s)
+2025-10-21 15:27:24,905 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 31.1s)
+2025-10-21 15:27:25,909 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 32.1s)
+2025-10-21 15:27:26,913 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 33.1s)
+2025-10-21 15:27:27,917 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 34.1s)
+2025-10-21 15:27:28,920 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 35.1s)
+2025-10-21 15:27:29,924 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 36.1s)
+2025-10-21 15:27:30,927 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 37.1s)
+2025-10-21 15:27:31,931 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 38.1s)
+2025-10-21 15:27:32,935 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 39.2s)
+2025-10-21 15:27:33,939 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 40.2s)
+2025-10-21 15:27:34,944 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 41.2s)
+2025-10-21 15:27:35,947 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 42.2s)
+2025-10-21 15:27:36,951 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 43.2s)
+2025-10-21 15:27:37,953 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 44.2s)
+2025-10-21 15:27:38,957 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 45.2s)
+2025-10-21 15:27:39,960 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 46.2s)
+2025-10-21 15:27:40,963 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 47.2s)
+2025-10-21 15:27:41,967 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 48.2s)
+2025-10-21 15:27:42,970 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: scrape, Status: pending (elapsed: 49.2s)
+2025-10-21 15:27:42,970 - tests.e2e.helpers.queue_monitor - INFO - ✓ Reached stage 'scrape' after 49.2s
+2025-10-21 15:27:42,970 - tests.e2e.scenarios.base_scenario - INFO - [JobSubmissionScenario] Scraping complete, status: pending
+2025-10-21 15:27:42,970 - tests.e2e.helpers.queue_monitor - INFO - Waiting for HvdqdW3khWEjbkgJJWTP to reach stage: filter (timeout: 30.0s)
+2025-10-21 15:27:42,973 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: scrape, Status: pending (elapsed: 0.0s)
+2025-10-21 15:27:43,976 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: scrape, Status: pending (elapsed: 1.0s)
+2025-10-21 15:27:44,979 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: scrape, Status: pending (elapsed: 2.0s)
+2025-10-21 15:27:45,982 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: scrape, Status: pending (elapsed: 3.0s)
+2025-10-21 15:27:46,985 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: scrape, Status: pending (elapsed: 4.0s)
+2025-10-21 15:27:47,988 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: scrape, Status: pending (elapsed: 5.0s)
+2025-10-21 15:27:48,991 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: scrape, Status: pending (elapsed: 6.0s)
+2025-10-21 15:27:49,995 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: scrape, Status: pending (elapsed: 7.0s)
+2025-10-21 15:27:50,998 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: scrape, Status: pending (elapsed: 8.0s)
+2025-10-21 15:27:52,002 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: scrape, Status: pending (elapsed: 9.0s)
+2025-10-21 15:27:53,006 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: scrape, Status: pending (elapsed: 10.0s)
+2025-10-21 15:27:54,010 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: scrape, Status: pending (elapsed: 11.0s)
+2025-10-21 15:27:55,014 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: scrape, Status: pending (elapsed: 12.0s)
+2025-10-21 15:27:56,018 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: scrape, Status: pending (elapsed: 13.0s)
+2025-10-21 15:27:57,022 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: scrape, Status: pending (elapsed: 14.1s)
+2025-10-21 15:27:58,025 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: scrape, Status: pending (elapsed: 15.1s)
+2025-10-21 15:27:59,029 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: scrape, Status: pending (elapsed: 16.1s)
+2025-10-21 15:28:00,035 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: scrape, Status: pending (elapsed: 17.1s)
+2025-10-21 15:28:01,039 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: scrape, Status: pending (elapsed: 18.1s)
+2025-10-21 15:28:02,042 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: scrape, Status: pending (elapsed: 19.1s)
+2025-10-21 15:28:03,045 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: scrape, Status: pending (elapsed: 20.1s)
+2025-10-21 15:28:04,049 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: scrape, Status: pending (elapsed: 21.1s)
+2025-10-21 15:28:05,053 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: scrape, Status: pending (elapsed: 22.1s)
+2025-10-21 15:28:06,056 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: scrape, Status: pending (elapsed: 23.1s)
+2025-10-21 15:28:07,060 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: scrape, Status: pending (elapsed: 24.1s)
+2025-10-21 15:28:08,063 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: scrape, Status: pending (elapsed: 25.1s)
+2025-10-21 15:28:09,066 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: scrape, Status: pending (elapsed: 26.1s)
+2025-10-21 15:28:10,070 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: scrape, Status: pending (elapsed: 27.1s)
+2025-10-21 15:28:11,073 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: scrape, Status: pending (elapsed: 28.1s)
+2025-10-21 15:28:12,077 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: scrape, Status: pending (elapsed: 29.1s)
+2025-10-21 15:28:13,078 - tests.e2e.scenarios.base_scenario - ERROR - [JobSubmissionScenario] Error in scenario: Timeout waiting for HvdqdW3khWEjbkgJJWTP to reach stage 'filter' (waited 30.1s, last stage: scrape)
+2025-10-21 15:28:13,078 - tests.e2e.scenarios.base_scenario - WARNING - [JobSubmissionScenario] Cleanup failed: 'CleanupHelper' object is not callable
+================================================================================
+RUNNING 1 E2E SCENARIO(S)
+Database: (default)
+Cleanup: True
+================================================================================
+
+Running: job_submission
+--------------------------------------------------------------------------------
+[JobSubmissionScenario] Running scenario: JobSubmissionScenario
+[JobSubmissionScenario] Test run ID: e2e_test_107108e4
+[JobSubmissionScenario] ----------------------------------------------------------------------
+[JobSubmissionScenario] [1/4] Setup...
+[JobSubmissionScenario] [2/4] Execute...
+[JobSubmissionScenario] Submitting job: https://boards.greenhouse.io/cloudflare/jobs/7270583
+[JobSubmissionScenario] Queue item created: HvdqdW3khWEjbkgJJWTP
+[JobSubmissionScenario] Waiting for job scraping...
+[JobSubmissionScenario] Waiting for filtering...
+[JobSubmissionScenario] ✗ JobSubmissionScenario ERROR: Timeout waiting for HvdqdW3khWEjbkgJJWTP to reach stage 'filter' (waited 30.1s, last stage: scrape)
+[JobSubmissionScenario] [4/4] Cleanup...
+[JobSubmissionScenario] ----------------------------------------------------------------------
+================================================================================
+TEST SUMMARY
+================================================================================
+
+Total scenarios: 1
+  ✓ Passed:  0
+  ✗ Failed:  0
+  ⚠ Errors:  1
+  ⊝ Skipped: 0
+
+Total duration: 79.40s
+
+Detailed Results:
+--------------------------------------------------------------------------------
+⚠ JobSubmissionScenario: error (79.40s)
+  Message: Unexpected error: Timeout waiting for HvdqdW3khWEjbkgJJWTP to reach stage 'filter' (waited 30.1s, last stage: scrape)
+  Error: Timeout waiting for HvdqdW3khWEjbkgJJWTP to reach stage 'filter' (waited 30.1s, last stage: scrape)
+================================================================================

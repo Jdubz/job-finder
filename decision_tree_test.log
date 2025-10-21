@@ -1,0 +1,89 @@
+2025-10-21 15:21:08,112 - tests.e2e.scenarios.base_scenario - INFO - [JobSubmissionScenario] Setting up scenario...
+2025-10-21 15:21:08,177 - job_finder.storage.firestore_client - INFO - Initialized Firebase Admin SDK
+2025-10-21 15:21:08,207 - job_finder.storage.firestore_client - INFO - Connected to Firestore database: (default) in project static-sites-257923
+2025-10-21 15:21:08,207 - job_finder.storage.firestore_client - INFO - Created new Firestore client for database: (default)
+2025-10-21 15:21:08,207 - tests.e2e.scenarios.base_scenario - INFO - [JobSubmissionScenario] Test dependencies initialized
+2025-10-21 15:21:08,207 - tests.e2e.helpers.firestore_helper - DEBUG - Creating queue item: https://boards.greenhouse.io/cloudflare/jobs/7270583
+2025-10-21 15:21:08,247 - tests.e2e.helpers.firestore_helper - INFO - Created queue item: GhZNiJpiMDoIrsv9ZsFh
+2025-10-21 15:21:08,247 - tests.e2e.scenarios.base_scenario - INFO - [JobSubmissionScenario] Created queue item: GhZNiJpiMDoIrsv9ZsFh
+2025-10-21 15:21:08,247 - tests.e2e.helpers.queue_monitor - INFO - Waiting for GhZNiJpiMDoIrsv9ZsFh to reach stage: scrape (timeout: 60.0s)
+2025-10-21 15:21:08,250 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 0.0s)
+2025-10-21 15:21:09,254 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 1.0s)
+2025-10-21 15:21:10,261 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 2.0s)
+2025-10-21 15:21:11,266 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 3.0s)
+2025-10-21 15:21:12,270 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: pending (elapsed: 4.0s)
+2025-10-21 15:21:13,274 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: None, Status: processing (elapsed: 5.0s)
+2025-10-21 15:21:14,280 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: scrape, Status: success (elapsed: 6.0s)
+2025-10-21 15:21:14,280 - tests.e2e.helpers.queue_monitor - INFO - ✓ Reached stage 'scrape' after 6.0s
+2025-10-21 15:21:14,280 - tests.e2e.scenarios.base_scenario - INFO - [JobSubmissionScenario] Scraping complete, status: success
+2025-10-21 15:21:14,281 - tests.e2e.helpers.queue_monitor - INFO - Waiting for GhZNiJpiMDoIrsv9ZsFh to reach stage: filter (timeout: 30.0s)
+2025-10-21 15:21:14,284 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: scrape, Status: success (elapsed: 0.0s)
+2025-10-21 15:21:15,290 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: scrape, Status: success (elapsed: 1.0s)
+2025-10-21 15:21:16,296 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: scrape, Status: success (elapsed: 2.0s)
+2025-10-21 15:21:17,301 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: scrape, Status: success (elapsed: 3.0s)
+2025-10-21 15:21:18,307 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: scrape, Status: success (elapsed: 4.0s)
+2025-10-21 15:21:19,312 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: scrape, Status: success (elapsed: 5.0s)
+2025-10-21 15:21:20,316 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: scrape, Status: success (elapsed: 6.0s)
+2025-10-21 15:21:21,321 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: scrape, Status: success (elapsed: 7.0s)
+2025-10-21 15:21:22,327 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: scrape, Status: success (elapsed: 8.0s)
+2025-10-21 15:21:23,332 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: scrape, Status: success (elapsed: 9.1s)
+2025-10-21 15:21:24,337 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: scrape, Status: success (elapsed: 10.1s)
+2025-10-21 15:21:25,343 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: scrape, Status: success (elapsed: 11.1s)
+2025-10-21 15:21:26,348 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: scrape, Status: success (elapsed: 12.1s)
+2025-10-21 15:21:27,353 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: scrape, Status: success (elapsed: 13.1s)
+2025-10-21 15:21:28,356 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: scrape, Status: success (elapsed: 14.1s)
+2025-10-21 15:21:29,359 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: scrape, Status: success (elapsed: 15.1s)
+2025-10-21 15:21:30,363 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: scrape, Status: success (elapsed: 16.1s)
+2025-10-21 15:21:31,366 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: scrape, Status: success (elapsed: 17.1s)
+2025-10-21 15:21:32,370 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: scrape, Status: success (elapsed: 18.1s)
+2025-10-21 15:21:33,374 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: scrape, Status: success (elapsed: 19.1s)
+2025-10-21 15:21:34,378 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: scrape, Status: success (elapsed: 20.1s)
+2025-10-21 15:21:35,383 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: scrape, Status: success (elapsed: 21.1s)
+2025-10-21 15:21:36,389 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: scrape, Status: success (elapsed: 22.1s)
+2025-10-21 15:21:37,393 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: scrape, Status: success (elapsed: 23.1s)
+2025-10-21 15:21:38,399 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: scrape, Status: success (elapsed: 24.1s)
+2025-10-21 15:21:39,404 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: scrape, Status: success (elapsed: 25.1s)
+2025-10-21 15:21:40,407 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: scrape, Status: success (elapsed: 26.1s)
+2025-10-21 15:21:41,411 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: scrape, Status: success (elapsed: 27.1s)
+2025-10-21 15:21:42,416 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: scrape, Status: success (elapsed: 28.1s)
+2025-10-21 15:21:43,420 - tests.e2e.helpers.queue_monitor - DEBUG - Stage: scrape, Status: success (elapsed: 29.1s)
+2025-10-21 15:21:44,420 - tests.e2e.scenarios.base_scenario - ERROR - [JobSubmissionScenario] Error in scenario: Timeout waiting for GhZNiJpiMDoIrsv9ZsFh to reach stage 'filter' (waited 30.1s, last stage: scrape)
+2025-10-21 15:21:44,420 - tests.e2e.scenarios.base_scenario - WARNING - [JobSubmissionScenario] Cleanup failed: 'CleanupHelper' object is not callable
+================================================================================
+RUNNING 1 E2E SCENARIO(S)
+Database: (default)
+Cleanup: True
+================================================================================
+
+Running: job_submission
+--------------------------------------------------------------------------------
+[JobSubmissionScenario] Running scenario: JobSubmissionScenario
+[JobSubmissionScenario] Test run ID: e2e_test_53e8f5b3
+[JobSubmissionScenario] ----------------------------------------------------------------------
+[JobSubmissionScenario] [1/4] Setup...
+[JobSubmissionScenario] [2/4] Execute...
+[JobSubmissionScenario] Submitting job: https://boards.greenhouse.io/cloudflare/jobs/7270583
+[JobSubmissionScenario] Queue item created: GhZNiJpiMDoIrsv9ZsFh
+[JobSubmissionScenario] Waiting for job scraping...
+[JobSubmissionScenario] Waiting for filtering...
+[JobSubmissionScenario] ✗ JobSubmissionScenario ERROR: Timeout waiting for GhZNiJpiMDoIrsv9ZsFh to reach stage 'filter' (waited 30.1s, last stage: scrape)
+[JobSubmissionScenario] [4/4] Cleanup...
+[JobSubmissionScenario] ----------------------------------------------------------------------
+================================================================================
+TEST SUMMARY
+================================================================================
+
+Total scenarios: 1
+  ✓ Passed:  0
+  ✗ Failed:  0
+  ⚠ Errors:  1
+  ⊝ Skipped: 0
+
+Total duration: 36.31s
+
+Detailed Results:
+--------------------------------------------------------------------------------
+⚠ JobSubmissionScenario: error (36.31s)
+  Message: Unexpected error: Timeout waiting for GhZNiJpiMDoIrsv9ZsFh to reach stage 'filter' (waited 30.1s, last stage: scrape)
+  Error: Timeout waiting for GhZNiJpiMDoIrsv9ZsFh to reach stage 'filter' (waited 30.1s, last stage: scrape)
+================================================================================
