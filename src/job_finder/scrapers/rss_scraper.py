@@ -4,7 +4,10 @@ import logging
 import re
 from typing import Any, Dict, List
 
-import feedparser
+try:
+    import feedparser
+except ImportError:
+    feedparser = None  # type: ignore
 
 from job_finder.scrapers.base import BaseScraper
 from job_finder.scrapers.text_sanitizer import (
@@ -28,6 +31,10 @@ class RSSJobScraper(BaseScraper):
             config: General scraping configuration
             listing_config: RSS feed configuration from job listing
         """
+        if feedparser is None:
+            raise ImportError(
+                "feedparser is required for RSS scraping. Install with: pip install feedparser"
+            )
         super().__init__(config)
         self.listing_config = listing_config
         self.feed_url = listing_config.get("url")
