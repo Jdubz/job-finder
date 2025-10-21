@@ -117,6 +117,7 @@ class QueueManager:
         result_message: Optional[str] = None,
         scraped_data: Optional[dict] = None,
         error_details: Optional[str] = None,
+        pipeline_stage: Optional[str] = None,
     ) -> None:
         """
         Update item status and optional message.
@@ -127,6 +128,7 @@ class QueueManager:
             result_message: Optional message describing result
             scraped_data: Optional scraped data to store
             error_details: Optional detailed error information for debugging
+            pipeline_stage: Optional pipeline stage for E2E test monitoring (scrape/filter/analyze/save)
         """
         update_data = {
             "status": status.value,
@@ -141,6 +143,9 @@ class QueueManager:
 
         if error_details is not None:
             update_data["error_details"] = error_details
+
+        if pipeline_stage is not None:
+            update_data["pipeline_stage"] = pipeline_stage
 
         # Set processed_at when starting processing
         if status == QueueStatus.PROCESSING:
@@ -697,7 +702,28 @@ class QueueManager:
                 f"Duplicate work: {target_type.value} for {target_url} already queued",
             )
 
-        # Check 4: Already completed successfully
+        # Check 4: Already reached terminal state
+        # Only block if the URL has reached a FINAL state (save/filtered/skipped/failed)
+        # Intermediate states (scrape/filter/analyze with SUCCESS) should allow re-spawning
+        terminal_states = [
+            QueueStatus.FILTERED,
+            QueueStatus.SKIPPED,
+            QueueStatus.FAILED,
+        ]
+
+        terminal_items = self.get_items_by_tracking_id(
+            current_item.tracking_id,
+            status_filter=terminal_states,
+        )
+
+        for item in terminal_items:
+            if item.url == target_url and item.type == target_type:
+                return (
+                    False,
+                    f"Already in terminal state ({item.status.value}): {target_type.value} for {target_url}",
+                )
+
+        # Also check for items that completed the SAVE stage (final SUCCESS state)
         completed_items = self.get_items_by_tracking_id(
             current_item.tracking_id,
             status_filter=[QueueStatus.SUCCESS],
@@ -705,10 +731,12 @@ class QueueManager:
 
         for item in completed_items:
             if item.url == target_url and item.type == target_type:
-                return (
-                    False,
-                    f"Already completed: {target_type.value} for {target_url}",
-                )
+                # Check if this is the final save stage
+                if hasattr(item, "pipeline_stage") and item.pipeline_stage == "save":
+                    return (
+                        False,
+                        f"Already saved: {target_type.value} for {target_url}",
+                    )
 
         # All checks passed
         return (True, "OK")
