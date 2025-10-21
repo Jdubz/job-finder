@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from google.cloud import firestore as gcloud_firestore
+from google.cloud.firestore_v1.base_query import FieldFilter
 
 from job_finder.queue.models import (
     CompanySubTask,
@@ -87,7 +88,7 @@ class QueueManager:
         try:
             query = (
                 self.db.collection(self.collection_name)
-                .where("status", "==", QueueStatus.PENDING.value)
+                .where(filter=FieldFilter("status", "==", QueueStatus.PENDING.value))
                 .order_by("created_at")
                 .limit(limit)
             )
@@ -219,7 +220,11 @@ class QueueManager:
             True if URL exists in queue, False otherwise
         """
         try:
-            query = self.db.collection(self.collection_name).where("url", "==", url).limit(1)
+            query = (
+                self.db.collection(self.collection_name)
+                .where(filter=FieldFilter("url", "==", url))
+                .limit(1)
+            )
 
             docs = list(query.stream())
             return len(docs) > 0
@@ -282,15 +287,17 @@ class QueueManager:
             query = (
                 self.db.collection(self.collection_name)
                 .where(
-                    "status",
-                    "in",
-                    [
-                        QueueStatus.SUCCESS.value,
-                        QueueStatus.SKIPPED.value,
-                        QueueStatus.FILTERED.value,
-                    ],
+                    filter=FieldFilter(
+                        "status",
+                        "in",
+                        [
+                            QueueStatus.SUCCESS.value,
+                            QueueStatus.SKIPPED.value,
+                            QueueStatus.FILTERED.value,
+                        ],
+                    )
                 )
-                .where("completed_at", "<", cutoff_date)
+                .where(filter=FieldFilter("completed_at", "<", cutoff_date))
             )
 
             docs = query.stream()
@@ -392,8 +399,8 @@ class QueueManager:
 
             query = (
                 self.db.collection(self.collection_name)
-                .where("type", "==", QueueItemType.SCRAPE.value)
-                .where("status", "==", QueueStatus.PENDING.value)
+                .where(filter=FieldFilter("type", "==", QueueItemType.SCRAPE.value))
+                .where(filter=FieldFilter("status", "==", QueueStatus.PENDING.value))
                 .limit(1)
             )
 
@@ -544,11 +551,11 @@ class QueueManager:
         """
         try:
             query = self.db.collection(self.collection_name).where(
-                "parent_item_id", "==", parent_item_id
+                filter=FieldFilter("parent_item_id", "==", parent_item_id)
             )
 
             if sub_task:
-                query = query.where("sub_task", "==", sub_task.value)
+                query = query.where(filter=FieldFilter("sub_task", "==", sub_task.value))
 
             docs = query.stream()
 
@@ -582,7 +589,9 @@ class QueueManager:
             List of queue items with matching tracking_id
         """
         try:
-            query = self.db.collection(self.collection_name).where("tracking_id", "==", tracking_id)
+            query = self.db.collection(self.collection_name).where(
+                filter=FieldFilter("tracking_id", "==", tracking_id)
+            )
 
             docs = query.stream()
             items = []
