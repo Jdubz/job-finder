@@ -5,6 +5,7 @@ from datetime import datetime, timezone, timedelta
 from typing import Dict, Any, Optional, Union
 
 from google.cloud import firestore as gcloud_firestore
+from google.cloud.firestore_v1.base_query import FieldFilter
 
 logger = logging.getLogger(__name__)
 
@@ -211,8 +212,8 @@ class CompanyScrapeTracker:
             # (We store scraped_at timestamp when sources are scraped)
             query = (
                 self.db.collection("job-sources")
-                .where("company_id", "==", company_id)
-                .where("scraped_at", ">", cutoff)
+                .where(filter=FieldFilter("company_id", "==", company_id))
+                .where(filter=FieldFilter("scraped_at", ">", cutoff))
             )
 
             count = len(list(query.stream()))

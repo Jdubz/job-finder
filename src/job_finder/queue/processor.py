@@ -5,6 +5,8 @@ import traceback
 import uuid
 from typing import Any, Dict, Optional
 
+from google.cloud import firestore as gcloud_firestore
+
 from job_finder.ai import AIJobMatcher, AITask, create_provider
 from job_finder.company_info_fetcher import CompanyInfoFetcher
 from job_finder.filters import StrikeFilterEngine
@@ -127,14 +129,8 @@ class QueueItemProcessor:
                     )
                 self._process_granular_company(item)
             elif item.type == QueueItemType.JOB:
-                # All job items must use granular pipeline
-                if not item.sub_task:
-                    raise ValueError(
-                        "Job items must have sub_task set. "
-                        "Legacy monolithic pipeline has been removed. "
-                        "Use submit_job() which creates granular pipeline items (JOB_SCRAPE)."
-                    )
-                self._process_granular_job(item)
+                # Use decision tree routing based on pipeline_state
+                self._process_job(item)
             elif item.type == QueueItemType.SCRAPE:
                 self._process_scrape(item)
             elif item.type == QueueItemType.SOURCE_DISCOVERY:
@@ -532,9 +528,54 @@ class QueueItemProcessor:
     # Granular Pipeline Processors
     # ========================================================================
 
+    def _process_job(self, item: JobQueueItem) -> None:
+        """
+        Process job item using decision tree routing.
+
+        Examines pipeline_state to determine next action:
+        - No job_data → SCRAPE
+        - Has job_data, no filter_result → FILTER
+        - Has filter_result (passed), no match_result → ANALYZE
+        - Has match_result → SAVE
+
+        Args:
+            item: Job queue item
+        """
+        if not item.id:
+            logger.error("Cannot process item without ID")
+            return
+
+        # Get current pipeline state
+        state = item.pipeline_state or {}
+
+        # Decision tree: determine what action to take based on state
+        has_job_data = "job_data" in state
+        has_filter_result = "filter_result" in state
+        has_match_result = "match_result" in state
+
+        if not has_job_data:
+            # Need to scrape job data
+            logger.info(f"[DECISION TREE] {item.url[:50]} → SCRAPE (no job_data)")
+            self._do_job_scrape(item)
+        elif not has_filter_result:
+            # Need to filter
+            logger.info(f"[DECISION TREE] {item.url[:50]} → FILTER (has job_data)")
+            self._do_job_filter(item)
+        elif not has_match_result:
+            # Need to analyze
+            logger.info(f"[DECISION TREE] {item.url[:50]} → ANALYZE (passed filter)")
+            self._do_job_analyze(item)
+        else:
+            # Need to save
+            logger.info(f"[DECISION TREE] {item.url[:50]} → SAVE (has match_result)")
+            self._do_job_save(item)
+
     def _process_granular_job(self, item: JobQueueItem) -> None:
         """
-        Route granular pipeline job to appropriate processor.
+        DEPRECATED: Route granular pipeline job to appropriate processor.
+
+        This method is kept for backward compatibility but should not be used.
+        Use _process_job() instead which uses decision tree routing.
 
         Args:
             item: Job queue item with sub_task specified
@@ -552,6 +593,287 @@ class QueueItemProcessor:
             self._process_job_save(item)
         else:
             raise ValueError(f"Unknown sub_task: {item.sub_task}")
+
+    # ========================================================================
+    # Decision Tree Action Methods
+    # ========================================================================
+
+    def _do_job_scrape(self, item: JobQueueItem) -> None:
+        """
+        Scrape job data and update state.
+
+        Sets pipeline_stage='scrape' and re-spawns same URL with job_data in state.
+        """
+        if not item.id:
+            logger.error("Cannot process item without ID")
+            return
+
+        logger.info(f"JOB_SCRAPE: Extracting job data from {item.url[:50]}...")
+
+        try:
+            # Get source configuration for this URL
+            source = self.sources_manager.get_source_for_url(item.url)
+
+            if source:
+                # Use source-specific scraping method
+                job_data = self._scrape_with_source_config(item.url, source)
+            else:
+                # Fall back to generic scraping (or use AI extraction)
+                job_data = self._scrape_job(item)
+
+            if not job_data:
+                error_msg = "Could not scrape job details from URL"
+                error_details = f"Failed to extract data from: {item.url}"
+                self.queue_manager.update_status(
+                    item.id, QueueStatus.FAILED, error_msg, error_details=error_details
+                )
+                return
+
+            # Update pipeline state with scraped data
+            updated_state = {
+                **(item.pipeline_state or {}),
+                "job_data": job_data,
+                "scrape_method": source.get("name") if source else "generic",
+            }
+
+            # Mark this step complete and set pipeline_stage
+            self.queue_manager.update_status(
+                item.id,
+                QueueStatus.SUCCESS,
+                "Job data scraped successfully",
+                pipeline_stage="scrape",
+            )
+
+            # Re-spawn same URL with updated state
+            self._respawn_job_with_state(item, updated_state, next_stage="filter")
+
+            logger.info(
+                f"JOB_SCRAPE complete: {job_data.get('title')} at {job_data.get('company')}"
+            )
+
+        except Exception as e:
+            logger.error(f"Error in JOB_SCRAPE: {e}")
+            raise
+
+    def _do_job_filter(self, item: JobQueueItem) -> None:
+        """
+        Filter job and update state.
+
+        Sets pipeline_stage='filter'. Re-spawns if passed, marks FILTERED if rejected.
+        """
+        if not item.id or not item.pipeline_state:
+            logger.error("Cannot process FILTER without ID or pipeline_state")
+            return
+
+        job_data = item.pipeline_state.get("job_data")
+        if not job_data:
+            logger.error("No job_data in pipeline_state")
+            return
+
+        logger.info(f"JOB_FILTER: Evaluating {job_data.get('title')} at {job_data.get('company')}")
+
+        try:
+            # Run strike-based filter
+            filter_result = self.filter_engine.evaluate_job(job_data)
+
+            if not filter_result.passed:
+                # Job rejected by filters - TERMINAL STATE
+                rejection_summary = filter_result.get_rejection_summary()
+                rejection_data = filter_result.to_dict()
+
+                logger.info(f"JOB_FILTER: Rejected - {rejection_summary}")
+
+                self.queue_manager.update_status(
+                    item.id,
+                    QueueStatus.FILTERED,
+                    f"Rejected by filters: {rejection_summary}",
+                    scraped_data={"job_data": job_data, "filter_result": rejection_data},
+                    pipeline_stage="filter",
+                )
+                return
+
+            # Filter passed - update state and continue
+            updated_state = {
+                **item.pipeline_state,
+                "filter_result": filter_result.to_dict(),
+            }
+
+            # Mark this step complete
+            self.queue_manager.update_status(
+                item.id,
+                QueueStatus.SUCCESS,
+                "Passed filtering",
+                pipeline_stage="filter",
+            )
+
+            # Re-spawn same URL with filter result
+            self._respawn_job_with_state(item, updated_state, next_stage="analyze")
+
+            logger.info(f"JOB_FILTER complete: Passed with {filter_result.total_strikes} strikes")
+
+        except Exception as e:
+            logger.error(f"Error in JOB_FILTER: {e}")
+            raise
+
+    def _do_job_analyze(self, item: JobQueueItem) -> None:
+        """
+        Analyze job with AI and update state.
+
+        Sets pipeline_stage='analyze'. Re-spawns if matched, marks SKIPPED if low score.
+        """
+        if not item.id or not item.pipeline_state:
+            logger.error("Cannot process ANALYZE without ID or pipeline_state")
+            return
+
+        job_data = item.pipeline_state.get("job_data")
+        if not job_data:
+            logger.error("No job_data in pipeline_state")
+            return
+
+        logger.info(f"JOB_ANALYZE: Analyzing {job_data.get('title')} at {job_data.get('company')}")
+
+        try:
+            # Ensure company exists
+            company_name = job_data.get("company", item.company_name)
+            company_website = job_data.get("company_website", "")
+
+            if company_name and company_website:
+                company = self.companies_manager.get_or_create_company(
+                    company_name=company_name,
+                    company_website=company_website,
+                    fetch_info_func=self.company_info_fetcher.fetch_company_info,
+                )
+                company_id = company.get("id")
+                job_data["companyId"] = company_id
+                job_data["company_info"] = self._build_company_info_string(company)
+
+            # Run AI matching (uses configured model - Sonnet by default)
+            result = self.ai_matcher.analyze_job(job_data)
+
+            if not result:
+                # Below match threshold - TERMINAL STATE
+                self.queue_manager.update_status(
+                    item.id,
+                    QueueStatus.SKIPPED,
+                    f"Job score below threshold (< {self.ai_matcher.min_match_score})",
+                    pipeline_stage="analyze",
+                )
+                return
+
+            # Match passed - update state and continue
+            updated_state = {
+                **item.pipeline_state,
+                "match_result": result.to_dict(),
+            }
+
+            # Mark this step complete
+            self.queue_manager.update_status(
+                item.id,
+                QueueStatus.SUCCESS,
+                f"AI analysis complete (score: {result.match_score})",
+                pipeline_stage="analyze",
+            )
+
+            # Re-spawn same URL with match result
+            self._respawn_job_with_state(item, updated_state, next_stage="save")
+
+            logger.info(
+                f"JOB_ANALYZE complete: Score {result.match_score}, "
+                f"Priority {result.application_priority}"
+            )
+
+        except Exception as e:
+            logger.error(f"Error in JOB_ANALYZE: {e}")
+            raise
+
+    def _do_job_save(self, item: JobQueueItem) -> None:
+        """
+        Save job match to Firestore.
+
+        Final step - marks item as SUCCESS, no re-spawning.
+        """
+        if not item.id or not item.pipeline_state:
+            logger.error("Cannot process SAVE without ID or pipeline_state")
+            return
+
+        job_data = item.pipeline_state.get("job_data")
+        match_result_dict = item.pipeline_state.get("match_result")
+
+        if not job_data or not match_result_dict:
+            logger.error("Missing job_data or match_result in pipeline_state")
+            return
+
+        logger.info(f"JOB_SAVE: Saving {job_data.get('title')} at {job_data.get('company')}")
+
+        try:
+            # Reconstruct JobMatchResult from dict
+            from job_finder.ai.matcher import JobMatchResult
+
+            result = JobMatchResult(**match_result_dict)
+
+            # Save to job-matches
+            doc_id = self.job_storage.save_job_match(job_data, result)
+
+            logger.info(
+                f"Job matched and saved: {job_data.get('title')} at {job_data.get('company')} "
+                f"(Score: {result.match_score}, ID: {doc_id})"
+            )
+
+            self.queue_manager.update_status(
+                item.id,
+                QueueStatus.SUCCESS,
+                f"Job saved successfully (ID: {doc_id}, Score: {result.match_score})",
+                pipeline_stage="save",
+            )
+
+        except Exception as e:
+            logger.error(f"Error in JOB_SAVE: {e}")
+            raise
+
+    def _respawn_job_with_state(
+        self,
+        current_item: JobQueueItem,
+        updated_state: dict,
+        next_stage: str,
+    ) -> None:
+        """
+        Requeue the same job item with updated state for next stage.
+
+        Updates the current item's state and sets it back to PENDING so it gets
+        processed again. This allows the SAME queue item to progress through all
+        stages, making it easier for E2E tests to monitor.
+
+        Args:
+            current_item: Current queue item
+            updated_state: Updated pipeline state
+            next_stage: Next pipeline stage name (for logging)
+        """
+        if not current_item.id:
+            logger.error("Cannot requeue item without ID")
+            return
+
+        # Update the same item with new state and mark as pending for re-processing
+        update_data = {
+            "pipeline_state": updated_state,
+            "pipeline_stage": next_stage,
+            "status": "pending",  # Requeue for processing
+            "updated_at": gcloud_firestore.SERVER_TIMESTAMP,
+        }
+
+        try:
+            doc_ref = self.queue_manager.db.collection("job-queue").document(current_item.id)
+            doc_ref.update(update_data)
+
+            logger.info(
+                f"Requeued item {current_item.id} for {next_stage}: {current_item.url[:50]}"
+            )
+        except Exception as e:
+            logger.error(f"Failed to requeue item {current_item.id}: {e}")
+            raise
+
+    # ========================================================================
+    # Legacy Subtask-Based Methods (Kept for Backward Compatibility)
+    # ========================================================================
 
     def _process_job_scrape(self, item: JobQueueItem) -> None:
         """

@@ -4,6 +4,7 @@ import logging
 from typing import Any, Dict, List, Optional
 
 from google.cloud import firestore as gcloud_firestore
+from google.cloud.firestore_v1.base_query import FieldFilter
 
 from job_finder.profile.schema import Experience, Profile, Skill
 from job_finder.storage.firestore_client import FirestoreClient
@@ -131,9 +132,11 @@ class FirestoreProfileLoader:
         Returns:
             List of content item documents
         """
-        query = self.db.collection("content-items").where("type", "==", item_type)
+        query = self.db.collection("content-items").where(
+            filter=FieldFilter("type", "==", item_type)
+        )
         if user_id:
-            query = query.where("userId", "==", user_id)
+            query = query.where(filter=FieldFilter("userId", "==", user_id))
 
         return query.stream()
 
@@ -149,7 +152,7 @@ class FirestoreProfileLoader:
         """
         query = self.db.collection("experience-entries")
         if user_id:
-            query = query.where("userId", "==", user_id)
+            query = query.where(filter=FieldFilter("userId", "==", user_id))
 
         # Order by start date descending (most recent first)
         query = query.order_by("startDate", direction=gcloud_firestore.Query.DESCENDING)
@@ -275,7 +278,7 @@ class FirestoreProfileLoader:
             # Query experience-blurbs collection
             query = self.db.collection("experience-blurbs")
             if user_id:
-                query = query.where("userId", "==", user_id)
+                query = query.where(filter=FieldFilter("userId", "==", user_id))
 
             docs = query.stream()
 
