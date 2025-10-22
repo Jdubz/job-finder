@@ -1,8 +1,56 @@
-# Local Docker Testing Guide
+# Local Development & Testing Guide
 
-Two docker-compose files for local testing of the job-finder container.
+## Recommended: Use Dev-Monitor (Primary Method)
 
-## Prerequisites
+**For local development, use the dev-monitor tool to manage all services including the Python worker via Docker.**
+
+The dev-monitor is a local development console that manages:
+- Firebase Emulators (Firestore, Functions)
+- Frontend development server
+- Backend Firebase Functions
+- **Python Worker (via Docker container)**
+
+### Start Dev-Monitor
+
+```bash
+# From the job-finder-app-manager repository root
+cd dev-monitor
+
+# Start all services (including Python worker in Docker)
+make dev-monitor
+
+# Or start specific services
+make start-worker  # Start Python worker container only
+```
+
+### View Worker Logs
+
+```bash
+# Worker logs are available at:
+tail -f dev-monitor/logs/queue_worker.log
+
+# Or via the dev-monitor web UI at http://localhost:5174
+```
+
+### Restart Worker After Code Changes
+
+The Python worker runs in a Docker container managed by dev-monitor. After making code changes:
+
+```bash
+# Rebuild and restart the worker container
+make restart-worker
+
+# Or rebuild from scratch
+make rebuild-worker
+```
+
+---
+
+## Alternative: Manual Docker Testing
+
+For testing specific Docker configurations without dev-monitor, use these docker-compose files.
+
+### Prerequisites
 
 ```bash
 # Ensure your credentials are in place
