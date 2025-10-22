@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   job-finder:
-    image: ghcr.io/jdubz/job-finder:staging
+    image: ghcr.io/jdubz/job-finder-worker:staging
     container_name: job-finder-staging
     restart: unless-stopped
 
