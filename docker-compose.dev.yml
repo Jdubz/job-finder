@@ -42,7 +42,8 @@ services:
 
       # Config path - USE DEV CONFIG
       - CONFIG_PATH=/app/config/config.dev.yaml
-      - LOG_FILE=/app/logs/dev.log
+      - LOG_FILE=/app/logs/queue_worker.log
+      - QUEUE_WORKER_LOG_FILE=/app/logs/queue_worker.log
 
       # Python configuration for development
       - PYTHONUNBUFFERED=1
@@ -68,36 +69,38 @@ services:
       # Mount config (READ-WRITE for easy editing)
       - ./config:/app/config:rw
 
-      # Mount logs directory for output
-      - ./logs:/app/logs
+      # Mount centralized logs directory (dev-monitor/logs/plain)
+      # This allows dev-monitor to monitor worker logs in real-time
+      - ../logs/plain:/app/logs
 
       # Mount data directory
       - ./data:/app/data
 
-    # Run the worker in development mode
+    # Run the queue worker in development mode
     command: >
       /bin/bash -c "
-      echo '=== Job Finder Development Mode ===' &&
+      echo '=== Job Finder Queue Worker - Development Mode ===' &&
       echo '  Using Firebase Emulators' &&
       echo '  Firestore: host.docker.internal:8080' &&
       echo '  Auth: host.docker.internal:9099' &&
       echo '  Config: /app/config/config.dev.yaml' &&
+      echo '  Logs: /app/logs/queue_worker.log' &&
       echo '' &&
       echo 'Checking emulator connectivity...' &&
       curl -s http://host.docker.internal:8080 > /dev/null && echo '✓ Firestore emulator connected' || echo '✗ Firestore emulator not reachable - start emulators first!' &&
       curl -s http://host.docker.internal:9099 > /dev/null && echo '✓ Auth emulator connected' || echo '✗ Auth emulator not reachable - start emulators first!' &&
       echo '' &&
       echo 'Source code mounted from local directory - edit files to reload' &&
-      echo 'Logs will appear below...' &&
+      echo 'Starting queue worker - logs will appear in /app/logs/queue_worker.log' &&
       echo '' &&
-      python run_job_search.py || echo 'Job search failed - container staying alive for debugging' &&
+      python scripts/workers/queue_worker.py || echo 'Queue worker failed - container staying alive for debugging' &&
       echo '' &&
-      echo '=== Job search complete. Container staying running for debugging. ===' &&
+      echo '=== Queue worker stopped. Container staying running for debugging. ===' &&
       echo 'Commands:' &&
-      echo '  View logs: docker-compose -f docker-compose.dev.yml logs -f' &&
-      echo '  Enter shell: docker-compose -f docker-compose.dev.yml exec job-finder bash' &&
-      echo '  Restart: docker-compose -f docker-compose.dev.yml restart' &&
-      echo '  Stop: docker-compose -f docker-compose.dev.yml down' &&
+      echo '  View logs: docker logs job-finder-dev -f' &&
+      echo '  Enter shell: docker compose -f docker-compose.dev.yml exec job-finder bash' &&
+      echo '  Restart: docker compose -f docker-compose.dev.yml restart' &&
+      echo '  Stop: docker compose -f docker-compose.dev.yml down' &&
       tail -f /dev/null
       "
 
