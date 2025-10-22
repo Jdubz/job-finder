@@ -15,12 +15,14 @@ from job_finder.profile.schema import Profile
 from job_finder.queue.config_loader import ConfigLoader
 from job_finder.queue.manager import QueueManager
 from job_finder.queue.models import (
+    CompanyStatus,
     CompanySubTask,
     JobQueueItem,
     JobSubTask,
     QueueItemType,
     QueueStatus,
 )
+from job_finder.queue.scraper_intake import ScraperIntake
 from job_finder.scrape_runner import ScrapeRunner
 from job_finder.storage import FirestoreJobStorage
 from job_finder.storage.companies_manager import CompaniesManager
@@ -84,6 +86,13 @@ class QueueItemProcessor:
             profile=profile,
         )
 
+        # Initialize scraper intake for submitting jobs to queue
+        self.scraper_intake = ScraperIntake(
+            queue_manager=queue_manager,
+            job_storage=job_storage,
+            companies_manager=companies_manager,
+        )
+
     def process_item(self, item: JobQueueItem) -> None:
         """
         Process a queue item based on its type.
@@ -135,6 +144,8 @@ class QueueItemProcessor:
                 self._process_scrape(item)
             elif item.type == QueueItemType.SOURCE_DISCOVERY:
                 self._process_source_discovery(item)
+            elif item.type == QueueItemType.SCRAPE_SOURCE:
+                self._process_scrape_source(item)
             else:
                 raise ValueError(f"Unknown item type: {item.type}")
 
@@ -1026,19 +1037,72 @@ class QueueItemProcessor:
         logger.info(f"JOB_ANALYZE: Analyzing {job_data.get('title')} at {job_data.get('company')}")
 
         try:
-            # Ensure company exists
+            # Ensure company exists and has good data
             company_name = job_data.get("company", item.company_name)
             company_website = job_data.get("company_website", "")
 
             if company_name and company_website:
-                company = self.companies_manager.get_or_create_company(
-                    company_name=company_name,
-                    company_website=company_website,
-                    fetch_info_func=self.company_info_fetcher.fetch_company_info,
-                )
-                company_id = company.get("id")
-                job_data["companyId"] = company_id
-                job_data["company_info"] = self._build_company_info_string(company)
+                # Check if company exists in database
+                company = self.companies_manager.get_company(company_name)
+
+                # Handle company data quality and status
+                if not company or not self.companies_manager.has_good_company_data(company):
+                    # Company missing or has poor data - spawn COMPANY_FETCH for full analysis
+                    logger.info(
+                        f"Company {company_name} {'not found' if not company else 'has insufficient data'} "
+                        f"- spawning COMPANY_FETCH queue item"
+                    )
+
+                    # Create stub if doesn't exist
+                    if not company:
+                        company = self.companies_manager.create_company_stub(
+                            company_name=company_name,
+                            company_website=company_website,
+                        )
+
+                    # Spawn COMPANY_FETCH queue item for full analysis
+                    company_item = self.queue_manager.spawn_item_safely(
+                        current_item=item,
+                        new_item_data={
+                            "type": QueueItemType.COMPANY.value,
+                            "url": company_website,
+                            "company_name": company_name,
+                            "company_id": company.get("id"),
+                            "company_sub_task": CompanySubTask.FETCH.value,
+                            "source": "job_spawned",
+                        },
+                    )
+
+                    if company_item:
+                        logger.info(f"Spawned COMPANY_FETCH item {company_item} for {company_name}")
+
+                    # Use stub data for now (will have minimal info)
+                    company_id = company.get("id")
+                    job_data["companyId"] = company_id
+                    job_data["company_info"] = self._build_company_info_string(company)
+
+                elif company.get("status") in [
+                    CompanyStatus.PENDING.value,
+                    CompanyStatus.ANALYZING.value,
+                ]:
+                    # Company is being analyzed - mark job as pending, will retry later
+                    logger.info(
+                        f"Company {company_name} is being analyzed (status={company.get('status')}) "
+                        f"- marking job as PENDING for retry"
+                    )
+                    self.queue_manager.update_status(
+                        item.id,
+                        QueueStatus.PENDING,
+                        f"Waiting for company analysis to complete (status={company.get('status')})",
+                    )
+                    return
+
+                else:
+                    # Company exists and has good data - use it
+                    logger.info(f"Using existing company data for {company_name}")
+                    company_id = company.get("id")
+                    job_data["companyId"] = company_id
+                    job_data["company_info"] = self._build_company_info_string(company)
 
             # Run AI matching (uses configured model - Sonnet by default)
             result = self.ai_matcher.analyze_job(job_data)
@@ -1312,6 +1376,17 @@ class QueueItemProcessor:
 
         Args:
             item: Company queue item with company_sub_task=ANALYZE
+
+        TODO: Consider parallelizing company parameter fetches for optimization:
+            Could spawn multiple queue items:
+              - COMPANY_SIZE (web search for employee count)
+              - COMPANY_LOCATION (web search for offices)
+              - COMPANY_CULTURE (scrape about page)
+              - COMPANY_JOB_BOARD (scrape careers page)
+            Benefits: Parallel processing, fine-grained retry
+            Trade-offs: Complex coordination, partial success handling
+            Decision: Start with serial, optimize if it becomes a bottleneck
+            See: dev-monitor/docs/decision-tree.md#performance-optimization
         """
         if not item.id or not item.pipeline_state:
             logger.error("Cannot process ANALYZE without ID or pipeline_state")
@@ -1815,6 +1890,18 @@ class QueueItemProcessor:
                 )
 
             if success:
+                # Spawn SCRAPE_SOURCE queue item to immediately scrape the new source
+                scrape_item = JobQueueItem(
+                    type=QueueItemType.SCRAPE_SOURCE,
+                    url="",  # Not used for SCRAPE_SOURCE
+                    company_name=company_name or "Unknown",
+                    source="automated_discovery",
+                    scraped_data={"source_id": source_id},
+                    tracking_id=str(uuid.uuid4()),  # Required for loop prevention
+                )
+                scrape_item_id = self.queue_manager.add_item(scrape_item)
+                logger.info(f"Spawned SCRAPE_SOURCE item {scrape_item_id} for source {source_id}")
+
                 # Update queue item with success
                 self.queue_manager.update_status(
                     item.id,
@@ -2094,3 +2181,164 @@ class QueueItemProcessor:
         except Exception as e:
             logger.error(f"Error discovering generic source: {e}")
             return False, None, f"Error discovering selectors: {str(e)}"
+
+    def _process_scrape_source(self, item: JobQueueItem) -> None:
+        """
+        Process SCRAPE_SOURCE queue item.
+
+        Scrapes a specific job board source and submits found jobs to the queue.
+
+        Flow:
+        1. Fetch source configuration from job-sources collection
+        2. Dispatch to appropriate scraper based on source_type
+        3. Submit found jobs via ScraperIntake
+        4. Update source health tracking (success/failure)
+
+        Args:
+            item: Queue item with source_id or source_url
+        """
+        if not item.id:
+            logger.error("Cannot process SCRAPE_SOURCE without ID")
+            return
+
+        source_id = item.scraped_data.get("source_id") if item.scraped_data else None
+        source_url = item.url if item.url else None
+
+        logger.info(f"SCRAPE_SOURCE: Processing source {source_id or source_url}")
+
+        try:
+            # Fetch source configuration
+            if source_id:
+                source = self.sources_manager.get_source_by_id(source_id)
+            elif source_url:
+                source = self.sources_manager.get_source_for_url(source_url)
+            else:
+                raise ValueError("SCRAPE_SOURCE item must have source_id or url")
+
+            if not source:
+                self.queue_manager.update_status(
+                    item.id,
+                    QueueStatus.FAILED,
+                    "Source not found",
+                    error_details=f"source_id={source_id}, url={source_url}",
+                )
+                return
+
+            # Check if source is enabled
+            if not source.get("enabled", False):
+                logger.info(f"Skipping disabled source: {source.get('name')}")
+                self.queue_manager.update_status(
+                    item.id,
+                    QueueStatus.SKIPPED,
+                    "Source is disabled",
+                )
+                return
+
+            source_type = source.get("sourceType")
+            source_name = source.get("name", "Unknown")
+            config = source.get("config", {})
+
+            logger.info(f"Scraping source: {source_name} ({source_type})")
+
+            # Create appropriate scraper and scrape jobs
+            jobs = []
+            try:
+                if source_type == "greenhouse":
+                    from job_finder.scrapers.greenhouse_scraper import GreenhouseScraper
+
+                    board_token = config.get("board_token")
+                    if not board_token:
+                        raise ValueError(f"Source {source_name} missing board_token in config")
+                    gh_scraper = GreenhouseScraper(config)
+                    jobs = gh_scraper.scrape()
+
+                elif source_type == "rss":
+                    from job_finder.scrapers.rss_scraper import RSSJobScraper
+
+                    rss_url = config.get("url")
+                    if not rss_url:
+                        raise ValueError(f"Source {source_name} missing url in config")
+                    rss_scraper = RSSJobScraper(rss_url, listing_config={})
+                    jobs = rss_scraper.scrape()
+
+                elif source_type == "workday":
+                    # TODO: Implement Workday scraper
+                    logger.warning(f"Workday scraper not yet implemented for {source_name}")
+                    self.queue_manager.update_status(
+                        item.id,
+                        QueueStatus.SKIPPED,
+                        "Workday scraper not yet implemented",
+                    )
+                    return
+
+                else:
+                    logger.warning(f"Unsupported source type: {source_type}")
+                    self.queue_manager.update_status(
+                        item.id,
+                        QueueStatus.FAILED,
+                        f"Unsupported source type: {source_type}",
+                    )
+                    return
+
+                logger.info(f"Found {len(jobs)} jobs from {source_name}")
+
+                # Submit jobs to queue using ScraperIntake
+                if jobs:
+                    company_id = source.get("company_id")
+                    source_label = f"{source_type}:{source_name}"
+                    jobs_added = self.scraper_intake.submit_jobs(
+                        jobs=jobs,
+                        source=source_label,
+                        company_id=company_id,
+                    )
+                    logger.info(f"Submitted {jobs_added} jobs to queue from {source_name}")
+
+                    # Record success in source health tracking
+                    self.sources_manager.record_scraping_success(
+                        source_id=source.get("id"),
+                        jobs_found=jobs_added,
+                    )
+
+                    # Mark queue item as success
+                    self.queue_manager.update_status(
+                        item.id,
+                        QueueStatus.SUCCESS,
+                        f"Scraped {len(jobs)} jobs, submitted {jobs_added} to queue",
+                        scraped_data={
+                            "jobs_found": len(jobs),
+                            "jobs_submitted": jobs_added,
+                            "source_name": source_name,
+                        },
+                    )
+                else:
+                    # No jobs found - still mark as success
+                    logger.info(f"No jobs found from {source_name}")
+                    self.queue_manager.update_status(
+                        item.id,
+                        QueueStatus.SUCCESS,
+                        "No jobs found",
+                        scraped_data={
+                            "jobs_found": 0,
+                            "source_name": source_name,
+                        },
+                    )
+
+            except Exception as scrape_error:
+                # Record failure in source health tracking
+                logger.error(f"Error scraping source {source_name}: {scrape_error}")
+                self.sources_manager.record_scraping_failure(
+                    source_id=source.get("id"),
+                    error_message=str(scrape_error),
+                )
+
+                # Mark queue item as failed
+                self.queue_manager.update_status(
+                    item.id,
+                    QueueStatus.FAILED,
+                    f"Scraping failed: {str(scrape_error)}",
+                    error_details=traceback.format_exc(),
+                )
+
+        except Exception as e:
+            logger.error(f"Error in SCRAPE_SOURCE: {e}")
+            raise

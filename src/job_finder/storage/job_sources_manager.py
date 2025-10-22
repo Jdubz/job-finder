@@ -6,6 +6,8 @@ from typing import Any, Dict, List, Optional
 from google.cloud import firestore as gcloud_firestore
 from google.cloud.firestore_v1.base_query import FieldFilter
 
+from job_finder.queue.models import SourceStatus
+
 from .firestore_client import FirestoreClient
 
 logger = logging.getLogger(__name__)
@@ -113,11 +115,15 @@ class JobSourcesManager:
         if not self.db:
             raise RuntimeError("Firestore not initialized")
 
+        # Determine initial status based on enabled flag
+        initial_status = SourceStatus.ACTIVE if enabled else SourceStatus.DISABLED
+
         source_doc = {
             "name": name,
             "sourceType": source_type,
             "config": config,
-            "enabled": enabled,
+            "enabled": enabled,  # Legacy field, kept for backward compatibility
+            "status": initial_status.value,  # New status field
             "tags": tags or [],
             # Company linkage (optional)
             "companyId": company_id,
@@ -128,6 +134,7 @@ class JobSourcesManager:
             "lastScrapedError": None,
             "totalJobsFound": 0,
             "totalJobsMatched": 0,
+            "consecutiveFailures": 0,  # For health tracking
             # Metadata
             "createdAt": gcloud_firestore.SERVER_TIMESTAMP,
             "updatedAt": gcloud_firestore.SERVER_TIMESTAMP,
@@ -579,15 +586,20 @@ class JobSourcesManager:
         if not self.db:
             raise RuntimeError("Firestore not initialized")
 
-        # If validation required, disable until manually enabled
+        # Determine status based on validation requirement
         if validation_required:
             enabled = False
+            status = SourceStatus.PENDING_VALIDATION
+        else:
+            # Auto-enabled sources are active, others are active if explicitly enabled
+            status = SourceStatus.ACTIVE if enabled else SourceStatus.DISABLED
 
         source_doc = {
             "name": name,
             "sourceType": source_type,
             "config": config,
-            "enabled": enabled,
+            "enabled": enabled,  # Legacy field, kept for backward compatibility
+            "status": status.value,  # New status field
             "tags": [f"discovered-via-{discovered_via}", f"confidence-{discovery_confidence}"],
             # Company linkage (optional)
             "companyId": company_id,
@@ -599,6 +611,7 @@ class JobSourcesManager:
             "discoveryConfidence": discovery_confidence,
             "discoveryQueueItemId": discovery_queue_item_id,
             "validationRequired": validation_required,
+            "autoEnabled": enabled and not validation_required,  # Track if auto-enabled
             # Tracking
             "lastScrapedAt": None,
             "lastScrapedStatus": None,
@@ -615,10 +628,10 @@ class JobSourcesManager:
             doc_ref = self.db.collection(self.collection_name).add(source_doc)
             doc_id = doc_ref[1].id
 
-            status = "enabled" if enabled else "pending validation"
+            status_label = "enabled" if enabled else "pending validation"
             logger.info(
                 f"Created source from discovery: {name} ({source_type}) "
-                f"[{discovery_confidence} confidence, {status}] - ID: {doc_id}"
+                f"[{discovery_confidence} confidence, {status_label}] - ID: {doc_id}"
             )
 
             return doc_id
@@ -749,3 +762,43 @@ class JobSourcesManager:
         except Exception as e:
             logger.error(f"Error recording success for source {source_id}: {e}")
             raise
+
+    def update_source_status(
+        self,
+        source_id: str,
+        status: SourceStatus,
+        sync_enabled: bool = True,
+    ) -> bool:
+        """
+        Update the status of a job source.
+
+        Used during source discovery and validation to track operational state.
+
+        Args:
+            source_id: Firestore document ID
+            status: New status (SourceStatus enum)
+            sync_enabled: If True, also update legacy 'enabled' field to match status
+
+        Returns:
+            True if updated successfully, False otherwise
+        """
+        try:
+            update_data = {
+                "status": status.value if isinstance(status, SourceStatus) else status,
+                "updatedAt": gcloud_firestore.SERVER_TIMESTAMP,
+            }
+
+            # Sync legacy enabled field if requested
+            if sync_enabled:
+                # enabled=True for ACTIVE status, False for all others
+                update_data["enabled"] = status == SourceStatus.ACTIVE
+
+            self.db.collection(self.collection_name).document(source_id).update(update_data)
+            logger.info(
+                f"Updated source {source_id} status to {status.value if isinstance(status, SourceStatus) else status}"
+            )
+            return True
+
+        except Exception as e:
+            logger.error(f"Error updating source status for {source_id}: {e}")
+            return False

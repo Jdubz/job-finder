@@ -517,14 +517,17 @@ class TestJobAnalyzeSuccess:
         )
 
         # Mock company info
+        # Mock company with good data quality (Phase 2 changes)
         company_record = {
             "id": "company-123",
             "name": "Startup Inc",
-            "about": "We build cool products",
-            "culture": "Fast-paced startup",
+            "about": "We build cool products" * 20,  # > 100 chars for good quality
+            "culture": "Fast-paced startup" * 10,  # > 50 chars for good quality
             "mission": "Change the world",
+            "status": "active",
         }
-        processor.companies_manager.get_or_create_company.return_value = company_record
+        processor.companies_manager.get_company.return_value = company_record
+        processor.companies_manager.has_good_company_data.return_value = True
 
         # Mock AI result
         match_result = JobMatchResult(
@@ -540,8 +543,8 @@ class TestJobAnalyzeSuccess:
 
         processor._process_job_analyze(item)
 
-        # Verify company was fetched/created
-        processor.companies_manager.get_or_create_company.assert_called_once()
+        # Verify company was fetched (Phase 2 uses get_company() now)
+        processor.companies_manager.get_company.assert_called_once()
 
         # Should spawn SAVE
         processor.queue_manager.spawn_next_pipeline_step.assert_called_once()

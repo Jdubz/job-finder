@@ -23,13 +23,14 @@ class QueueItemType(str, Enum):
     Type of queue item.
 
     TypeScript equivalent: QueueItemType in queue.types.ts
-    Values must match exactly: "job" | "company" | "scrape" | "source_discovery"
+    Values must match exactly: "job" | "company" | "scrape" | "source_discovery" | "scrape_source"
     """
 
     JOB = "job"
     COMPANY = "company"
     SCRAPE = "scrape"
     SOURCE_DISCOVERY = "source_discovery"
+    SCRAPE_SOURCE = "scrape_source"  # NEW: For automated source scraping
 
 
 class JobSubTask(str, Enum):
@@ -76,6 +77,63 @@ class CompanySubTask(str, Enum):
     EXTRACT = "extract"
     ANALYZE = "analyze"
     SAVE = "save"
+
+
+class CompanyStatus(str, Enum):
+    """
+    Status for company records in Firestore.
+
+    Tracks the analysis state of a company.
+
+    TypeScript equivalent: CompanyStatus in queue.types.ts
+    """
+
+    PENDING = "pending"  # Initial state, not yet analyzed
+    ANALYZING = "analyzing"  # Currently being processed through pipeline
+    ACTIVE = "active"  # Analysis complete, ready for use
+    FAILED = "failed"  # Analysis failed after retries
+
+
+class SourceStatus(str, Enum):
+    """
+    Status for job source records in Firestore.
+
+    Tracks the validation and operational state of a scraping source.
+
+    TypeScript equivalent: SourceStatus in queue.types.ts
+    """
+
+    PENDING_VALIDATION = "pending_validation"  # Discovered but needs manual validation
+    ACTIVE = "active"  # Validated and enabled for scraping
+    DISABLED = "disabled"  # Manually or automatically disabled
+    FAILED = "failed"  # Permanently failed validation or operation
+
+
+class SourceTier(str, Enum):
+    """
+    Priority tier for company/source scraping.
+
+    Based on scoring algorithm:
+    - Portland office: +50 points
+    - Tech stack alignment: up to +100 points
+    - Remote-first culture: +15 points
+    - AI/ML focus: +10 points
+
+    Tiers:
+    - S: 150+ points (top priority)
+    - A: 100-149 points (high priority)
+    - B: 70-99 points (medium priority)
+    - C: 50-69 points (low priority)
+    - D: 0-49 points (minimal priority)
+
+    TypeScript equivalent: SourceTier in queue.types.ts
+    """
+
+    S = "S"
+    A = "A"
+    B = "B"
+    C = "C"
+    D = "D"
 
 
 class QueueStatus(str, Enum):
@@ -253,6 +311,21 @@ class JobQueueItem(BaseModel):
     # Source discovery configuration (only used when type is SOURCE_DISCOVERY)
     source_discovery_config: Optional[SourceDiscoveryConfig] = Field(
         default=None, description="Configuration for source discovery"
+    )
+
+    # Scrape source fields (only used when type is SCRAPE_SOURCE)
+    source_id: Optional[str] = Field(
+        default=None,
+        description="Reference to job-sources Firestore document (for SCRAPE_SOURCE type)",
+    )
+    source_type: Optional[str] = Field(
+        default=None, description="Type of source: greenhouse, rss, workday, lever, api, scraper"
+    )
+    source_config: Optional[Dict[str, Any]] = Field(
+        default=None, description="Source-specific configuration (selectors, API keys, etc.)"
+    )
+    source_tier: Optional[SourceTier] = Field(
+        default=None, description="Priority tier (S/A/B/C/D) for scheduling optimization"
     )
 
     # Granular pipeline fields (only used when type is JOB with sub_task)

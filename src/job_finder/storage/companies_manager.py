@@ -6,6 +6,7 @@ from typing import Any, Dict, Optional
 
 from google.cloud.firestore_v1.base_query import FieldFilter
 
+from job_finder.queue.models import CompanyStatus
 from job_finder.utils.company_name_utils import normalize_company_name
 
 from .firestore_client import FirestoreClient
@@ -117,6 +118,7 @@ class CompaniesManager:
                 - techStack: List of technologies/skills (list)
                 - tier: Priority tier S/A/B/C/D (computed from scoring)
                 - priorityScore: Numeric priority score (computed)
+                - status: Analysis status (CompanyStatus enum) - defaults to "active" if not provided
 
         Returns:
             Document ID of saved company
@@ -148,6 +150,9 @@ class CompaniesManager:
                 "techStack": company_data.get("techStack", []),
                 "tier": company_data.get("tier", ""),
                 "priorityScore": company_data.get("priorityScore", 0),
+                # Status tracking
+                "status": company_data.get("status", CompanyStatus.ACTIVE.value),
+                "last_analyzed_at": company_data.get("last_analyzed_at", datetime.now()),
                 "updatedAt": datetime.now(),
             }
 
@@ -210,6 +215,68 @@ class CompaniesManager:
             )
             raise
 
+    def has_good_company_data(self, company_data: Dict[str, Any]) -> bool:
+        """
+        Check if company has sufficient data quality to use for job matching.
+
+        Quality thresholds (from decision tree):
+        - Minimal: about > 50 OR culture > 25
+        - Good: about > 100 AND culture > 50
+
+        Args:
+            company_data: Company data dictionary
+
+        Returns:
+            True if company has good quality data
+        """
+        about_length = len(company_data.get("about", ""))
+        culture_length = len(company_data.get("culture", ""))
+
+        # Good quality: Detailed about AND culture sections
+        has_good_quality = about_length > 100 and culture_length > 50
+
+        # Also acceptable: One substantial section
+        has_minimal_quality = about_length > 50 or culture_length > 25
+
+        return has_good_quality or has_minimal_quality
+
+    def create_company_stub(self, company_name: str, company_website: str = "") -> Dict[str, Any]:
+        """
+        Create a minimal company record with status="analyzing".
+
+        Used when spawning COMPANY queue items to avoid blocking job processing.
+        The company will be fully analyzed by the company pipeline later.
+
+        Args:
+            company_name: Company name
+            company_website: Company website URL
+
+        Returns:
+            Company data dictionary with id
+        """
+        # Check if company already exists
+        existing = self.get_company(company_name)
+        if existing:
+            logger.info(f"Company stub already exists for {company_name}")
+            return existing
+
+        # Create minimal record
+        stub_data = {
+            "name": company_name,
+            "website": company_website,
+            "status": CompanyStatus.PENDING.value,
+            "about": "",
+            "culture": "",
+            "mission": "",
+        }
+
+        # Save stub
+        doc_id = self.save_company(stub_data)
+
+        # Return with ID
+        stub_data["id"] = doc_id
+        return stub_data
+
     def get_or_create_company(
         self, company_name: str, company_website: str = "", fetch_info_func=None
     ) -> Dict[str, Any]:
@@ -229,11 +296,8 @@ class CompaniesManager:
         company = self.get_company(company_name)
 
         if company:
-            # Check if info is complete enough
-            has_about = len(company.get("about", "")) > 100
-            has_culture = len(company.get("culture", "")) > 50
-
-            if has_about or has_culture:
+            # Check if info is complete enough using quality threshold
+            if self.has_good_company_data(company):
                 logger.info(f"Using cached company info for {company_name}")
                 return company
 
@@ -332,3 +396,46 @@ class CompaniesManager:
                 exc_info=True,
             )
             return []
+
+    def update_company_status(
+        self,
+        company_id: str,
+        status: CompanyStatus,
+        analysis_progress: Optional[Dict[str, bool]] = None,
+    ) -> bool:
+        """
+        Update the status of a company.
+
+        Used during company pipeline processing to track analysis state.
+
+        Args:
+            company_id: Firestore document ID
+            status: New status (CompanyStatus enum)
+            analysis_progress: Optional dict tracking pipeline progress:
+                {"fetch": True, "extract": True, "analyze": False, "save": False}
+
+        Returns:
+            True if updated successfully, False otherwise
+        """
+        try:
+            update_data: Dict[str, Any] = {
+                "status": status.value if isinstance(status, CompanyStatus) else status,
+                "updatedAt": datetime.now(),
+            }
+
+            if analysis_progress is not None:
+                update_data["analysis_progress"] = analysis_progress
+
+            # Update last_analyzed_at when status becomes active
+            if status == CompanyStatus.ACTIVE:
+                update_data["last_analyzed_at"] = datetime.now()
+
+            self.db.collection(self.collection_name).document(company_id).update(update_data)
+            logger.info(
+                f"Updated company {company_id} status to {status.value if isinstance(status, CompanyStatus) else status}"
+            )
+            return True
+
+        except Exception as e:
+            logger.error(f"Error updating company status for {company_id}: {e}")
+            return False
