@@ -680,20 +680,11 @@ class QueueManager:
                 f"Max spawn depth ({current_item.max_spawn_depth}) reached",
             )
 
-        # Check 2: Circular dependency - get all URLs in ancestry
-        try:
-            ancestor_items = self.get_items_by_tracking_id(current_item.tracking_id)
-            ancestor_urls = {
-                item.url for item in ancestor_items if item.id in current_item.ancestry_chain
-            }
-
-            if target_url in ancestor_urls:
-                return (
-                    False,
-                    f"Circular dependency detected: {target_url} already in ancestry chain",
-                )
-        except Exception as e:
-            logger.warning(f"Error checking ancestry chain: {e}")
+        # Check 2: Circular dependency - DISABLED for granular pipelines
+        # The same URL needs to progress through multiple sub-tasks (FETCH → EXTRACT → ANALYZE → SAVE)
+        # Check 3 (duplicate pending work) handles actual duplicate prevention
+        # Check 4 (terminal states) prevents re-processing completed items
+        pass
 
         # Check 3: Duplicate pending work
         if self.has_pending_work_for_url(target_url, target_type, current_item.tracking_id):
