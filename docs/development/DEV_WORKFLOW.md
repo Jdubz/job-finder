@@ -1,409 +1,548 @@
-# Development Workflow with Firebase Emulators
+# Development Workflow
 
-This guide explains how to develop the Job Finder worker locally using Docker and Firebase Emulators.
+This document describes the complete development workflow for the job-finder-worker project, from local development to production deployment.
 
-## Overview
+## Table of Contents
 
-The development workflow uses:
+1. [Local Development Setup](#local-development-setup)
+2. [Development Cycle](#development-cycle)
+3. [Testing](#testing)
+4. [Code Quality](#code-quality)
+5. [Deployment Workflow](#deployment-workflow)
+6. [Troubleshooting](#troubleshooting)
 
-- **Firebase Emulators** (from job-finder-BE) for Auth, Firestore, Functions, and Storage
-- **Docker container** for the Python worker with mounted source code
-- **Emulator connectivity** via `host.docker.internal` from container to host
-
-## Architecture
-
-```
-┌─────────────────────────────────────────────┐
-│ Host Machine                                │
-│                                             │
-│  ┌────────────────────────────────────┐    │
-│  │ job-finder-BE/functions            │    │
-│  │ Firebase Emulators                 │    │
-│  │  - Auth (9099)                     │    │
-│  │  - Firestore (8080)                │    │
-│  │  - Functions (5001)                │    │
-│  │  - Storage (9199)                  │    │
-│  │  - UI (4000)                       │    │
-│  └────────────────────────────────────┘    │
-│         ▲                                   │
-│         │ host.docker.internal              │
-│         │                                   │
-│  ┌──────┴──────────────────────────────┐   │
-│  │ Docker Container                    │   │
-│  │ job-finder-worker                   │   │
-│  │  - Python worker                    │   │
-│  │  - Mounted source code              │   │
-│  │  - config.dev.yaml                  │   │
-│  └─────────────────────────────────────┘   │
-└─────────────────────────────────────────────┘
-```
-
-## Quick Start
+## Local Development Setup
 
 ### Prerequisites
 
-1. **Docker** and **Docker Compose** installed
-2. **job-finder-BE** repository cloned in the same parent directory
-3. **API keys** set in environment:
-   ```bash
-   export ANTHROPIC_API_KEY="your-key-here"
-   export OPENAI_API_KEY="your-key-here"  # optional
-   ```
-
-### Start Development Environment
-
-Use the helper script to start everything:
-
 ```bash
-./scripts/dev/start-dev.sh
+# Required software
+- Python 3.12+
+- Docker & Docker Compose
+- Node.js 18+ (for dev-monitor)
+- Git
+- gcloud CLI (for viewing staging/production logs)
 ```
 
-This will:
-1. Check if Firebase Emulators are running
-2. Start emulators if needed (from ../job-finder-BE)
-3. Start the worker Docker container
-4. Connect container to emulators via `host.docker.internal`
+### Using Dev-Monitor (Recommended)
 
-### Manual Start (Alternative)
+The dev-monitor is the **primary method** for local development. It manages all services including the Python worker via Docker.
 
-If you prefer manual control:
+**Location**: `job-finder-app-manager/dev-monitor`
 
-**Terminal 1 - Start Emulators:**
+**Services Managed**:
+- Firebase Emulators (Firestore, Functions, Auth)
+- Python Worker (Docker container)
+- Frontend development server (React)
+- Backend Firebase Functions (TypeScript)
+
+#### Starting Dev-Monitor
+
 ```bash
-cd ../job-finder-BE/functions
-npm run emulators:start
+# Navigate to dev-monitor directory
+cd ../dev-monitor
+
+# Start all services
+make dev-monitor
+
+# Or start specific services
+make start-emulators  # Firebase only
+make start-worker     # Worker only
+make start-frontend   # Frontend only
+make start-backend    # Backend only
 ```
 
-**Terminal 2 - Start Worker:**
+#### Accessing Services
+
+- **Dev-Monitor UI**: http://localhost:5174
+- **Firebase Emulator UI**: http://localhost:4000
+- **Firestore Emulator**: localhost:8080
+- **Frontend**: http://localhost:3000
+- **Backend Functions**: http://localhost:5001
+
+#### Worker Logs
+
 ```bash
-docker-compose -f docker-compose.dev.yml up
+# View worker logs in real-time
+tail -f dev-monitor/logs/queue_worker.log
+
+# Or via the dev-monitor web UI
+open http://localhost:5174
 ```
 
-## Development Workflow
-
-### 1. Make Code Changes
-
-Edit files in `src/`, `scripts/`, or `tests/` - they are mounted into the container.
-
-### 2. Restart Worker
-
-Changes to Python code require restarting:
+#### Restarting After Code Changes
 
 ```bash
-docker-compose -f docker-compose.dev.yml restart
+# Rebuild and restart worker after Python changes
+make restart-worker
+
+# Rebuild from scratch (if dependencies changed)
+make rebuild-worker
+
+# Restart frontend after React changes (auto-reload usually handles this)
+make restart-frontend
+
+# Restart backend after TypeScript changes
+make restart-backend
 ```
 
-### 3. View Logs
+### Manual Python Development (Alternative)
+
+For running tests or scripts outside of dev-monitor:
 
 ```bash
-docker-compose -f docker-compose.dev.yml logs -f
-```
+# Create virtual environment
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
 
-### 4. Enter Container Shell
+# Install dependencies
+pip install -r requirements.txt
+pip install -e ".[dev]"
 
-```bash
-./scripts/dev/dev-shell.sh
+# Set environment variables
+export GOOGLE_APPLICATION_CREDENTIALS="credentials/serviceAccountKey.json"
+export STORAGE_DATABASE_NAME="portfolio-staging"
+export ENVIRONMENT="development"
 
-# Or manually:
-docker-compose -f docker-compose.dev.yml exec job-finder bash
-```
-
-Inside the container, you can:
-
-```bash
 # Run tests
 pytest
 
 # Run specific test
-pytest tests/test_firestore_storage.py -v
+pytest tests/test_filters.py -v
 
-# Run the worker manually
-python run_job_search.py
-
-# Check emulator connectivity
-curl http://host.docker.internal:8080
-curl http://host.docker.internal:9099
+# Run with coverage
+pytest --cov=src/job_finder --cov-report=html
 ```
 
-### 5. View Emulator Data
+## Development Cycle
 
-Open the Emulator UI in your browser:
-
-```
-http://localhost:4000
-```
-
-You can:
-- View Firestore documents in real-time
-- Inspect queue items
-- Check auth users
-- View function logs
-- Manually add test data
-
-### 6. Stop Development Environment
+### 1. Create Feature Branch
 
 ```bash
-./scripts/dev/stop-dev.sh
+# Ensure you're on staging
+git checkout staging
+git pull origin staging
+
+# Create feature branch
+git checkout -b feature/your-feature-name
 ```
 
-This stops:
-- Worker container
-- Firebase Emulators
-
-**Note:** Emulator data persists in `.firebase/emulator-data/` (in job-finder-BE)
-
-## Configuration
-
-### config.dev.yaml
-
-The development config (`config/config.dev.yaml`) is optimized for local development:
-
-- **Database**: `(default)` - Emulator default database
-- **AI thresholds**: Lower for easier testing
-- **Scraping**: Disabled external sites (use mock data)
-- **Logging**: Console only (no Cloud Logging)
-- **Queue**: Enabled with faster polling
-
-Key differences from production:
-
-| Setting | Production | Development |
-|---------|-----------|-------------|
-| Database | `portfolio` | `(default)` |
-| Min match score | 80 | 60 |
-| External scraping | Enabled | Disabled |
-| Mock data | No | Yes |
-| Cloud logging | Yes | No |
-| Poll interval | 30s | 5s |
-
-### Environment Variables
-
-Set in `docker-compose.dev.yml`:
-
-```yaml
-FIRESTORE_EMULATOR_HOST=host.docker.internal:8080
-FIREBASE_AUTH_EMULATOR_HOST=host.docker.internal:9099
-PROFILE_DATABASE_NAME=(default)
-STORAGE_DATABASE_NAME=(default)
-CONFIG_PATH=/app/config/config.dev.yaml
-ENVIRONMENT=development
-```
-
-## Common Tasks
-
-### Run Queue Worker
-
-The container automatically starts the worker. To run manually:
+### 2. Develop Locally
 
 ```bash
-./scripts/dev/dev-shell.sh
+# Start dev-monitor
+cd ../dev-monitor
+make dev-monitor
 
-# Inside container:
-python run_job_search.py
+# Make changes in job-finder-worker repo
+cd ../job-finder-worker
+
+# Test changes by restarting worker
+cd ../dev-monitor
+make restart-worker
+
+# View logs
+tail -f logs/queue_worker.log
 ```
 
-### Test Firestore Connection
+### 3. Write Tests
 
 ```bash
-./scripts/dev/dev-shell.sh
+# Write tests for new functionality
+# Location: tests/
 
-# Inside container:
-python -c "
-from google.cloud import firestore
-import os
-print(f'Emulator: {os.getenv(\"FIRESTORE_EMULATOR_HOST\")}')
-db = firestore.Client(project='demo-project', database='(default)')
-print(f'Connected to Firestore')
-"
+# Run tests
+pytest tests/
+
+# Run specific test file
+pytest tests/queue/test_processor.py -v
+
+# Run with coverage
+pytest --cov=src/job_finder --cov-report=html
 ```
 
-### Seed Test Data
-
-Create test users and data in emulators:
+### 4. Code Quality Checks
 
 ```bash
-# From job-finder-BE
-cd ../job-finder-BE/functions
-npm run emulators:seed
+# Format code with black
+black src/ tests/
+
+# Check formatting without changes
+black --check src/ tests/
+
+# Type checking
+mypy src/
+
+# Run linter
+flake8 src/ tests/
 ```
 
-### Clear Emulator Data
-
-Start fresh with empty database:
+### 5. Commit Changes
 
 ```bash
-cd ../job-finder-BE
-npm run emulators:clear
-npm run emulators:start
+# Stage changes
+git add .
+
+# Commit (pre-commit hook runs black)
+git commit -m "feat: add new feature"
+
+# Push to feature branch
+git push origin feature/your-feature-name
 ```
 
-### Run Tests
+## Testing
+
+### Unit Tests
 
 ```bash
-./scripts/dev/dev-shell.sh
-
-# Inside container:
+# Run all unit tests
 pytest
-pytest --cov=src
-pytest tests/queue/ -v
+
+# Run specific test module
+pytest tests/queue/test_processor.py
+
+# Run specific test function
+pytest tests/queue/test_processor.py::test_process_company_fetch -v
+
+# Run tests matching pattern
+pytest -k "company" -v
+
+# Run with verbose output
+pytest -v
+
+# Run with coverage report
+pytest --cov=src/job_finder --cov-report=term-missing
+```
+
+### Integration Tests
+
+```bash
+# Run integration tests
+pytest tests/queue/test_integration.py -v
+
+# Run smoke tests
+pytest tests/smoke/ -v
+```
+
+### Testing Against Staging Data
+
+```bash
+# Use staging database for testing
+export STORAGE_DATABASE_NAME="portfolio-staging"
+
+# Run tests
+pytest tests/
+```
+
+## Code Quality
+
+### Pre-Commit Hooks
+
+Pre-commit hooks automatically run when you commit:
+
+```bash
+# Hooks run automatically on commit
+git commit -m "your message"
+
+# Manually run pre-commit checks
+.husky/pre-commit
+
+# Black formatting
+black src/ tests/
+```
+
+### Pre-Push Hooks
+
+Pre-push hooks run before pushing to remote:
+
+```bash
+# Hooks run automatically on push
+git push origin feature-branch
+
+# Manually run pre-push checks
+.husky/pre-push
+
+# Checks performed:
+# - mypy type checking
+# - pytest (all tests must pass)
+```
+
+### Manual Quality Checks
+
+```bash
+# Format code
+black src/ tests/
+
+# Type checking
+mypy src/
+
+# Linting
+flake8 src/ tests/
+
+# Run all checks
+black src/ tests/ && mypy src/ && pytest
+```
+
+## Deployment Workflow
+
+### Development → Staging → Production
+
+```
+Local Dev (dev-monitor)
+  ↓ PR to staging
+Staging (auto-deploy via Watchtower in 3 min)
+  ↓ Verify + PR to main
+Production (auto-deploy via Watchtower in 5 min)
+```
+
+### 1. Deploy to Staging
+
+```bash
+# Ensure all tests pass
+pytest
+
+# Push to staging branch (triggers GitHub Actions)
+git checkout staging
+git merge feature/your-feature-name
+git push origin staging
+
+# GitHub Actions automatically:
+# 1. Runs tests
+# 2. Runs code quality checks
+# 3. Builds Docker image
+# 4. Pushes to ghcr.io/jdubz/job-finder-worker:staging
+# 5. Watchtower detects and deploys within 3 minutes
+```
+
+### 2. Verify in Staging
+
+```bash
+# View staging logs
+gcloud logging tail 'logName="projects/static-sites-257923/logs/job-finder" \
+  AND labels.environment="staging"'
+
+# Or read recent logs
+gcloud logging read 'logName="projects/static-sites-257923/logs/job-finder" \
+  AND labels.environment="staging"' \
+  --limit 20 --freshness 10m
+
+# Check worker status
+gcloud logging read 'logName="projects/static-sites-257923/logs/job-finder" \
+  AND labels.environment="staging" \
+  AND textPayload:"[WORKER]"' \
+  --limit 5
+```
+
+### 3. Deploy to Production
+
+```bash
+# After verifying staging works correctly
+git checkout main
+git merge staging
+git push origin main
+
+# GitHub Actions automatically:
+# 1. Runs tests
+# 2. Runs code quality checks
+# 3. Builds Docker image
+# 4. Pushes to ghcr.io/jdubz/job-finder-worker:latest
+# 5. Watchtower detects and deploys within 5 minutes
+```
+
+### 4. Verify in Production
+
+```bash
+# View production logs
+gcloud logging tail 'logName="projects/static-sites-257923/logs/job-finder" \
+  AND labels.environment="production"'
+
+# Check worker status
+gcloud logging read 'logName="projects/static-sites-257923/logs/job-finder" \
+  AND labels.environment="production" \
+  AND textPayload:"[WORKER]"' \
+  --limit 5
+```
+
+## Monitoring Queue Activity
+
+### Enhanced Logging (Added 2025-10-22)
+
+The queue worker now logs detailed information on **every queue check** (every 60 seconds).
+
+**Monitor staging queue**:
+```bash
+# Watch for queue activity
+gcloud logging tail 'logName="projects/static-sites-257923/logs/job-finder" \
+  AND labels.environment="staging" \
+  AND (textPayload:"found_pending_items" OR textPayload:"no_pending_items")'
+
+# View queue items being processed
+gcloud logging tail 'logName="projects/static-sites-257923/logs/job-finder" \
+  AND labels.environment="staging" \
+  AND textPayload:"[QUEUE] Item"'
+```
+
+**Monitor local queue** (dev-monitor):
+```bash
+# Watch worker log
+tail -f dev-monitor/logs/queue_worker.log
+
+# Filter for queue activity
+tail -f dev-monitor/logs/queue_worker.log | grep -E "(found_pending_items|no_pending_items|\[QUEUE\])"
 ```
 
 ## Troubleshooting
 
-### Worker can't connect to emulators
+### Dev-Monitor Won't Start
 
-**Symptom:** Container logs show connection errors to Firestore/Auth
+**Symptoms**: `make dev-monitor` fails or services don't start
 
-**Solution:**
-
-1. Verify emulators are running:
-   ```bash
-   curl http://localhost:4000
-   ```
-
-2. Check `extra_hosts` in docker-compose.dev.yml:
-   ```yaml
-   extra_hosts:
-     - "host.docker.internal:host-gateway"
-   ```
-
-3. Test from inside container:
-   ```bash
-   docker-compose -f docker-compose.dev.yml exec job-finder bash
-   curl http://host.docker.internal:8080
-   ```
-
-### Emulators won't start
-
-**Check logs:**
+**Solutions**:
 ```bash
-tail -f /tmp/firebase-emulators.log
+# Check if ports are in use
+lsof -i :4000  # Firebase Emulator UI
+lsof -i :8080  # Firestore Emulator
+lsof -i :3000  # Frontend
+lsof -i :5001  # Backend Functions
+lsof -i :5174  # Dev-Monitor UI
+
+# Stop conflicting processes
+make stop-all
+
+# Restart from scratch
+make clean
+make dev-monitor
 ```
 
-**Common causes:**
-- Ports already in use (kill existing emulators)
-- Missing dependencies in job-finder-BE
+### Worker Not Connecting to Emulator
 
-### Source code changes not reflected
+**Symptoms**: Worker shows connection errors or "ALTS creds" warnings
 
-**Volumes not mounted correctly:**
-
+**Solutions**:
 ```bash
-# Rebuild container
-docker-compose -f docker-compose.dev.yml up --build
+# Check Firestore emulator is running
+curl http://localhost:8080
 
-# Verify mounts
-docker-compose -f docker-compose.dev.yml exec job-finder ls -la /app/src
+# Check worker environment
+# Should have: FIRESTORE_EMULATOR_HOST=host.docker.internal:8080
+
+# Restart worker
+make restart-worker
+
+# Check worker logs
+tail -f dev-monitor/logs/queue_worker.log
 ```
 
-### Permission errors
+### Tests Failing in CI but Passing Locally
 
-**Fix file ownership:**
+**Symptoms**: GitHub Actions tests fail, but `pytest` passes locally
 
+**Solutions**:
 ```bash
-# On host
-sudo chown -R $USER:$USER src/ tests/ scripts/
+# Run tests with same Python version as CI
+python3.12 -m pytest
 
-# Rebuild container
-docker-compose -f docker-compose.dev.yml down
-docker-compose -f docker-compose.dev.yml up --build
+# Run tests in clean environment
+deactivate  # Exit venv
+rm -rf venv
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+pip install -e ".[dev]"
+pytest
+
+# Check for missing dependencies
+pip list
 ```
 
-### API keys not available
+### Staging Deployment Not Working
 
-**Set in shell before starting:**
+**Symptoms**: Push to staging doesn't trigger deployment or Watchtower doesn't update
 
+**Checks**:
 ```bash
-export ANTHROPIC_API_KEY="your-key"
-docker-compose -f docker-compose.dev.yml up
+# 1. Verify GitHub Actions completed
+gh run list --repo Jdubz/job-finder-worker --branch staging --limit 3
+
+# 2. Check if image was pushed
+# Visit: https://github.com/Jdubz/job-finder-worker/pkgs/container/job-finder-worker
+
+# 3. Verify Portainer stack has correct image name
+# Should be: ghcr.io/jdubz/job-finder-worker:staging
+# NOT: ghcr.io/jdubz/job-finder:staging
+
+# 4. Check Watchtower is running
+# In Portainer: Containers → watchtower-job-finder-staging
+
+# 5. Manually trigger update if needed
+# In Portainer: Containers → job-finder-staging → Recreate (with "Pull latest image")
 ```
 
-**Or add to `.env` file** (gitignored):
+### Loop Prevention Bug (Fixed 2025-10-22)
 
+**Symptoms**: Company pipeline stuck after FETCH, logs show "Circular dependency detected"
+
+**Cause**: Loop prevention incorrectly blocked granular pipeline progression (same URL with different sub-tasks)
+
+**Fix Applied**: Disabled Check 2 (circular dependency) in `src/job_finder/queue/manager.py:683-687`
+
+**Verification**:
 ```bash
-# .env
-ANTHROPIC_API_KEY=your-key-here
-OPENAI_API_KEY=your-key-here
+# Check if company pipelines are progressing
+gcloud logging read 'logName="projects/static-sites-257923/logs/job-finder" \
+  AND labels.environment="staging" \
+  AND (textPayload:"COMPANY_FETCH" OR textPayload:"COMPANY_EXTRACT")' \
+  --limit 10
 ```
 
 ## Best Practices
 
-### 1. Always Use Emulators for Development
+### 1. Always Use Dev-Monitor for Local Development
 
-Never connect to production databases during development. Use emulators exclusively.
+❌ **Don't**: Start worker manually with `python scripts/workers/queue_worker.py`
+✅ **Do**: Use `make dev-monitor` to start all services together
 
-### 2. Keep Emulator Data Clean
+### 2. Test Before Pushing
 
-Periodically clear emulator data to ensure tests are reproducible:
+❌ **Don't**: Push untested code to staging
+✅ **Do**: Run `pytest` locally first, verify in dev-monitor
+
+### 3. Monitor Staging Before Production
+
+❌ **Don't**: Deploy to production immediately after merging to staging
+✅ **Do**: Wait 3-5 minutes, verify staging logs, then deploy to production
+
+### 4. Use Structured Logging
+
+❌ **Don't**: Use print() statements
+✅ **Do**: Use slogger with appropriate categories:
+```python
+from job_finder.logging_config import get_structured_logger
+slogger = get_structured_logger(__name__)
+
+# Worker status
+slogger.worker_status("started", {"poll_interval": 60})
+
+# Database activity
+slogger.database_activity("query", "job-queue", "fetching pending items")
+
+# Pipeline activity
+slogger.pipeline_activity("FETCH", "company", "success", {"pages": 3})
+```
+
+### 5. Clean Up Feature Branches
 
 ```bash
-cd ../job-finder-BE
-npm run emulators:clear
+# After PR merged to staging
+git checkout staging
+git pull origin staging
+git branch -d feature/your-feature-name
+git push origin --delete feature/your-feature-name
 ```
-
-### 3. Use Mock Data
-
-Enable `mock_scraping: true` in config.dev.yaml to avoid hitting real job sites.
-
-### 4. Version Your Config
-
-Keep `config.dev.yaml` in git so other developers have the same setup.
-
-### 5. Test in Container
-
-Always test in the Docker container, not on host, to ensure consistency.
-
-### 6. Monitor Emulator UI
-
-Keep the Emulator UI open at `localhost:4000` to watch data flow in real-time.
-
-### 7. Commit Often
-
-With mounted volumes, you're editing files directly. Commit frequently.
-
-## Integration with Backend
-
-### Calling Backend Functions
-
-The worker can call backend Cloud Functions in the emulator:
-
-```python
-import requests
-
-# Call a function in the emulator
-response = requests.post(
-    "http://host.docker.internal:5001/demo-project/us-central1/yourFunction",
-    json={"data": {"key": "value"}}
-)
-```
-
-### Sharing Data
-
-Both worker and backend use the same Firestore emulator:
-
-- Worker writes to `job-matches`
-- Backend reads from `job-matches`
-- Both use Auth emulator for users
-
-### Testing Full Flow
-
-1. **Backend creates job queue item** (via Emulator UI or function)
-2. **Worker picks up item** from queue
-3. **Worker processes job** and creates match
-4. **Backend reads match** from Firestore
-5. **Frontend displays match** (if running)
 
 ## Related Documentation
 
-- [Firebase Emulators](../../job-finder-BE/docs/development/EMULATORS.md)
-- [Docker Compose Reference](./DOCKER_COMPOSE.md)
-- [Configuration Guide](./CONFIGURATION.md)
-- [Testing Guide](./TESTING.md)
-
-## Support
-
-For issues:
-
-1. Check container logs: `docker-compose -f docker-compose.dev.yml logs`
-2. Check emulator logs: `tail -f /tmp/firebase-emulators.log`
-3. Review Emulator UI: `http://localhost:4000`
-4. Contact team in project Slack
+- [Deployment Architecture](../deployment-architecture.md) - Infrastructure and CI/CD details
+- [Local Testing Guide](../guides/local-testing.md) - Testing strategies
+- [Cloud Logging Design](../CLOUD_LOGGING_DESIGN.md) - Logging architecture
+- [Loop Prevention](../LOOP_PREVENTION_SUMMARY.md) - Queue safety mechanisms

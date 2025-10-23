@@ -170,10 +170,38 @@ def run_worker_loop(
             items = queue_manager.get_pending_items(limit=10)
 
             if items:
+                # Log found items with details
                 slogger.worker_status(
-                    "processing_batch", {"iteration": iteration, "items_count": len(items)}
+                    "found_pending_items",
+                    {
+                        "iteration": iteration,
+                        "items_count": len(items),
+                        "total_processed": items_processed_total
+                    }
                 )
 
+                # Log each item's details
+                for i, item in enumerate(items, 1):
+                    item_info = {
+                        "position": i,
+                        "item_id": item.id,
+                        "type": item.type.value if hasattr(item.type, 'value') else str(item.type),
+                        "url": item.url[:50] + "..." if len(item.url) > 50 else item.url,
+                    }
+
+                    # Add company name if available
+                    if hasattr(item, 'company_name') and item.company_name:
+                        item_info["company"] = item.company_name
+
+                    # Add sub-task if available
+                    if hasattr(item, 'company_sub_task') and item.company_sub_task:
+                        item_info["sub_task"] = item.company_sub_task.value if hasattr(item.company_sub_task, 'value') else str(item.company_sub_task)
+                    elif hasattr(item, 'sub_task') and item.sub_task:
+                        item_info["sub_task"] = item.sub_task.value if hasattr(item.sub_task, 'value') else str(item.sub_task)
+
+                    slogger.logger.info(f"[QUEUE] Item {i}/{len(items)}: {item_info}")
+
+                # Process items
                 for item in items:
                     if shutdown_requested:
                         slogger.worker_status("shutdown_in_progress")
@@ -189,16 +217,14 @@ def run_worker_loop(
                 stats = queue_manager.get_queue_stats()
                 slogger.worker_status("batch_completed", {"queue_stats": str(stats)})
             else:
-                # No items to process
-                # Log every 10 iterations (~10 minutes)
-                if iteration % 10 == 0:
-                    slogger.worker_status(
-                        "idle",
-                        {
-                            "iteration": iteration,
-                            "total_processed": items_processed_total,
-                        },
-                    )
+                # No items to process - always log this
+                slogger.worker_status(
+                    "no_pending_items",
+                    {
+                        "iteration": iteration,
+                        "total_processed": items_processed_total,
+                    },
+                )
 
             # Sleep before next poll
             time.sleep(poll_interval)

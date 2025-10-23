@@ -50,7 +50,39 @@ When considering improvements or new features:
 
 ## Commands
 
-### Setup
+### Local Development (Recommended)
+
+**For local development, use the dev-monitor tool which manages all services including the Python worker via Docker.**
+
+```bash
+# Navigate to the dev-monitor directory (in job-finder-app-manager repo)
+cd ../dev-monitor
+
+# Start all services including Python worker container
+make dev-monitor
+
+# View worker logs
+tail -f logs/queue_worker.log
+
+# Restart worker after code changes
+make restart-worker
+
+# Access dev-monitor web UI
+open http://localhost:5174
+```
+
+The dev-monitor manages:
+- Firebase Emulators (Firestore on localhost:8080)
+- Python Worker (Docker container)
+- Frontend dev server
+- Backend Firebase Functions
+
+**Worker logs location:** `dev-monitor/logs/queue_worker.log`
+
+### Setup (For Manual Testing Only)
+
+For running tests or scripts outside of dev-monitor:
+
 ```bash
 # Create and activate virtual environment
 python -m venv venv
@@ -72,16 +104,27 @@ python -m job_finder.main --create-profile data/profile.json
 # Then update config/config.yaml to point to your profile
 ```
 
-### Running the Application
+### Running the Worker
+
+**Primary method - via dev-monitor:**
 ```bash
-# Run with default config (includes AI matching if configured)
-python -m job_finder.main
+cd ../dev-monitor
+make dev-monitor  # Starts worker in Docker container
+```
 
-# Run with custom config
-python -m job_finder.main --config path/to/config.yaml
+**Alternative - manual queue worker (not recommended):**
+```bash
+# Only use this for testing specific configurations
+source venv/bin/activate
+GOOGLE_APPLICATION_CREDENTIALS="credentials/serviceAccountKey.json" \
+STORAGE_DATABASE_NAME="portfolio-staging" \
+python scripts/workers/queue_worker.py
+```
 
-# Override output file
-python -m job_finder.main --output data/custom_output.json
+**Legacy monolithic mode (deprecated):**
+```bash
+# This mode is deprecated - use queue worker instead
+python -m job_finder.main --config config/config.yaml
 ```
 
 ### Testing
