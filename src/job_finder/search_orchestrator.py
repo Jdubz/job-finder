@@ -15,7 +15,6 @@ from job_finder.scrapers.greenhouse_scraper import GreenhouseScraper
 from job_finder.scrapers.rss_scraper import RSSJobScraper
 from job_finder.storage import FirestoreJobStorage, JobSourcesManager
 from job_finder.storage.companies_manager import CompaniesManager
-from job_finder.utils.job_type_filter import FilterDecision, filter_job
 
 logger = logging.getLogger(__name__)
 

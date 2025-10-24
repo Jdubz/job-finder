@@ -102,9 +102,6 @@ class GreenhouseScraper(BaseScraper):
             # Extract location
             location = self._extract_location(job_data)
 
-            # Extract departments/tags
-            departments = [dept.get("name", "") for dept in job_data.get("departments", [])]
-
             # Build job URL
             absolute_url = job_data.get("absolute_url", "")
 

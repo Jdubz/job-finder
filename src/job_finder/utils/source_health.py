@@ -2,7 +2,6 @@
 
 import logging
 from datetime import datetime, timezone, timedelta
-from typing import Dict, Any
 
 from google.cloud import firestore as gcloud_firestore
 from google.cloud.firestore_v1.base_query import FieldFilter

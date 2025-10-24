@@ -5,7 +5,7 @@ import logging
 from typing import Any, Dict, Optional
 
 from job_finder.ai.providers import AITask, create_provider
-from job_finder.constants import MAX_HTML_SAMPLE_LENGTH, MAX_HTML_SAMPLE_LENGTH_SMALL
+from job_finder.constants import MAX_HTML_SAMPLE_LENGTH
 
 logger = logging.getLogger(__name__)
 
