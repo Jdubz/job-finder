@@ -3,14 +3,13 @@
 
 import argparse
 import json
-import logging
 import sys
 from pathlib import Path
 
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
-from job_finder.logging_config import format_company_name, get_structured_logger
+from job_finder.logging_config import format_company_name
 
 
 def demo_truncation(company_names):

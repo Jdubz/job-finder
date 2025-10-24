@@ -1,7 +1,5 @@
 """Tests for source type detector utility."""
 
-import pytest
-
 from job_finder.queue.models import SourceTypeHint
 from job_finder.utils.source_type_detector import SourceTypeDetector
 

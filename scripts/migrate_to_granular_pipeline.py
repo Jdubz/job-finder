@@ -12,7 +12,6 @@ Usage:
 
 import argparse
 import logging
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List
 
@@ -22,7 +21,7 @@ import sys
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from job_finder.queue.manager import QueueManager
-from job_finder.queue.models import JobQueueItem, JobSubTask, QueueItemType, QueueStatus
+from job_finder.queue.models import JobQueueItem, JobSubTask
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)

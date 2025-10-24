@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Test the complete AI job matching pipeline with a real job posting."""
 import json
-import os
 
 from dotenv import load_dotenv
 

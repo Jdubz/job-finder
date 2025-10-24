@@ -28,7 +28,6 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List
 
-from google.cloud import firestore
 
 from job_finder.queue.manager import QueueManager
 from job_finder.queue.scraper_intake import ScraperIntake

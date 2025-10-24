@@ -6,7 +6,6 @@ Verifies cost optimization - rejected jobs should never reach expensive AI analy
 """
 
 import logging
-from typing import Dict, Any
 
 from .base_scenario import BaseE2EScenario
 from ..helpers import QueueMonitor, FirestoreHelper, CleanupHelper

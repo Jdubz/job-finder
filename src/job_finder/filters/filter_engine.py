@@ -7,9 +7,8 @@ and improve match quality by only analyzing jobs that meet basic requirements.
 
 import logging
 import re
-from typing import List, Optional
 
-from job_finder.filters.models import FilterResult, FilterRejection
+from job_finder.filters.models import FilterResult
 
 logger = logging.getLogger(__name__)
 

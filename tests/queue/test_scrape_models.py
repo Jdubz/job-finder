@@ -1,8 +1,5 @@
 """Tests for SCRAPE queue models and configuration."""
 
-import pytest
-from pydantic import ValidationError
-
 from job_finder.queue.models import JobQueueItem, QueueItemType, ScrapeConfig
 
 

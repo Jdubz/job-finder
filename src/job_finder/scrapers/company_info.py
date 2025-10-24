@@ -2,8 +2,8 @@
 
 import logging
 import re
-from typing import Any, Dict, Optional
-from urllib.parse import urljoin, urlparse
+from typing import Optional
+from urllib.parse import urlparse
 
 logger = logging.getLogger(__name__)
 

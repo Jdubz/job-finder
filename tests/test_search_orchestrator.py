@@ -256,9 +256,8 @@ class TestGetActiveListings:
         orchestrator.sources_manager = Mock()
         orchestrator.companies_manager = Mock()
         orchestrator.sources_manager.get_active_sources.return_value = mock_sources
-        orchestrator.companies_manager.get_company_by_id.side_effect = (
-            lambda cid: mock_companies.get(cid)
-        )
+        # Use batch_get_companies instead of individual get_company_by_id
+        orchestrator.companies_manager.batch_get_companies.return_value = mock_companies
 
         sorted_sources = orchestrator._get_active_sources()
 
@@ -277,7 +276,8 @@ class TestGetActiveListings:
         orchestrator.sources_manager = Mock()
         orchestrator.companies_manager = Mock()
         orchestrator.sources_manager.get_active_sources.return_value = mock_sources
-        orchestrator.companies_manager.get_company_by_id.return_value = None  # Company not found
+        # Return empty dict for batch_get_companies - company not found
+        orchestrator.companies_manager.batch_get_companies.return_value = {}
 
         sorted_sources = orchestrator._get_active_sources()
 
@@ -469,7 +469,7 @@ class TestFilterByAge:
 class TestFilterByJobType:
     """Test job type and seniority filtering."""
 
-    @patch("job_finder.search_orchestrator.filter_job")
+    @patch("job_finder.utils.common_filters.filter_job")
     def test_filter_by_job_type_accepts_valid_jobs(self, mock_filter, mock_config):
         """Test filtering accepts valid engineering jobs."""
         mock_filter.return_value = (FilterDecision.ACCEPT, "Passed all filters")
@@ -485,7 +485,7 @@ class TestFilterByJobType:
         assert stats == {}
         mock_filter.assert_called_once()
 
-    @patch("job_finder.search_orchestrator.filter_job")
+    @patch("job_finder.utils.common_filters.filter_job")
     def test_filter_by_job_type_rejects_invalid_jobs(self, mock_filter, mock_config):
         """Test filtering rejects non-engineering jobs."""
         mock_filter.return_value = (

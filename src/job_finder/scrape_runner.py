@@ -14,7 +14,6 @@ from job_finder.ai import AIJobMatcher
 from job_finder.company_info_fetcher import CompanyInfoFetcher
 from job_finder.profile.schema import Profile
 from job_finder.scrapers.greenhouse_scraper import GreenhouseScraper
-from job_finder.scrapers.rss_scraper import RSSJobScraper
 from job_finder.storage import FirestoreJobStorage
 from job_finder.storage.companies_manager import CompaniesManager
 from job_finder.storage.job_sources_manager import JobSourcesManager

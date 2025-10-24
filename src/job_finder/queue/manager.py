@@ -684,7 +684,6 @@ class QueueManager:
         # The same URL needs to progress through multiple sub-tasks (FETCH → EXTRACT → ANALYZE → SAVE)
         # Check 3 (duplicate pending work) handles actual duplicate prevention
         # Check 4 (terminal states) prevents re-processing completed items
-        pass
 
         # Check 3: Duplicate pending work
         if self.has_pending_work_for_url(target_url, target_type, current_item.tracking_id):

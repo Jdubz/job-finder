@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 
 from job_finder.ai.matcher import JobMatchResult
 from job_finder.filters.models import FilterResult
-from job_finder.queue.models import JobQueueItem, JobSubTask, QueueItemType, QueueStatus
+from job_finder.queue.models import JobQueueItem, JobSubTask, QueueItemType
 from job_finder.queue.processor import QueueItemProcessor
 
 

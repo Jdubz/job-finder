@@ -217,30 +217,35 @@ class JobSearchOrchestrator:
 
         sources = self.sources_manager.get_active_sources()
 
+        # Batch fetch all company data to avoid N+1 queries
+        company_ids = [s.get("companyId") for s in sources if s.get("companyId")]
+        companies_map = {}
+        if company_ids:
+            companies_map = self.companies_manager.batch_get_companies(company_ids)
+            logger.debug(
+                f"Batch fetched {len(companies_map)} companies for {len(company_ids)} source IDs"
+            )
+
         # Enrich sources with company data where applicable
         enriched_sources = []
         for source in sources:
             company_id = source.get("companyId")
 
-            if company_id:
-                # Fetch company data and merge priority fields
-                company = self.companies_manager.get_company_by_id(company_id)
-                if company:
-                    # Add company priority data to source
-                    source["hasPortlandOffice"] = company.get("hasPortlandOffice", False)
-                    source["techStack"] = company.get("techStack", [])
-                    source["tier"] = company.get("tier", "D")
-                    source["priorityScore"] = company.get("priorityScore", 0)
-                    source["company_website"] = company.get("website", "")
-                else:
-                    # Company not found, set defaults
-                    logger.warning(
-                        f"Company {company_id} not found for source {source.get('name')}"
-                    )
-                    source["hasPortlandOffice"] = False
-                    source["techStack"] = []
-                    source["tier"] = "D"
-                    source["priorityScore"] = 0
+            if company_id and company_id in companies_map:
+                # Add company priority data to source
+                company = companies_map[company_id]
+                source["hasPortlandOffice"] = company.get("hasPortlandOffice", False)
+                source["techStack"] = company.get("techStack", [])
+                source["tier"] = company.get("tier", "D")
+                source["priorityScore"] = company.get("priorityScore", 0)
+                source["company_website"] = company.get("website", "")
+            elif company_id:
+                # Company ID provided but not found in batch fetch
+                logger.warning(f"Company {company_id} not found for source {source.get('name')}")
+                source["hasPortlandOffice"] = False
+                source["techStack"] = []
+                source["tier"] = "D"
+                source["priorityScore"] = 0
             else:
                 # No company link (RSS feed, job board) - assign default priority
                 source["hasPortlandOffice"] = False
@@ -638,29 +643,9 @@ class JobSearchOrchestrator:
 
     def _filter_remote_only(self, jobs: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """Filter jobs to only include remote positions or Portland, OR on-site/hybrid."""
-        remote_keywords = ["remote", "work from home", "wfh", "anywhere", "distributed"]
+        from job_finder.utils.common_filters import filter_remote_only
 
-        filtered_jobs = []
-        for job in jobs:
-            location = job.get("location", "").lower()
-            title = job.get("title", "").lower()
-            description = job.get("description", "").lower()
-
-            # Check if remote
-            is_remote = (
-                any(keyword in location for keyword in remote_keywords)
-                or any(keyword in title for keyword in remote_keywords)
-                or any(keyword in description[:500] for keyword in remote_keywords)
-            )
-
-            # Check if Portland, OR location
-            is_portland = "portland" in location and ("or" in location or "oregon" in location)
-
-            # Include if remote OR Portland location (on-site/hybrid in Portland is OK)
-            if is_remote or is_portland:
-                filtered_jobs.append(job)
-
-        return filtered_jobs
+        return filter_remote_only(jobs)
 
     def _filter_by_age(self, jobs: List[Dict[str, Any]], max_days: int = 7) -> List[Dict[str, Any]]:
         """
@@ -673,40 +658,9 @@ class JobSearchOrchestrator:
         Returns:
             List of jobs posted within max_days
         """
-        from datetime import datetime, timedelta, timezone
+        from job_finder.utils.common_filters import filter_by_age
 
-        from job_finder.utils.date_utils import parse_job_date
-
-        cutoff_date = datetime.now(timezone.utc) - timedelta(days=max_days)
-        fresh_jobs = []
-
-        for job in jobs:
-            posted_date_str = job.get("posted_date", "")
-
-            # If no date, skip (can't verify age)
-            if not posted_date_str:
-                logger.debug(f"Skipping job with no posted_date: {job.get('title')}")
-                continue
-
-            # Parse the date
-            posted_date = parse_job_date(posted_date_str)
-
-            # If we couldn't parse it, skip (can't verify age)
-            if not posted_date:
-                logger.debug(f"Could not parse posted_date for: {job.get('title')}")
-                continue
-
-            # Check if within age limit
-            if posted_date >= cutoff_date:
-                fresh_jobs.append(job)
-            else:
-                days_old = (datetime.now(timezone.utc) - posted_date).days
-                logger.debug(
-                    f"Skipping old job ({days_old} days): "
-                    f"{job.get('title')} at {job.get('company')}"
-                )
-
-        return fresh_jobs
+        return filter_by_age(jobs, max_days=max_days, verbose=True)
 
     def _filter_by_job_type(
         self, jobs: List[Dict[str, Any]]
@@ -721,38 +675,7 @@ class JobSearchOrchestrator:
             Tuple of (filtered_jobs, filter_stats) where filter_stats contains
             counts of jobs filtered by each reason
         """
-        # Get filter configuration
+        from job_finder.utils.common_filters import filter_by_job_type
+
         filters_config = self.config.get("filters", {})
-        strict_role_filter = filters_config.get("strict_role_filtering", True)
-        min_seniority = filters_config.get("min_seniority_level", None)
-
-        filtered_jobs = []
-        filter_stats: Dict[str, int] = {}
-
-        for job in jobs:
-            title = job.get("title", "")
-            description = job.get("description", "")
-
-            # Apply all filters
-            decision, reason = filter_job(
-                title=title,
-                description=description,
-                strict_role_filter=strict_role_filter,
-                min_seniority=min_seniority,
-            )
-
-            if decision == FilterDecision.ACCEPT:
-                filtered_jobs.append(job)
-            else:
-                # Track rejection reasons
-                filter_stats[reason] = filter_stats.get(reason, 0) + 1
-                logger.debug(f"  ❌ Filtered: {title} - {reason}")
-
-        # Log summary of filtered jobs
-        if filter_stats:
-            total_filtered = sum(filter_stats.values())
-            logger.info(f"  Filtered out {total_filtered} jobs by role/seniority:")
-            for reason, count in sorted(filter_stats.items(), key=lambda x: -x[1]):
-                logger.info(f"    - {count}: {reason}")
-
-        return filtered_jobs, filter_stats
+        return filter_by_job_type(jobs, filters_config, verbose=True)

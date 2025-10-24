@@ -3,7 +3,7 @@
 import os
 from abc import ABC, abstractmethod
 from enum import Enum
-from typing import Any, Dict, Optional
+from typing import Optional
 
 from anthropic import Anthropic
 from openai import OpenAI
@@ -73,7 +73,6 @@ class AIProvider(ABC):
         Returns:
             The generated text response.
         """
-        pass
 
 
 class ClaudeProvider(AIProvider):

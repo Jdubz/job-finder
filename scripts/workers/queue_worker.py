@@ -5,7 +5,6 @@ Queue worker daemon - continuously processes job queue items.
 This worker polls the Firestore job-queue collection every 60 seconds
 and processes pending items in FIFO order.
 """
-import logging
 import os
 import signal
 import sys

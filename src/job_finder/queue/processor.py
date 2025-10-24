@@ -7,8 +7,9 @@ from typing import Any, Dict, Optional
 
 from google.cloud import firestore as gcloud_firestore
 
-from job_finder.ai import AIJobMatcher, AITask, create_provider
+from job_finder.ai import AIJobMatcher
 from job_finder.company_info_fetcher import CompanyInfoFetcher
+from job_finder.constants import MIN_COMPANY_PAGE_LENGTH
 from job_finder.filters import StrikeFilterEngine
 from job_finder.logging_config import format_company_name
 from job_finder.profile.schema import Profile
@@ -1253,7 +1254,7 @@ class QueueItemProcessor:
             for page_url in pages_to_try:
                 try:
                     content = self.company_info_fetcher._fetch_page_content(page_url)
-                    if content and len(content) > 200:
+                    if content and len(content) > MIN_COMPANY_PAGE_LENGTH:
                         # Extract page type from URL
                         page_type = page_url.split("/")[-1] if "/" in page_url else "homepage"
                         html_content[page_type] = content

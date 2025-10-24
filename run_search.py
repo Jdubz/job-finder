@@ -1,36 +1,20 @@
 #!/usr/bin/env python3
-"""Run job search with the orchestrator."""
+"""
+DEPRECATED: Use run_job_search_unified.py instead.
 
+This file now wraps the unified script for backward compatibility.
+"""
+
+import subprocess
 import sys
-from pathlib import Path
 
-import yaml
+print("⚠️  run_search.py is deprecated. Please use run_job_search_unified.py")
+print("   Forwarding to unified script with --mode=quick --max-jobs=30...\n")
 
-# Add src to path
-sys.path.insert(0, str(Path(__file__).parent / "src"))
+# Forward to unified script with quick mode and max-jobs=30
+result = subprocess.run(
+    [sys.executable, "run_job_search_unified.py", "--mode=quick", "--max-jobs=30"],
+    cwd=sys.path[0] if sys.path else ".",
+)
 
-from job_finder.logging_config import setup_logging
-from job_finder.search_orchestrator import JobSearchOrchestrator
-
-# Set up logging
-setup_logging()
-
-# Load config
-with open("config/config.yaml", "r") as f:
-    config = yaml.safe_load(f)
-
-# Override max_jobs to 30 for this run
-config["search"]["max_jobs"] = 30
-
-# Run search
-orchestrator = JobSearchOrchestrator(config)
-stats = orchestrator.run_search()
-
-# Print summary
-print("\n" + "=" * 70)
-print("SEARCH COMPLETE!")
-print("=" * 70)
-print(f"Jobs saved: {stats['jobs_saved']}")
-print(f"Jobs matched: {stats['jobs_matched']}")
-print(f"Jobs analyzed: {stats['jobs_analyzed']}")
-print("=" * 70)
+sys.exit(result.returncode)

@@ -3,6 +3,7 @@
 import logging
 from typing import Any, Dict, List, Optional
 
+from job_finder.constants import DEFAULT_STRIKE_THRESHOLD
 from job_finder.storage.firestore_client import FirestoreClient
 
 logger = logging.getLogger(__name__)
@@ -200,7 +201,7 @@ class ConfigLoader:
         return {
             # Meta
             "enabled": True,
-            "strikeThreshold": 5,
+            "strikeThreshold": DEFAULT_STRIKE_THRESHOLD,
             # Hard Rejections
             "hardRejections": {
                 "excludedJobTypes": ["sales", "hr", "recruiter", "support", "customer success"],

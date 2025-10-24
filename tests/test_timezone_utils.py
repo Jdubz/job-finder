@@ -1,9 +1,5 @@
 """Tests for timezone detection and scoring utilities."""
 
-import json
-import tempfile
-from pathlib import Path
-
 from job_finder.utils.timezone_utils import (
     calculate_timezone_score_adjustment,
     detect_timezone_for_job,

@@ -15,7 +15,7 @@ Usage:
 import os
 import sys
 from datetime import datetime
-from typing import Any, Dict, List
+from typing import Any, Dict
 
 sys.path.insert(0, "src")
 

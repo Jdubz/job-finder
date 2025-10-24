@@ -257,74 +257,21 @@ class QueueEnabledOrchestrator:
 
     def _filter_remote_only(self, jobs: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """Filter jobs to only include remote positions or Portland, OR."""
-        remote_keywords = ["remote", "work from home", "wfh", "anywhere", "distributed"]
+        from job_finder.utils.common_filters import filter_remote_only
 
-        filtered_jobs = []
-        for job in jobs:
-            location = job.get("location", "").lower()
-            title = job.get("title", "").lower()
-            description = job.get("description", "").lower()
-
-            is_remote = (
-                any(keyword in location for keyword in remote_keywords)
-                or any(keyword in title for keyword in remote_keywords)
-                or any(keyword in description[:500] for keyword in remote_keywords)
-            )
-
-            is_portland = "portland" in location and ("or" in location or "oregon" in location)
-
-            if is_remote or is_portland:
-                filtered_jobs.append(job)
-
-        return filtered_jobs
+        return filter_remote_only(jobs)
 
     def _filter_by_age(self, jobs: List[Dict[str, Any]], max_days: int = 7) -> List[Dict[str, Any]]:
         """Filter jobs to only include those posted within the last N days."""
-        from datetime import datetime, timedelta, timezone
+        from job_finder.utils.common_filters import filter_by_age
 
-        from job_finder.utils.date_utils import parse_job_date
-
-        cutoff_date = datetime.now(timezone.utc) - timedelta(days=max_days)
-        fresh_jobs = []
-
-        for job in jobs:
-            posted_date_str = job.get("posted_date", "")
-
-            if not posted_date_str:
-                continue
-
-            posted_date = parse_job_date(posted_date_str)
-
-            if posted_date and posted_date >= cutoff_date:
-                fresh_jobs.append(job)
-
-        return fresh_jobs
+        return filter_by_age(jobs, max_days=max_days, verbose=False)
 
     def _filter_by_job_type(
         self, jobs: List[Dict[str, Any]]
     ) -> tuple[List[Dict[str, Any]], Dict[str, int]]:
         """Filter jobs by role type and seniority."""
+        from job_finder.utils.common_filters import filter_by_job_type
+
         filters_config = self.config.get("filters", {})
-        strict_role_filter = filters_config.get("strict_role_filtering", True)
-        min_seniority = filters_config.get("min_seniority_level", None)
-
-        filtered_jobs = []
-        filter_stats: Dict[str, int] = {}
-
-        for job in jobs:
-            title = job.get("title", "")
-            description = job.get("description", "")
-
-            decision, reason = filter_job(
-                title=title,
-                description=description,
-                strict_role_filter=strict_role_filter,
-                min_seniority=min_seniority,
-            )
-
-            if decision == FilterDecision.ACCEPT:
-                filtered_jobs.append(job)
-            else:
-                filter_stats[reason] = filter_stats.get(reason, 0) + 1
-
-        return filtered_jobs, filter_stats
+        return filter_by_job_type(jobs, filters_config, verbose=False)

@@ -1,7 +1,6 @@
 """Main entry point for the job finder application."""
 
 import argparse
-from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import yaml

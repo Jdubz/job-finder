@@ -98,6 +98,73 @@ class CompaniesManager:
             )
             return None
 
+    def batch_get_companies(self, company_ids: list[str]) -> Dict[str, Dict[str, Any]]:
+        """
+        Batch fetch companies by their Firestore document IDs.
+
+        This method optimizes performance by fetching multiple companies with fewer
+        Firestore queries, instead of making individual queries for each company_id.
+        Firestore 'in' queries support up to 10 values, so this method chunks the
+        IDs and makes multiple batch queries if needed.
+
+        Args:
+            company_ids: List of Firestore document IDs
+
+        Returns:
+            Dictionary mapping company_id → company_data
+            Only returns companies that were found (silently skips missing IDs)
+
+        Example:
+            >>> ids = ["company1", "company2", "company3"]
+            >>> companies = manager.batch_get_companies(ids)
+            >>> companies["company1"]["name"]
+            "Acme Corp"
+        """
+        if not company_ids:
+            return {}
+
+        from job_finder.constants import FIRESTORE_IN_QUERY_MAX
+
+        companies = {}
+        chunk_size = FIRESTORE_IN_QUERY_MAX
+
+        try:
+            # Process in chunks (Firestore limit for 'in' queries)
+            for i in range(0, len(company_ids), chunk_size):
+                chunk = company_ids[i : i + chunk_size]
+
+                # Use FieldPath.document_id() to query by document ID
+                from google.cloud import firestore as gcloud_firestore
+
+                docs = (
+                    self.db.collection(self.collection_name)
+                    .where(
+                        filter=FieldFilter(gcloud_firestore.FieldPath.document_id(), "in", chunk)
+                    )
+                    .stream()
+                )
+
+                # Build result dictionary
+                for doc in docs:
+                    data = doc.to_dict()
+                    data["id"] = doc.id
+                    companies[doc.id] = data
+
+            logger.debug(f"Batch fetched {len(companies)} companies from {len(company_ids)} IDs")
+            return companies
+
+        except (RuntimeError, ValueError, AttributeError) as e:
+            # Firestore query errors or data access issues
+            logger.error(f"Error in batch_get_companies (database): {e}")
+            return {}
+        except Exception as e:
+            # Unexpected errors - log with traceback and return empty dict
+            logger.error(
+                f"Unexpected error in batch_get_companies ({type(e).__name__}): {e}",
+                exc_info=True,
+            )
+            return {}
+
     def save_company(self, company_data: Dict[str, Any]) -> str:
         """
         Save or update company information.
