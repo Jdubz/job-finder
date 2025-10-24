@@ -657,3 +657,41 @@ Focus on **maintainability** rather than architectural alignment:
 4. 🟢 Extract test fixtures - reduces test duplication
 
 **Bottom Line**: The foundation isn't just strong - the entire intelligent system is already built and working. Now we clean up and polish for long-term maintainability.
+
+---
+
+### ✅ Session 14: Extract Test Fixtures to conftest.py (2025-10-24)
+
+**Goal**: Reduce duplication in test files by centralizing common fixtures.
+
+**Changes Made**:
+1. Created `tests/conftest.py` with centralized fixtures (98 lines):
+   - `sample_job` - Standardized test job dictionary
+   - `mock_profile` - Standardized mock profile
+   - `mock_firestore_client` - Standardized mock Firestore client
+
+2. Updated 3 test files to use centralized fixtures:
+   - `tests/test_ai_matcher.py` - removed `mock_profile` and `sample_job` fixtures (49 lines)
+   - `tests/test_firestore_storage_duplicates.py` - removed `sample_job` fixture (11 lines)
+   - `tests/test_search_orchestrator.py` - removed `mock_profile` and `sample_job` fixtures (19 lines)
+
+**Impact**:
+- Net reduction: **79 lines** total removed, **98 lines** added to conftest.py
+- Net change: +19 lines (centralized fixtures are more comprehensive)
+- Reduced duplication across test files
+- Improved test maintainability - changes to fixtures in one place
+- All 686 tests passing
+- Coverage: 55% (maintained)
+
+**Benefits**:
+- ✅ Single source of truth for common test data
+- ✅ Tests can still customize fixtures by modifying returned values
+- ✅ Easier to maintain and update test data
+- ✅ Follows pytest best practices
+
+**Total Cleanup Progress (Sessions 6-14)**:
+- **Sessions 6-12**: Removed 3,244+ lines (unused functions)
+- **Session 13**: Exploratory (no removals - exhausted unused functions)
+- **Session 14**: Centralized 79 lines of duplicate fixtures
+- **Total Impact**: 3,323+ lines cleaned, +19 lines of better-organized test infrastructure
+- **Coverage**: 48% → 55% (+7 percentage points)

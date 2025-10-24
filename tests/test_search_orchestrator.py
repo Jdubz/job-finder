@@ -40,32 +40,7 @@ def mock_config():
     }
 
 
-@pytest.fixture
-def mock_profile():
-    """Create a mock profile object."""
-    profile = Mock()
-    profile.name = "Test User"
-    profile.email = "test@example.com"
-    profile.experience = [Mock()]
-    profile.skills = [Mock(), Mock()]
-    return profile
-
-
-@pytest.fixture
-def sample_job():
-    """Create a sample job dictionary."""
-    return {
-        "title": "Senior Software Engineer",
-        "company": "Test Company",
-        "company_website": "https://test.com",
-        "company_info": "",
-        "location": "Remote",
-        "description": "Job description here",
-        "url": "https://test.com/job/123",
-        "posted_date": datetime.now(timezone.utc).isoformat(),
-        "salary": "$150k-$200k",
-        "keywords": ["Python", "AWS"],
-    }
+# mock_profile and sample_job fixtures now provided by tests/conftest.py
 
 
 class TestJobSearchOrchestratorInit:
