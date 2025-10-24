@@ -695,3 +695,74 @@ Focus on **maintainability** rather than architectural alignment:
 - **Session 14**: Centralized 79 lines of duplicate fixtures
 - **Total Impact**: 3,323+ lines cleaned, +19 lines of better-organized test infrastructure
 - **Coverage**: 48% → 55% (+7 percentage points)
+
+### ✅ Session 16: Add Custom Domain-Specific Exceptions (2025-10-24)
+
+**Goal**: Improve error handling clarity by replacing generic Python exceptions with domain-specific custom exceptions.
+
+**Changes Made**:
+1. Created `src/job_finder/exceptions.py` with custom exception hierarchy (103 lines):
+   - `JobFinderError` - Base exception for all job finder errors
+   - `ConfigurationError` - Configuration and missing field errors
+   - `InitializationError` - Component initialization failures
+   - `QueueProcessingError` - Queue item processing errors
+   - `AIProviderError` - AI API and provider errors
+   - `StorageError` - Firestore storage operation errors
+   - `ProfileError` - Profile loading/validation errors
+   - `ScraperError` - Scraping operation errors
+
+2. Replaced generic exceptions in core modules:
+   - `queue/processor.py` - 8 ValueError → QueueProcessingError/ConfigurationError
+   - `queue/manager.py` - 1 ValueError → QueueProcessingError
+   - `ai/providers.py` - 6 ValueError/RuntimeError → AIProviderError
+   - `storage/firestore_storage.py` - 6 RuntimeError → StorageError
+   - `storage/job_sources_manager.py` - 9 RuntimeError → StorageError
+
+3. Updated test expectations:
+   - `tests/test_ai_model_selection.py` - Updated to expect AIProviderError
+
+**Impact**:
+- **Files created**: 1 (exceptions.py)
+- **Files modified**: 6 core modules
+- **Exception replacements**: 30+ generic exceptions → domain-specific
+- **Lines added**: 103 (exceptions module)
+- All 686 tests passing
+- Coverage: 55% (maintained)
+- Exceptions module: **100% coverage**
+
+**Benefits**:
+- ✅ **Clearer error handling**: Domain-specific exceptions communicate intent
+- ✅ **Better debugging**: Stack traces immediately show what type of error occurred
+- ✅ **Selective catch**: Can catch specific exception types (e.g., only AIProviderError)
+- ✅ **Consistent API**: All custom exceptions inherit from JobFinderError
+- ✅ **Documentation**: Each exception class documents when it's raised
+- ✅ **Foundation for future**: Easy to add more custom exceptions as needed
+
+**Example Improvements**:
+```python
+# Before:
+raise ValueError("Anthropic API key must be provided")
+raise RuntimeError("Firestore not initialized")
+
+# After:
+raise AIProviderError("Anthropic API key must be provided")
+raise StorageError("Firestore not initialized")
+```
+
+**Modules Still Using Generic Exceptions** (can be improved in future sessions):
+- `profile/` modules (ValueError, RuntimeError for profile operations)
+- `config/` modules (ValueError for invalid config)
+- `search_orchestrator.py` (RuntimeError for uninitialized managers)
+- `scrape_runner.py` (ValueError for missing config)
+- `scrapers/` modules (ValueError for scraper configuration)
+- `storage/firestore_client.py` (ValueError, RuntimeError for initialization)
+- `storage/companies_manager.py` (ValueError for missing fields)
+
+**Total Cleanup Progress (Sessions 6-16)**:
+- **Sessions 6-12**: Removed 3,244+ lines (unused functions)
+- **Session 13**: Exploratory (exhausted unused functions)
+- **Session 14**: Centralized 79 lines of duplicate fixtures
+- **Session 16**: Added 103 lines of custom exceptions, replaced 30+ generic exceptions
+- **Total Impact**: 3,323+ lines cleaned, +122 lines of better-organized infrastructure
+- **Coverage**: 48% → 55% (+7 percentage points)
+- **Code Quality**: Mypy 0 issues, domain-specific error handling

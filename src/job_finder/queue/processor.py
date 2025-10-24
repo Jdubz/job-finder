@@ -93,6 +93,7 @@ from google.cloud import firestore as gcloud_firestore
 from job_finder.ai import AIJobMatcher
 from job_finder.company_info_fetcher import CompanyInfoFetcher
 from job_finder.constants import MIN_COMPANY_PAGE_LENGTH
+from job_finder.exceptions import ConfigurationError, QueueProcessingError
 from job_finder.filters import StrikeFilterEngine
 from job_finder.logging_config import format_company_name
 from job_finder.profile.schema import Profile
@@ -220,7 +221,7 @@ class QueueItemProcessor:
             if item.type == QueueItemType.COMPANY:
                 # All company items must use granular pipeline
                 if not item.company_sub_task:
-                    raise ValueError(
+                    raise QueueProcessingError(
                         "Company items must have company_sub_task set. "
                         "Use submit_company() which creates granular pipeline items."
                     )
@@ -235,7 +236,7 @@ class QueueItemProcessor:
             elif item.type == QueueItemType.SCRAPE_SOURCE:
                 self._process_scrape_source(item)
             else:
-                raise ValueError(f"Unknown item type: {item.type}")
+                raise QueueProcessingError(f"Unknown item type: {item.type}")
 
         except Exception as e:
             error_msg = str(e)
@@ -697,7 +698,7 @@ class QueueItemProcessor:
             item: Job queue item with sub_task specified
         """
         if not item.sub_task:
-            raise ValueError("sub_task required for granular processing")
+            raise QueueProcessingError("sub_task required for granular processing")
 
         if item.sub_task == JobSubTask.SCRAPE:
             self._process_job_scrape(item)
@@ -708,7 +709,7 @@ class QueueItemProcessor:
         elif item.sub_task == JobSubTask.SAVE:
             self._process_job_save(item)
         else:
-            raise ValueError(f"Unknown sub_task: {item.sub_task}")
+            raise QueueProcessingError(f"Unknown sub_task: {item.sub_task}")
 
     # ========================================================================
     # Decision Tree Action Methods
@@ -1310,7 +1311,7 @@ class QueueItemProcessor:
             item: Company queue item with company_sub_task specified
         """
         if not item.company_sub_task:
-            raise ValueError("company_sub_task required for granular processing")
+            raise QueueProcessingError("company_sub_task required for granular processing")
 
         if item.company_sub_task == CompanySubTask.FETCH:
             self._process_company_fetch(item)
@@ -1321,7 +1322,7 @@ class QueueItemProcessor:
         elif item.company_sub_task == CompanySubTask.SAVE:
             self._process_company_save(item)
         else:
-            raise ValueError(f"Unknown company_sub_task: {item.company_sub_task}")
+            raise QueueProcessingError(f"Unknown company_sub_task: {item.company_sub_task}")
 
     def _process_company_fetch(self, item: JobQueueItem) -> None:
         """
@@ -2322,7 +2323,7 @@ class QueueItemProcessor:
             elif source_url:
                 source = self.sources_manager.get_source_for_url(source_url)
             else:
-                raise ValueError("SCRAPE_SOURCE item must have source_id or url")
+                raise QueueProcessingError("SCRAPE_SOURCE item must have source_id or url")
 
             if not source:
                 self.queue_manager.update_status(
@@ -2357,7 +2358,9 @@ class QueueItemProcessor:
 
                     board_token = config.get("board_token")
                     if not board_token:
-                        raise ValueError(f"Source {source_name} missing board_token in config")
+                        raise ConfigurationError(
+                            f"Source {source_name} missing board_token in config"
+                        )
                     gh_scraper = GreenhouseScraper(config)
                     jobs = gh_scraper.scrape()
 
@@ -2366,7 +2369,7 @@ class QueueItemProcessor:
 
                     rss_url = config.get("url")
                     if not rss_url:
-                        raise ValueError(f"Source {source_name} missing url in config")
+                        raise ConfigurationError(f"Source {source_name} missing url in config")
                     rss_scraper = RSSJobScraper(rss_url, listing_config={})
                     jobs = rss_scraper.scrape()
 

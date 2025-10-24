@@ -8,6 +8,8 @@ from typing import Optional
 from anthropic import Anthropic
 from openai import OpenAI
 
+from job_finder.exceptions import AIProviderError
+
 
 class AITask(str, Enum):
     """
@@ -88,7 +90,7 @@ class ClaudeProvider(AIProvider):
         """
         self.api_key = api_key or os.getenv("ANTHROPIC_API_KEY")
         if not self.api_key:
-            raise ValueError(
+            raise AIProviderError(
                 "Anthropic API key must be provided or set in ANTHROPIC_API_KEY environment variable"
             )
 
@@ -106,7 +108,7 @@ class ClaudeProvider(AIProvider):
             )
             return response.content[0].text
         except Exception as e:
-            raise RuntimeError(f"Claude API error: {str(e)}") from e
+            raise AIProviderError(f"Claude API error: {str(e)}") from e
 
 
 class OpenAIProvider(AIProvider):
@@ -122,7 +124,7 @@ class OpenAIProvider(AIProvider):
         """
         self.api_key = api_key or os.getenv("OPENAI_API_KEY")
         if not self.api_key:
-            raise ValueError(
+            raise AIProviderError(
                 "OpenAI API key must be provided or set in OPENAI_API_KEY environment variable"
             )
 
@@ -140,7 +142,7 @@ class OpenAIProvider(AIProvider):
             )
             return response.choices[0].message.content or ""
         except Exception as e:
-            raise RuntimeError(f"OpenAI API error: {str(e)}") from e
+            raise AIProviderError(f"OpenAI API error: {str(e)}") from e
 
 
 def get_model_for_task(provider_type: str, task: AITask) -> str:
@@ -170,7 +172,7 @@ def get_model_for_task(provider_type: str, task: AITask) -> str:
     provider_type = provider_type.lower()
 
     if provider_type not in MODEL_SELECTION:
-        raise ValueError(
+        raise AIProviderError(
             f"Unsupported AI provider: {provider_type}. Supported providers: {list(MODEL_SELECTION.keys())}"
         )
 
@@ -235,6 +237,6 @@ def create_provider(
         return OpenAIProvider(**kwargs)
 
     else:
-        raise ValueError(
+        raise AIProviderError(
             f"Unsupported AI provider: {provider_type}. Supported providers: claude, openai"
         )

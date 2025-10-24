@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Optional
 from google.cloud import firestore as gcloud_firestore
 from google.cloud.firestore_v1.base_query import FieldFilter
 
+from job_finder.exceptions import StorageError
 from job_finder.queue.models import SourceStatus
 
 from .firestore_client import FirestoreClient
@@ -113,7 +114,7 @@ class JobSourcesManager:
             }
         """
         if not self.db:
-            raise RuntimeError("Firestore not initialized")
+            raise StorageError("Firestore not initialized")
 
         # Determine initial status based on enabled flag
         initial_status = SourceStatus.ACTIVE if enabled else SourceStatus.DISABLED
@@ -174,7 +175,7 @@ class JobSourcesManager:
             List of active source documents
         """
         if not self.db:
-            raise RuntimeError("Firestore not initialized")
+            raise StorageError("Firestore not initialized")
 
         try:
             query = self.db.collection(self.collection_name).where(
@@ -226,7 +227,7 @@ class JobSourcesManager:
             Source document or None if not found
         """
         if not self.db:
-            raise RuntimeError("Firestore not initialized")
+            raise StorageError("Firestore not initialized")
 
         try:
             doc = self.db.collection(self.collection_name).document(source_id).get()
@@ -259,7 +260,7 @@ class JobSourcesManager:
             error: Error message if status is 'error'
         """
         if not self.db:
-            raise RuntimeError("Firestore not initialized")
+            raise StorageError("Firestore not initialized")
 
         update_data = {
             "lastScrapedAt": gcloud_firestore.SERVER_TIMESTAMP,
@@ -314,7 +315,7 @@ class JobSourcesManager:
             # Returns source with greenhouse config for Netflix
         """
         if not self.db:
-            raise RuntimeError("Firestore not initialized")
+            raise StorageError("Firestore not initialized")
 
         try:
             from urllib.parse import urlparse
@@ -409,7 +410,7 @@ class JobSourcesManager:
             Document ID of created source
         """
         if not self.db:
-            raise RuntimeError("Firestore not initialized")
+            raise StorageError("Firestore not initialized")
 
         # Determine status based on validation requirement
         if validation_required:
@@ -486,7 +487,7 @@ class JobSourcesManager:
             alternative_selectors: Optional list of fallback selectors to try
         """
         if not self.db:
-            raise RuntimeError("Firestore not initialized")
+            raise StorageError("Firestore not initialized")
 
         try:
             update_data = {
@@ -519,7 +520,7 @@ class JobSourcesManager:
             selector_failures: List of selectors that failed
         """
         if not self.db:
-            raise RuntimeError("Firestore not initialized")
+            raise StorageError("Firestore not initialized")
 
         try:
             # Get current source to check failure count
@@ -567,7 +568,7 @@ class JobSourcesManager:
             jobs_found: Number of jobs found in this scrape
         """
         if not self.db:
-            raise RuntimeError("Firestore not initialized")
+            raise StorageError("Firestore not initialized")
 
         try:
             update_data = {

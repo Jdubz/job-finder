@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional
 from google.cloud import firestore as gcloud_firestore
 from google.cloud.firestore_v1.base_query import FieldFilter
 
+from job_finder.exceptions import StorageError
 from job_finder.storage.firestore_client import FirestoreClient
 from job_finder.utils.url_utils import normalize_url
 
@@ -154,7 +155,7 @@ class FirestoreJobStorage:
             Document ID of saved job match (new or existing)
         """
         if not self.db:
-            raise RuntimeError("Firestore not initialized")
+            raise StorageError("Firestore not initialized")
 
         # Extract role from title
         title = job.get("title", "")
@@ -254,7 +255,7 @@ class FirestoreJobStorage:
             document_url: URL to generated resume/cover letter
         """
         if not self.db:
-            raise RuntimeError("Firestore not initialized")
+            raise StorageError("Firestore not initialized")
 
         try:
             self.db.collection("job-matches").document(doc_id).update(
@@ -289,7 +290,7 @@ class FirestoreJobStorage:
             notes: Optional notes to add
         """
         if not self.db:
-            raise RuntimeError("Firestore not initialized")
+            raise StorageError("Firestore not initialized")
 
         update_data = {
             "status": status,
@@ -339,7 +340,7 @@ class FirestoreJobStorage:
             List of job match documents
         """
         if not self.db:
-            raise RuntimeError("Firestore not initialized")
+            raise StorageError("Firestore not initialized")
 
         try:
             query = self.db.collection("job-matches")
@@ -392,7 +393,7 @@ class FirestoreJobStorage:
             True if job exists, False otherwise
         """
         if not self.db:
-            raise RuntimeError("Firestore not initialized")
+            raise StorageError("Firestore not initialized")
 
         try:
             # Normalize URL for consistent comparison
@@ -438,7 +439,7 @@ class FirestoreJobStorage:
             Dictionary mapping normalized URL to existence status
         """
         if not self.db:
-            raise RuntimeError("Firestore not initialized")
+            raise StorageError("Firestore not initialized")
 
         # Normalize all input URLs first
         normalized_urls = [normalize_url(url) for url in job_urls]

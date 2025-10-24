@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Optional
 from google.cloud import firestore as gcloud_firestore
 from google.cloud.firestore_v1.base_query import FieldFilter
 
+from job_finder.exceptions import QueueProcessingError
 from job_finder.queue.models import (
     CompanySubTask,
     JobQueueItem,
@@ -429,7 +430,9 @@ class QueueManager:
         if is_company:
             # Company pipeline
             if not isinstance(next_sub_task, CompanySubTask):
-                raise ValueError("next_sub_task must be CompanySubTask for company pipelines")
+                raise QueueProcessingError(
+                    "next_sub_task must be CompanySubTask for company pipelines"
+                )
 
             new_item_data = {
                 "type": QueueItemType.COMPANY,
