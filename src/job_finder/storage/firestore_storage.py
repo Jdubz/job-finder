@@ -57,20 +57,6 @@ def to_firestore_fields(data: Dict[str, Any]) -> Dict[str, Any]:
     return {FIELD_MAPPING.get(k, k): v for k, v in data.items() if v is not None}
 
 
-def from_firestore_fields(data: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    Convert Firestore camelCase field names to Python snake_case.
-
-    Args:
-        data: Dictionary with Firestore camelCase field names
-
-    Returns:
-        Dictionary with Python snake_case field names
-    """
-    reverse_mapping = {v: k for k, v in FIELD_MAPPING.items()}
-    return {reverse_mapping.get(k, k): v for k, v in data.items()}
-
-
 class FirestoreJobStorage:
     """Stores job matches in Firestore with tracking for document generation."""
 

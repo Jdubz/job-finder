@@ -380,19 +380,3 @@ class FirestoreProfileLoader:
         # This is a simplified calculation
         # In production, you'd want to parse dates and calculate actual duration
         return float(len(experiences))
-
-    def close(self):
-        """Close Firestore connection."""
-        # Firebase Admin SDK doesn't require explicit closing
-        # But we can delete the app if needed
-        try:
-            import firebase_admin
-
-            firebase_admin.delete_app(firebase_admin.get_app())
-            logger.info("Closed Firebase connection")
-        except (RuntimeError, ValueError) as e:
-            # Firebase app errors or not initialized - graceful degradation
-            logger.debug(f"Error closing Firebase (app error): {str(e)}")
-        except Exception as e:
-            # Unexpected errors - log at debug level (non-critical operation)
-            logger.debug(f"Unexpected error closing Firebase ({type(e).__name__}): {str(e)}")

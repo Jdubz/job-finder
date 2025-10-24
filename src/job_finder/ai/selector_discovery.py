@@ -132,47 +132,6 @@ Important:
 - Return null for fields that don't exist on this page
 - Be concise in your notes"""
 
-    def _build_validation_prompt(self, html: str, selectors: Dict[str, str], url: str) -> str:
-        """Build prompt for selector validation."""
-        html_sample = (
-            html[:MAX_HTML_SAMPLE_LENGTH_SMALL]
-            if len(html) > MAX_HTML_SAMPLE_LENGTH_SMALL
-            else html
-        )
-
-        selectors_json = json.dumps(selectors, indent=2)
-
-        return f"""You are an expert at validating CSS selectors for web scraping.
-
-Test these CSS selectors against the provided HTML and identify which ones work and which don't.
-
-URL: {url}
-
-Current Selectors:
-```json
-{selectors_json}
-```
-
-HTML Sample:
-```html
-{html_sample}
-```
-
-For each selector, check if it matches elements in the HTML. If a selector fails, suggest an improved alternative if possible.
-
-Return ONLY a valid JSON object with this structure:
-{{
-    "valid": true/false,
-    "working_selectors": ["title", "company", ...],
-    "failing_selectors": ["salary", ...],
-    "suggested_improvements": {{
-        "salary": ".new-selector"
-    }},
-    "notes": "brief explanation of any issues"
-}}
-
-Be concise and focus on actionable feedback."""
-
     def _parse_discovery_response(self, response: str) -> Optional[Dict[str, Any]]:
         """
         Parse AI response for selector discovery.
@@ -215,33 +174,3 @@ Be concise and focus on actionable feedback."""
         except Exception as e:
             logger.error(f"Error parsing discovery response: {e}")
             return None
-
-    def _parse_validation_response(self, response: str) -> Dict[str, Any]:
-        """
-        Parse AI response for selector validation.
-
-        Args:
-            response: Raw AI response
-
-        Returns:
-            Parsed validation result
-        """
-        try:
-            # Try to extract JSON from response
-            response = response.strip()
-
-            # Remove markdown code blocks if present
-            if response.startswith("```"):
-                lines = response.split("\n")
-                response = "\n".join(lines[1:-1])
-
-            result = json.loads(response)
-            return result
-
-        except json.JSONDecodeError as e:
-            logger.error(f"Failed to parse validation response as JSON: {e}")
-            logger.debug(f"Response was: {response[:500]}")
-            return {"valid": False, "error": "Failed to parse AI response"}
-        except Exception as e:
-            logger.error(f"Error parsing validation response: {e}")
-            return {"valid": False, "error": str(e)}

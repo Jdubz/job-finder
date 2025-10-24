@@ -292,54 +292,6 @@ class JobSourcesManager:
             )
             raise
 
-    def disable_source(self, doc_id: str) -> None:
-        """Disable a job source."""
-        if not self.db:
-            raise RuntimeError("Firestore not initialized")
-
-        try:
-            self.db.collection(self.collection_name).document(doc_id).update(
-                {
-                    "enabled": False,
-                    "updatedAt": gcloud_firestore.SERVER_TIMESTAMP,
-                }
-            )
-            logger.info(f"Disabled source {doc_id}")
-
-        except (RuntimeError, ValueError) as e:
-            logger.error(f"Error disabling source (database): {str(e)}")
-            raise
-        except Exception as e:
-            logger.error(
-                f"Unexpected error disabling source ({type(e).__name__}): {str(e)}",
-                exc_info=True,
-            )
-            raise
-
-    def enable_source(self, doc_id: str) -> None:
-        """Enable a job source."""
-        if not self.db:
-            raise RuntimeError("Firestore not initialized")
-
-        try:
-            self.db.collection(self.collection_name).document(doc_id).update(
-                {
-                    "enabled": True,
-                    "updatedAt": gcloud_firestore.SERVER_TIMESTAMP,
-                }
-            )
-            logger.info(f"Enabled source {doc_id}")
-
-        except (RuntimeError, ValueError) as e:
-            logger.error(f"Error enabling source (database): {str(e)}")
-            raise
-        except Exception as e:
-            logger.error(
-                f"Unexpected error enabling source ({type(e).__name__}): {str(e)}",
-                exc_info=True,
-            )
-            raise
-
     # ========================================================================
     # Granular Pipeline Support Methods
     # ========================================================================

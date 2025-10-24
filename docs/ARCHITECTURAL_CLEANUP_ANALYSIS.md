@@ -426,6 +426,31 @@ class AIAnalysisException(Exception): pass
 - ✓ Removed incomplete features (validate_selectors)
 - ✓ Removed redundant factory function
 
+### ✅ Session 11: Remove More Unused Functions (2025-10-24)
+- Removed 11 unused functions (400+ total lines, 150 executable):
+  - `close()` in profile/firestore_loader.py - Unnecessary cleanup (15 lines)
+  - `_build_validation_prompt()` in ai/selector_discovery.py - Incomplete feature (41 lines)
+  - `_parse_validation_response()` in ai/selector_discovery.py - Incomplete feature (29 lines)
+  - `get_all_companies()` in storage/companies_manager.py - Memory-inefficient (32 lines)
+  - `update_company_status()` in storage/companies_manager.py - Unused tracking (43 lines)
+  - `disable_source()` in storage/job_sources_manager.py - Redundant API (24 lines)
+  - `enable_source()` in storage/job_sources_manager.py - Incomplete feature (24 lines)
+  - `update_after_successful_scrape()` in utils/source_health.py - Disconnected infrastructure (74 lines)
+  - `update_after_failed_scrape()` in utils/source_health.py - Disconnected infrastructure (71 lines)
+  - `get_company_scrape_counts()` in utils/source_health.py - Inefficient bulk operation (23 lines)
+  - `from_firestore_fields()` in storage/firestore_storage.py - Unused converter (13 lines)
+- All 686 tests passing
+- Coverage: 4850 → 4700 statements (-150 lines executable code)
+- Coverage ratio: 53% → 55% (+2 percentage points!)
+- **Total removed in Sessions 6-11**: 3,137+ lines of code
+
+**Impact**:
+- ✓ Removed disconnected health tracking infrastructure
+- ✓ Cleaned up incomplete validation feature
+- ✓ Simplified companies_manager (2 fewer methods)
+- ✓ Simplified job_sources_manager (2 fewer methods)
+- ✓ Improved coverage ratio to 55%
+
 ## Prioritized Recommendations
 
 ### ✅ COMPLETED (Session 4)
