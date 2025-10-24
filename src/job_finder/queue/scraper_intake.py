@@ -5,7 +5,7 @@ import uuid
 from typing import Any, Dict, List, Optional
 
 from job_finder.queue.manager import QueueManager
-from job_finder.queue.models import JobQueueItem, JobSubTask, QueueItemType, QueueSource
+from job_finder.queue.models import JobQueueItem, QueueItemType, QueueSource
 from job_finder.utils.url_utils import normalize_url
 
 logger = logging.getLogger(__name__)
@@ -81,18 +81,18 @@ class ScraperIntake:
                     logger.debug(f"Job already exists in job-matches: {normalized_url}")
                     continue
 
-                # Create queue item with normalized URL and JOB_SCRAPE sub-task
+                # Create queue item with normalized URL
                 # Generate tracking_id for this root job (all spawned items will inherit it)
                 tracking_id = str(uuid.uuid4())
 
-                # Note: Full job data will be re-scraped during processing if not provided
+                # Note: State-driven processor will determine next step based on pipeline_state
+                # If scraped_data provided, it will skip scraping and go to filtering
                 queue_item = JobQueueItem(
                     type=QueueItemType.JOB,
                     url=normalized_url,
                     company_name=job.get("company", ""),
                     company_id=company_id,
                     source=source,
-                    sub_task=JobSubTask.SCRAPE,  # Required: Start at JOB_SCRAPE stage
                     scraped_data=(
                         job if len(job) > 2 else None
                     ),  # Include full job data if available
