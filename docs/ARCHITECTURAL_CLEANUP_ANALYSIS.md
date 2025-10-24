@@ -451,6 +451,23 @@ class AIAnalysisException(Exception): pass
 - ✓ Simplified job_sources_manager (2 fewer methods)
 - ✓ Improved coverage ratio to 55%
 
+### ✅ Session 12: Remove Queue Manager Unused Methods (2025-10-24)
+- Removed 3 unused methods from queue/manager.py (107 lines total, 38 executable):
+  - `clean_old_completed()` - Cleanup method never called (47 lines)
+  - `update_pipeline_state()` - Pipeline state update never used (24 lines)
+  - `get_pipeline_items()` - Pipeline query method never used (36 lines)
+- All 686 tests passing
+- Coverage: 4700 → 4662 statements (-38 lines executable code)
+- Coverage ratio: 55% (maintained)
+- queue/manager.py coverage improved: 48% → 55% (+7 percentage points!)
+- **Total removed in Sessions 6-12**: 3,244+ lines of code
+
+**Impact**:
+- ✓ Simplified queue/manager.py (3 fewer public methods)
+- ✓ Significantly improved queue/manager.py coverage (48% → 55%)
+- ✓ Removed unused pipeline infrastructure
+- ✓ Cleaned up queue maintenance methods
+
 ## Prioritized Recommendations
 
 ### ✅ COMPLETED (Session 4)

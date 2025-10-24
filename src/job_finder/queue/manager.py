@@ -273,54 +273,6 @@ class QueueManager:
             logger.error(f"Error getting queue stats: {e}")
             return stats
 
-    def clean_old_completed(self, days_old: int = 7) -> int:
-        """
-        Delete completed items older than specified days.
-
-        Args:
-            days_old: Delete items completed more than this many days ago
-
-        Returns:
-            Number of items deleted
-        """
-        from datetime import timedelta
-
-        cutoff_date = datetime.now(timezone.utc) - timedelta(days=days_old)
-
-        try:
-            # Query completed items older than cutoff
-            query = (
-                self.db.collection(self.collection_name)
-                .where(
-                    filter=FieldFilter(
-                        "status",
-                        "in",
-                        [
-                            QueueStatus.SUCCESS.value,
-                            QueueStatus.SKIPPED.value,
-                            QueueStatus.FILTERED.value,
-                        ],
-                    )
-                )
-                .where(filter=FieldFilter("completed_at", "<", cutoff_date))
-            )
-
-            docs = query.stream()
-            deleted_count = 0
-
-            for doc in docs:
-                doc.reference.delete()
-                deleted_count += 1
-
-            if deleted_count > 0:
-                logger.info(f"Cleaned up {deleted_count} old completed queue items")
-
-            return deleted_count
-
-        except Exception as e:
-            logger.error(f"Error cleaning old completed items: {e}")
-            return 0
-
     def retry_item(self, item_id: str) -> bool:
         """
         Retry a failed queue item by resetting it to pending status.
@@ -513,68 +465,6 @@ class QueueManager:
                     f"Created job pipeline item: {next_sub_task.value if next_sub_task else 'next'} for {current_item.url[:50]}..."
                 )
             return doc_id
-
-    def update_pipeline_state(
-        self,
-        item_id: str,
-        pipeline_state: Dict[str, Any],
-    ) -> None:
-        """
-        Update pipeline state for an item.
-
-        Args:
-            item_id: Queue item document ID
-            pipeline_state: New pipeline state data
-        """
-        try:
-            self.db.collection(self.collection_name).document(item_id).update(
-                {
-                    "pipeline_state": pipeline_state,
-                    "updated_at": gcloud_firestore.SERVER_TIMESTAMP,
-                }
-            )
-            logger.debug(f"Updated pipeline state for item {item_id}")
-
-        except Exception as e:
-            logger.error(f"Error updating pipeline state for item {item_id}: {e}")
-            raise
-
-    def get_pipeline_items(
-        self,
-        parent_item_id: str,
-        sub_task: Optional[JobSubTask] = None,
-    ) -> List[JobQueueItem]:
-        """
-        Get all pipeline items for a parent item.
-
-        Args:
-            parent_item_id: Parent item document ID
-            sub_task: Optional filter by specific sub-task
-
-        Returns:
-            List of pipeline items
-        """
-        try:
-            query = self.db.collection(self.collection_name).where(
-                filter=FieldFilter("parent_item_id", "==", parent_item_id)
-            )
-
-            if sub_task:
-                query = query.where(filter=FieldFilter("sub_task", "==", sub_task.value))
-
-            docs = query.stream()
-
-            items = []
-            for doc in docs:
-                data = doc.to_dict()
-                item = JobQueueItem.from_firestore(doc.id, data)
-                items.append(item)
-
-            return items
-
-        except Exception as e:
-            logger.error(f"Error getting pipeline items for parent {parent_item_id}: {e}")
-            return []
 
     def get_items_by_tracking_id(
         self,
