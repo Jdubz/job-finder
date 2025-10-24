@@ -2,7 +2,7 @@
 
 import logging
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Any, Callable, Dict, Optional
 
 from google.cloud.firestore_v1.base_query import FieldFilter
 
@@ -346,7 +346,10 @@ class CompaniesManager:
         return stub_data
 
     def get_or_create_company(
-        self, company_name: str, company_website: str = "", fetch_info_func=None
+        self,
+        company_name: str,
+        company_website: str = "",
+        fetch_info_func: Optional[Callable[[str, str], Dict[str, Any]]] = None,
     ) -> Dict[str, Any]:
         """
         Get company from database or fetch and create if not exists.
