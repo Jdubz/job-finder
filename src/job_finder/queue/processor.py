@@ -1,4 +1,87 @@
-"""Process queue items (jobs, companies, and scrape requests)."""
+"""Process queue items (jobs, companies, and scrape requests).
+
+TODO: REFACTORING PLAN - Break up God Object (2,345 lines)
+========================================================
+
+This file should be split into focused processor classes to improve:
+- Testability (mock/stub individual processors)
+- Maintainability (clear separation of concerns)
+- Code navigation (find methods faster)
+- Parallel development (multiple devs can work on different processors)
+
+PROPOSED STRUCTURE:
+------------------
+
+processors/
+├── __init__.py
+├── base_processor.py         # ✅ DONE (shared dependencies, utilities)
+├── job_processor.py           # TODO: Extract job processing (lines 199-1198)
+│   ├── _scrape_job()
+│   ├── _scrape_greenhouse_url()
+│   ├── _scrape_weworkremotely_url()
+│   ├── _scrape_remotive_url()
+│   ├── _scrape_generic_url()
+│   ├── _process_job()                    # State-driven decision tree
+│   ├── _process_granular_job()           # Legacy granular (deprecated?)
+│   ├── _do_job_scrape()
+│   ├── _do_job_filter()
+│   ├── _do_job_analyze()
+│   ├── _do_job_save()
+│   ├── _respawn_job_with_state()
+│   ├── _process_job_scrape()             # Granular SCRAPE step
+│   ├── _process_job_filter()             # Granular FILTER step
+│   ├── _process_job_analyze()            # Granular ANALYZE step
+│   └── _process_job_save()               # Granular SAVE step
+│
+├── company_processor.py       # TODO: Extract company processing (lines 1199-1830)
+│   ├── _process_granular_company()
+│   ├── _process_company_fetch()          # FETCH step
+│   ├── _process_company_extract()        # EXTRACT step
+│   ├── _process_company_analyze()        # ANALYZE step
+│   ├── _process_company_save()           # SAVE step
+│   ├── _detect_tech_stack()
+│   ├── _detect_job_board()
+│   └── _calculate_company_priority()
+│
+└── source_processor.py        # TODO: Extract source discovery (lines 1831-end)
+    ├── _process_source_discovery()
+    ├── _discover_greenhouse_source()
+    ├── _discover_workday_source()
+    ├── _discover_rss_source()
+    ├── _discover_generic_source()
+    ├── _process_scrape_source()
+    ├── _scrape_with_source_config()
+    └── _extract_with_selector()
+
+MAIN COORDINATOR (this file after refactoring):
+-----------------------------------------------
+processor.py (~200 lines)
+├── __init__()                     # Setup all processors
+├── process_item()                 # Main dispatcher
+├── _should_skip_by_stop_list()    # Shared validation
+└── _handle_failure()              # Shared error handling
+
+MIGRATION STRATEGY:
+------------------
+1. ✅ Create base_processor.py with shared dependencies
+2. TODO: Create job_processor.py, copy methods, test
+3. TODO: Create company_processor.py, copy methods, test
+4. TODO: Create source_processor.py, copy methods, test
+5. TODO: Update main processor to delegate to specialized processors
+6. TODO: Run full test suite, verify 100% backward compatibility
+7. TODO: Remove old methods from processor.py
+8. TODO: Update imports in test files if needed
+
+BENEFITS:
+---------
+- Each processor ~300-600 lines (manageable)
+- Clear single responsibility per class
+- Easier to test in isolation
+- Faster code navigation
+- Reduced merge conflicts
+
+ESTIMATED EFFORT: 2-3 hours for full extraction + testing
+"""
 
 import logging
 import traceback
@@ -94,6 +177,10 @@ class QueueItemProcessor:
             companies_manager=companies_manager,
         )
 
+    # ============================================================
+    # MAIN DISPATCHER
+    # ============================================================
+
     def process_item(self, item: JobQueueItem) -> None:
         """
         Process a queue item based on its type.
@@ -159,6 +246,10 @@ class QueueItemProcessor:
             )
             self._handle_failure(item, error_msg, error_details)
 
+    # ============================================================
+    # SHARED UTILITY METHODS
+    # ============================================================
+
     def _should_skip_by_stop_list(self, item: JobQueueItem) -> bool:
         """
         Check if item should be skipped based on stop list.
@@ -195,6 +286,12 @@ class QueueItemProcessor:
     # REMOVED: Legacy _process_job() method
     # All job processing now uses granular pipeline: _process_granular_job()
     # with sub-tasks: JOB_SCRAPE → JOB_FILTER → JOB_ANALYZE → JOB_SAVE
+
+    # ============================================================
+    # JOB SCRAPING METHODS
+    # TODO: Extract to job_processor.py
+    # Lines: 290-472 (183 lines)
+    # ============================================================
 
     def _scrape_job(self, item: JobQueueItem) -> Optional[Dict[str, Any]]:
         """
@@ -477,6 +574,11 @@ class QueueItemProcessor:
             )
             logger.error(f"Item {item.id} failed after {max_retries} retries: {error_message}")
 
+    # ============================================================
+    # LEGACY SCRAPE PROCESSING (Lines 577-639)
+    # TODO: Consider deprecating in favor of SCRAPE_SOURCE queue items
+    # ============================================================
+
     def _process_scrape(self, item: JobQueueItem) -> None:
         """
         Process a scrape queue item.
@@ -536,9 +638,11 @@ class QueueItemProcessor:
             logger.error(f"Error processing scrape request: {e}")
             raise
 
-    # ========================================================================
-    # Granular Pipeline Processors
-    # ========================================================================
+    # ============================================================
+    # JOB PROCESSING METHODS (State-Driven + Granular Pipeline)
+    # TODO: Extract to job_processor.py
+    # Lines: 645-1296 (~651 lines)
+    # ============================================================
 
     def _process_job(self, item: JobQueueItem) -> None:
         """
@@ -1192,9 +1296,11 @@ class QueueItemProcessor:
             logger.error(f"Error in JOB_SAVE: {e}")
             raise
 
-    # ========================================================================
-    # Granular Company Pipeline Processors
-    # ========================================================================
+    # ============================================================
+    # COMPANY PROCESSING METHODS (Granular Pipeline: FETCH → EXTRACT → ANALYZE → SAVE)
+    # TODO: Extract to company_processor.py
+    # Lines: 1303-1934 (~631 lines)
+    # ============================================================
 
     def _process_granular_company(self, item: JobQueueItem) -> None:
         """
@@ -1824,9 +1930,11 @@ class QueueItemProcessor:
 
         return None
 
-    # ========================================================================
-    # Source Discovery Processor
-    # ========================================================================
+    # ============================================================
+    # SOURCE DISCOVERY METHODS (Greenhouse, Workday, RSS, Generic)
+    # TODO: Extract to source_processor.py
+    # Lines: 1937-end (~507 lines)
+    # ============================================================
 
     def _process_source_discovery(self, item: JobQueueItem) -> None:
         """
