@@ -77,47 +77,6 @@ class SelectorDiscovery:
             logger.error(f"Error discovering selectors: {e}")
             return None
 
-    def validate_selectors(self, html: str, selectors: Dict[str, str], url: str) -> Dict[str, Any]:
-        """
-        Validate that selectors work on a given HTML page.
-
-        Args:
-            html: Raw HTML to test
-            selectors: Current selectors to validate
-            url: URL for context
-
-        Returns:
-            Validation results with suggested improvements
-
-        Example return value:
-        {
-            "valid": true,
-            "working_selectors": ["title", "company", "location"],
-            "failing_selectors": ["salary"],
-            "suggested_improvements": {
-                "salary": ".compensation-range"
-            },
-            "notes": "Salary selector changed from .salary-range to .compensation-range"
-        }
-        """
-        prompt = self._build_validation_prompt(html, selectors, url)
-
-        try:
-            response = self.provider.generate(prompt, max_tokens=1000, temperature=0.1)
-            result = self._parse_validation_response(response)
-
-            if result.get("valid"):
-                logger.info(f"Selectors validated for {url}")
-            else:
-                failing = result.get("failing_selectors", [])
-                logger.warning(f"Selectors validation failed for {url}: {failing}")
-
-            return result
-
-        except Exception as e:
-            logger.error(f"Error validating selectors: {e}")
-            return {"valid": False, "error": str(e)}
-
     def _build_discovery_prompt(self, html: str, url: str) -> str:
         """Build prompt for selector discovery."""
         # Truncate HTML if too long (keep first 20k chars)

@@ -327,17 +327,3 @@ Return ONLY valid JSON in this format:
             result["about"] = content[:300].strip()
 
         return result
-
-
-def create_company_info_fetcher(ai_provider=None, ai_config=None) -> CompanyInfoFetcher:
-    """
-    Factory function to create a CompanyInfoFetcher.
-
-    Args:
-        ai_provider: Optional AI provider for intelligent extraction
-        ai_config: Optional AI configuration dictionary
-
-    Returns:
-        CompanyInfoFetcher instance
-    """
-    return CompanyInfoFetcher(ai_provider=ai_provider, ai_config=ai_config)

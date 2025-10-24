@@ -240,38 +240,6 @@ class JobSourcesManager:
             logger.error(f"Error getting source {source_id}: {str(e)}")
             return None
 
-    def get_sources_for_company(self, company_id: str) -> List[Dict[str, Any]]:
-        """
-        Get all sources associated with a specific company.
-
-        Args:
-            company_id: Company document ID
-
-        Returns:
-            List of source documents for this company
-        """
-        if not self.db:
-            raise RuntimeError("Firestore not initialized")
-
-        try:
-            query = self.db.collection(self.collection_name).where(
-                filter=FieldFilter("companyId", "==", company_id)
-            )
-
-            docs = query.stream()
-
-            sources = []
-            for doc in docs:
-                data = doc.to_dict()
-                data["id"] = doc.id
-                sources.append(data)
-
-            return sources
-
-        except Exception as e:
-            logger.error(f"Error getting sources for company {company_id}: {str(e)}")
-            return []
-
     def update_scrape_status(
         self,
         doc_id: str,
@@ -372,56 +340,6 @@ class JobSourcesManager:
             )
             raise
 
-    def link_source_to_company(self, source_id: str, company_id: str, company_name: str) -> None:
-        """
-        Link a source to a company.
-
-        Args:
-            source_id: Source document ID
-            company_id: Company document ID
-            company_name: Company name (denormalized)
-        """
-        if not self.db:
-            raise RuntimeError("Firestore not initialized")
-
-        try:
-            self.db.collection(self.collection_name).document(source_id).update(
-                {
-                    "companyId": company_id,
-                    "companyName": company_name,
-                    "updatedAt": gcloud_firestore.SERVER_TIMESTAMP,
-                }
-            )
-            logger.info(f"Linked source {source_id} to company {company_name} ({company_id})")
-
-        except Exception as e:
-            logger.error(f"Error linking source to company: {str(e)}")
-            raise
-
-    def unlink_source_from_company(self, source_id: str) -> None:
-        """
-        Unlink a source from its company.
-
-        Args:
-            source_id: Source document ID
-        """
-        if not self.db:
-            raise RuntimeError("Firestore not initialized")
-
-        try:
-            self.db.collection(self.collection_name).document(source_id).update(
-                {
-                    "companyId": None,
-                    "companyName": None,
-                    "updatedAt": gcloud_firestore.SERVER_TIMESTAMP,
-                }
-            )
-            logger.info(f"Unlinked source {source_id} from company")
-
-        except Exception as e:
-            logger.error(f"Error unlinking source from company: {str(e)}")
-            raise
-
     # ========================================================================
     # Granular Pipeline Support Methods
     # ========================================================================
@@ -501,51 +419,6 @@ class JobSourcesManager:
         except Exception as e:
             logger.error(f"Error finding source for URL {url}: {e}")
             return None
-
-    def save_discovered_source(
-        self,
-        url: str,
-        name: str,
-        source_type: str,
-        selectors: Dict[str, Any],
-        confidence: str,
-        company_id: Optional[str] = None,
-        company_name: Optional[str] = None,
-    ) -> str:
-        """
-        Save AI-discovered source configuration.
-
-        Args:
-            url: Base URL for the source
-            name: Human-readable name
-            source_type: scraper, api, etc.
-            selectors: Discovered CSS selectors
-            confidence: high/medium/low confidence in selectors
-            company_id: Optional company ID
-            company_name: Optional company name
-
-        Returns:
-            Document ID of created source
-        """
-        config = {
-            "url": url,
-            "method": "requests",  # Default to requests, can upgrade to selenium later
-            "selectors": selectors,
-            "discovered_by_ai": True,
-            "discovery_confidence": confidence,
-        }
-
-        tags = ["ai-discovered", f"confidence-{confidence}"]
-
-        return self.add_source(
-            name=name,
-            source_type=source_type,
-            config=config,
-            enabled=True,  # Start enabled if high confidence, can be disabled if fails
-            company_id=company_id,
-            company_name=company_name,
-            tags=tags,
-        )
 
     def create_from_discovery(
         self,

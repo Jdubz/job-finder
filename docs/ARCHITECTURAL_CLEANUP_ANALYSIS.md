@@ -407,6 +407,25 @@ class AIAnalysisException(Exception): pass
 - ✓ Improved coverage ratio to 53%
 - ✓ Clearer documentation (no confusion about modes)
 
+### ✅ Session 10: Remove Unused Functions (2025-10-24)
+- Removed 6 unused functions (175 total lines, 52 executable):
+  - `create_company_info_fetcher()` in company_info_fetcher.py - Factory function (12 lines)
+  - `validate_selectors()` in ai/selector_discovery.py - Incomplete feature (40 lines)
+  - `get_sources_for_company()` in storage/job_sources_manager.py - Superseded (31 lines)
+  - `link_source_to_company()` in storage/job_sources_manager.py - Superseded (25 lines)
+  - `unlink_source_from_company()` in storage/job_sources_manager.py - Superseded (23 lines)
+  - `save_discovered_source()` in storage/job_sources_manager.py - Superseded (44 lines)
+- All 686 tests passing
+- Coverage: 4902 → 4850 statements (-52 lines executable code)
+- Coverage ratio: 53% (maintained, removed untested code)
+- **Total removed in Sessions 6-10**: 2,737 lines of code
+
+**Impact**:
+- ✓ Removed unused API surface area
+- ✓ Simplified job_sources_manager (4 fewer methods)
+- ✓ Removed incomplete features (validate_selectors)
+- ✓ Removed redundant factory function
+
 ## Prioritized Recommendations
 
 ### ✅ COMPLETED (Session 4)
