@@ -11,6 +11,8 @@ import re
 from pathlib import Path
 from typing import Dict, List, Optional
 
+from job_finder.exceptions import ConfigurationError
+
 logger = logging.getLogger(__name__)
 
 # Global cache for loaded overrides
@@ -54,7 +56,7 @@ class TimezoneOverrideConfig:
 
             # Validate required fields
             if "overrides" not in config:
-                raise ValueError("Missing 'overrides' field in timezone_overrides.json")
+                raise ConfigurationError("Missing 'overrides' field in timezone_overrides.json")
 
             # Store metadata
             self.metadata = {
@@ -99,9 +101,9 @@ class TimezoneOverrideConfig:
             )
 
         except json.JSONDecodeError as e:
-            raise ValueError(f"Invalid JSON in {self.config_path}: {e}")
+            raise ConfigurationError(f"Invalid JSON in {self.config_path}: {e}")
         except Exception as e:
-            raise RuntimeError(f"Failed to load timezone overrides: {e}")
+            raise ConfigurationError(f"Failed to load timezone overrides: {e}")
 
     def get_override(self, company_name: str, company_info: str = "") -> Optional[str]:
         """

@@ -13,6 +13,8 @@ import firebase_admin
 from firebase_admin import credentials
 from google.cloud import firestore as gcloud_firestore
 
+from job_finder.exceptions import ConfigurationError, InitializationError
+
 logger = logging.getLogger(__name__)
 
 
@@ -104,13 +106,13 @@ class FirestoreClient:
         creds_path = credentials_path or os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
 
         if not creds_path:
-            raise ValueError(
+            raise ConfigurationError(
                 "Firebase credentials not found. Set GOOGLE_APPLICATION_CREDENTIALS "
                 "environment variable or pass credentials_path parameter."
             )
 
         if not Path(creds_path).exists():
-            raise FileNotFoundError(f"Credentials file not found: {creds_path}")
+            raise ConfigurationError(f"Credentials file not found: {creds_path}")
 
         # Initialize Firebase Admin
         try:
@@ -118,7 +120,7 @@ class FirestoreClient:
             firebase_admin.initialize_app(cred)
             logger.info("Initialized Firebase Admin SDK")
         except Exception as e:
-            raise RuntimeError(f"Failed to initialize Firebase Admin: {str(e)}") from e
+            raise InitializationError(f"Failed to initialize Firebase Admin: {str(e)}") from e
 
     @classmethod
     def _create_database_client(
@@ -143,13 +145,13 @@ class FirestoreClient:
         creds_path = credentials_path or os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
 
         if not creds_path:
-            raise ValueError(
+            raise ConfigurationError(
                 "Firebase credentials not found. Set GOOGLE_APPLICATION_CREDENTIALS "
                 "environment variable or pass credentials_path parameter."
             )
 
         if not Path(creds_path).exists():
-            raise FileNotFoundError(f"Credentials file not found: {creds_path}")
+            raise ConfigurationError(f"Credentials file not found: {creds_path}")
 
         try:
             # Get project ID from credentials
@@ -167,7 +169,7 @@ class FirestoreClient:
             return client
 
         except Exception as e:
-            raise RuntimeError(
+            raise InitializationError(
                 f"Failed to create Firestore client for {database_name}: {str(e)}"
             ) from e
 

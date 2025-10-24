@@ -4,6 +4,7 @@ from unittest.mock import Mock, patch
 
 import pytest
 
+from job_finder.exceptions import ScraperError
 from job_finder.scrapers.greenhouse_scraper import GreenhouseScraper, create_scraper_for_company
 
 
@@ -28,7 +29,7 @@ class TestGreenhouseScraperInit:
         """Test scraper initialization fails without board_token."""
         config = {"name": "Test Company"}
 
-        with pytest.raises(ValueError, match="board_token is required"):
+        with pytest.raises(ScraperError, match="board_token is required"):
             GreenhouseScraper(config)
 
     def test_init_with_minimal_config(self):

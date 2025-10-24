@@ -4,6 +4,7 @@ import json
 
 import pytest
 
+from job_finder.exceptions import ProfileError
 from job_finder.profile.loader import ProfileLoader
 from job_finder.profile.schema import Experience, Profile, Skill
 
@@ -55,8 +56,8 @@ class TestLoadFromJson:
         assert profile.skills[0].name == "Python"
 
     def test_load_file_not_found(self):
-        """Test loading from non-existent file raises FileNotFoundError."""
-        with pytest.raises(FileNotFoundError) as exc_info:
+        """Test loading from non-existent file raises ProfileError."""
+        with pytest.raises(ProfileError) as exc_info:
             ProfileLoader.load_from_json("/nonexistent/path/profile.json")
 
         assert "Profile file not found" in str(exc_info.value)
@@ -71,7 +72,7 @@ class TestLoadFromJson:
             ProfileLoader.load_from_json(str(json_file))
 
     def test_load_invalid_schema(self, tmp_path):
-        """Test loading data with invalid field types raises ValueError."""
+        """Test loading data with invalid field types raises ProfileError."""
         invalid_data = {
             "name": "Test User",
             "skills": "not a list",  # Invalid type - should be list
@@ -82,18 +83,18 @@ class TestLoadFromJson:
         with open(json_file, "w") as f:
             json.dump(invalid_data, f)
 
-        with pytest.raises(ValueError) as exc_info:
+        with pytest.raises(ProfileError) as exc_info:
             ProfileLoader.load_from_json(str(json_file))
 
         assert "Invalid profile data" in str(exc_info.value)
 
     def test_load_empty_json(self, tmp_path):
-        """Test loading empty JSON raises ValueError."""
+        """Test loading empty JSON raises ProfileError."""
         json_file = tmp_path / "empty.json"
         with open(json_file, "w") as f:
             json.dump({}, f)
 
-        with pytest.raises(ValueError) as exc_info:
+        with pytest.raises(ProfileError) as exc_info:
             ProfileLoader.load_from_json(str(json_file))
 
         assert "Invalid profile data" in str(exc_info.value)
@@ -178,21 +179,21 @@ class TestLoadFromDict:
         assert profile.experience[0].company == "Tech Corp"
 
     def test_load_invalid_dict(self):
-        """Test loading dictionary with invalid field types raises ValueError."""
+        """Test loading dictionary with invalid field types raises ProfileError."""
         invalid_data = {
             "name": "Test User",
             "skills": "not a list",  # Invalid type
             "experience": "not a list",  # Invalid type
         }
 
-        with pytest.raises(ValueError) as exc_info:
+        with pytest.raises(ProfileError) as exc_info:
             ProfileLoader.load_from_dict(invalid_data)
 
         assert "Invalid profile data" in str(exc_info.value)
 
     def test_load_empty_dict(self):
-        """Test loading empty dictionary raises ValueError."""
-        with pytest.raises(ValueError) as exc_info:
+        """Test loading empty dictionary raises ProfileError."""
+        with pytest.raises(ProfileError) as exc_info:
             ProfileLoader.load_from_dict({})
 
         assert "Invalid profile data" in str(exc_info.value)

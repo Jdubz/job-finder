@@ -11,6 +11,7 @@ from typing import Any, Dict, List, Optional
 
 import requests
 
+from job_finder.exceptions import ScraperError
 from job_finder.utils.date_utils import parse_job_date
 
 from .base import BaseScraper
@@ -48,7 +49,7 @@ class GreenhouseScraper(BaseScraper):
         self.base_url = "https://boards-api.greenhouse.io/v1/boards"
 
         if not self.board_token:
-            raise ValueError("board_token is required for Greenhouse scraper")
+            raise ScraperError("board_token is required for Greenhouse scraper")
 
     def scrape(self) -> List[Dict[str, Any]]:
         """Scrape jobs from Greenhouse API.

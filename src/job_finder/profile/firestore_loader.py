@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Optional
 from google.cloud import firestore as gcloud_firestore
 from google.cloud.firestore_v1.base_query import FieldFilter
 
+from job_finder.exceptions import InitializationError
 from job_finder.profile.schema import Experience, Profile, Skill
 from job_finder.storage.firestore_client import FirestoreClient
 
@@ -42,7 +43,7 @@ class FirestoreProfileLoader:
             Profile instance populated with Firestore data.
         """
         if not self.db:
-            raise RuntimeError("Firestore not initialized")
+            raise InitializationError("Firestore not initialized")
 
         logger.info(f"Loading profile from Firestore (user_id: {user_id})")
 

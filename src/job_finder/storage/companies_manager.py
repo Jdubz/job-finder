@@ -6,6 +6,7 @@ from typing import Any, Dict, Optional
 
 from google.cloud.firestore_v1.base_query import FieldFilter
 
+from job_finder.exceptions import StorageError
 from job_finder.queue.models import CompanyStatus
 from job_finder.utils.company_name_utils import normalize_company_name
 
@@ -193,7 +194,7 @@ class CompaniesManager:
         try:
             company_name = company_data.get("name")
             if not company_name:
-                raise ValueError("Company name is required")
+                raise StorageError("Company name is required")
 
             # Check if company already exists
             existing = self.get_company(company_name)

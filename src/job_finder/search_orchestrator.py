@@ -8,6 +8,7 @@ from typing import Any, Dict, List, Optional
 from job_finder.ai import AIJobMatcher
 from job_finder.ai.providers import create_provider
 from job_finder.company_info_fetcher import CompanyInfoFetcher
+from job_finder.exceptions import InitializationError
 from job_finder.profile import FirestoreProfileLoader
 from job_finder.profile.schema import Profile
 from job_finder.scrapers.greenhouse_scraper import GreenhouseScraper
@@ -160,7 +161,7 @@ class JobSearchOrchestrator:
     def _initialize_ai(self) -> AIJobMatcher:
         """Initialize AI job matcher."""
         if not self.profile:
-            raise RuntimeError("Profile must be loaded before initializing AI matcher")
+            raise InitializationError("Profile must be loaded before initializing AI matcher")
 
         ai_config = self.config.get("ai", {})
 
@@ -211,9 +212,9 @@ class JobSearchOrchestrator:
             List of source dictionaries with company data joined
         """
         if not self.sources_manager:
-            raise RuntimeError("SourcesManager not initialized")
+            raise InitializationError("SourcesManager not initialized")
         if not self.companies_manager:
-            raise RuntimeError("CompaniesManager not initialized")
+            raise InitializationError("CompaniesManager not initialized")
 
         sources = self.sources_manager.get_active_sources()
 
@@ -288,15 +289,15 @@ class JobSearchOrchestrator:
     def _ensure_managers_initialized(self) -> None:
         """Ensure all required managers are initialized."""
         if not self.sources_manager:
-            raise RuntimeError("SourcesManager not initialized")
+            raise InitializationError("SourcesManager not initialized")
         if not self.companies_manager:
-            raise RuntimeError("CompaniesManager not initialized")
+            raise InitializationError("CompaniesManager not initialized")
         if not self.ai_matcher:
-            raise RuntimeError("AIJobMatcher not initialized")
+            raise InitializationError("AIJobMatcher not initialized")
         if not self.job_storage:
-            raise RuntimeError("JobStorage not initialized")
+            raise InitializationError("JobStorage not initialized")
         if not self.company_info_fetcher:
-            raise RuntimeError("CompanyInfoFetcher not initialized")
+            raise InitializationError("CompanyInfoFetcher not initialized")
 
     def _process_listing(self, listing: Dict[str, Any], remaining_slots: int) -> Dict[str, Any]:
         """

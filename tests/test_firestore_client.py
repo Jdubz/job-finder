@@ -5,6 +5,7 @@ from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
+from job_finder.exceptions import ConfigurationError, InitializationError
 from job_finder.storage.firestore_client import FirestoreClient
 
 
@@ -150,7 +151,7 @@ class TestFirestoreClient:
     def test_get_client_missing_credentials(self, mock_firebase):
         """Test that get_client raises error when credentials not found."""
         mock_firebase.get_app.side_effect = ValueError("No app")
-        with pytest.raises(ValueError, match="Firebase credentials not found"):
+        with pytest.raises(ConfigurationError, match="Firebase credentials not found"):
             FirestoreClient.get_client(database_name="portfolio-staging")
 
     @patch("job_finder.storage.firestore_client.firebase_admin")
@@ -159,7 +160,7 @@ class TestFirestoreClient:
         """Test that get_client raises error when credentials file doesn't exist."""
         mock_firebase.get_app.side_effect = ValueError("No app")
 
-        with pytest.raises(FileNotFoundError, match="Credentials file not found"):
+        with pytest.raises(ConfigurationError, match="Credentials file not found"):
             FirestoreClient.get_client(
                 database_name="portfolio-staging", credentials_path="/nonexistent/path.json"
             )
@@ -226,7 +227,7 @@ class TestFirestoreClient:
         mock_creds.Certificate.side_effect = Exception("Failed to load credentials")
 
         # Verify RuntimeError raised
-        with pytest.raises(RuntimeError, match="Failed to initialize Firebase Admin"):
+        with pytest.raises(InitializationError, match="Failed to initialize Firebase Admin"):
             FirestoreClient.get_client(
                 database_name="portfolio-staging", credentials_path=mock_credentials_path
             )

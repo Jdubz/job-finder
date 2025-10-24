@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 from typing import Any, Dict
 
+from job_finder.exceptions import ProfileError
 from job_finder.profile.schema import Profile
 
 
@@ -28,7 +29,7 @@ class ProfileLoader:
         path = Path(file_path)
 
         if not path.exists():
-            raise FileNotFoundError(f"Profile file not found: {file_path}")
+            raise ProfileError(f"Profile file not found: {file_path}")
 
         with open(path, "r") as f:
             data = json.load(f)
@@ -36,7 +37,7 @@ class ProfileLoader:
         try:
             return Profile(**data)
         except Exception as e:
-            raise ValueError(f"Invalid profile data: {str(e)}") from e
+            raise ProfileError(f"Invalid profile data: {str(e)}") from e
 
     @staticmethod
     def load_from_dict(data: Dict[str, Any]) -> Profile:
@@ -55,7 +56,7 @@ class ProfileLoader:
         try:
             return Profile(**data)
         except Exception as e:
-            raise ValueError(f"Invalid profile data: {str(e)}") from e
+            raise ProfileError(f"Invalid profile data: {str(e)}") from e
 
     @staticmethod
     def validate_profile(profile: Profile) -> bool:
