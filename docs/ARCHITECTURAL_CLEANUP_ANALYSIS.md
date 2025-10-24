@@ -361,6 +361,21 @@ class AIAnalysisException(Exception): pass
 - ✓ Cleaner codebase
 - ✓ Less confusion for developers
 
+### ✅ Session 7: Continued Unused Code Removal (2025-10-24)
+- Removed 4 additional unused files (720 lines total):
+  - utils/company_priority_utils.py (198 lines) - legacy priority scoring
+  - utils/dedup_cache.py (137 lines) - unused deduplication cache
+  - scrapers/company_info.py (132 lines) - unused company info scraper
+  - scrapers/workday_scraper.py (253 lines) - unused Workday scraper
+- All 686 tests passing
+- Coverage improved: 5448 → 5196 statements (-252 lines executable code)
+- **Total removed in Sessions 6-7**: 1,533 lines of code
+
+**Impact**:
+- ✓ Significant code reduction (1,533 lines over 2 sessions)
+- ✓ Improved maintainability
+- ✓ Better coverage ratio (50%)
+
 ## Prioritized Recommendations
 
 ### ✅ COMPLETED (Session 4)
