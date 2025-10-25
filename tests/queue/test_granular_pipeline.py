@@ -46,7 +46,7 @@ class TestGranularRouting:
             sub_task=JobSubTask.SCRAPE,
         )
 
-        with patch.object(processor, "_process_job_scrape") as mock:
+        with patch.object(processor.job_processor, "process_job_scrape") as mock:
             processor._process_granular_job(item)
             mock.assert_called_once()
 
@@ -60,7 +60,7 @@ class TestGranularRouting:
             sub_task=JobSubTask.FILTER,
         )
 
-        with patch.object(processor, "_process_job_filter") as mock:
+        with patch.object(processor.job_processor, "process_job_filter") as mock:
             processor._process_granular_job(item)
             mock.assert_called_once()
 
@@ -74,7 +74,7 @@ class TestGranularRouting:
             sub_task=JobSubTask.ANALYZE,
         )
 
-        with patch.object(processor, "_process_job_analyze") as mock:
+        with patch.object(processor.job_processor, "process_job_analyze") as mock:
             processor._process_granular_job(item)
             mock.assert_called_once()
 
@@ -88,7 +88,7 @@ class TestGranularRouting:
             sub_task=JobSubTask.SAVE,
         )
 
-        with patch.object(processor, "_process_job_save") as mock:
+        with patch.object(processor.job_processor, "process_job_save") as mock:
             processor._process_granular_job(item)
             mock.assert_called_once()
 
@@ -109,7 +109,7 @@ class TestJobScrapeProcessor:
         job_data = {"title": "Engineer", "company": "Test", "description": "Desc"}
 
         processor.sources_manager.get_source_for_url.return_value = None
-        with patch.object(processor, "_scrape_job", return_value=job_data):
+        with patch.object(processor.job_processor, "_scrape_job", return_value=job_data):
             processor._process_job_scrape(item)
 
         # Should spawn next step
@@ -128,7 +128,7 @@ class TestJobScrapeProcessor:
         )
 
         processor.sources_manager.get_source_for_url.return_value = None
-        with patch.object(processor, "_scrape_job", return_value=None):
+        with patch.object(processor.job_processor, "_scrape_job", return_value=None):
             processor._process_job_scrape(item)
 
         # Should NOT spawn next step
