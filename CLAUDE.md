@@ -95,15 +95,6 @@ pip install -r requirements.txt
 pip install -e ".[dev]"
 ```
 
-### Profile Setup
-```bash
-# Create a profile template
-python -m job_finder.main --create-profile data/profile.json
-
-# Edit the profile.json with your information
-# Then update config/config.yaml to point to your profile
-```
-
 ### Running the Worker
 
 **Primary method - via dev-monitor:**
@@ -121,11 +112,7 @@ STORAGE_DATABASE_NAME="portfolio-staging" \
 python scripts/workers/queue_worker.py
 ```
 
-**Legacy monolithic mode (deprecated):**
-```bash
-# This mode is deprecated - use queue worker instead
-python -m job_finder.main --config config/config.yaml
-```
+**Note**: The legacy monolithic mode (`python -m job_finder.main`) has been removed. All job processing now happens through the queue-based worker system.
 
 ### Testing
 ```bash

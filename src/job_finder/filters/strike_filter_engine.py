@@ -11,6 +11,7 @@ import re
 from datetime import datetime, timezone
 from typing import Optional
 
+from job_finder.constants import DEFAULT_STRIKE_THRESHOLD
 from job_finder.filters.models import FilterResult
 from job_finder.utils.date_utils import parse_job_date
 
@@ -36,7 +37,7 @@ class StrikeFilterEngine:
         self.config = config
         self.tech_ranks = tech_ranks
         self.enabled = config.get("enabled", True)
-        self.strike_threshold = config.get("strikeThreshold", 5)
+        self.strike_threshold = config.get("strikeThreshold", DEFAULT_STRIKE_THRESHOLD)
 
         # Hard Rejections
         hard_rej = config.get("hardRejections", {})

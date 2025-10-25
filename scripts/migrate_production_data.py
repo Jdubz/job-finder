@@ -15,9 +15,7 @@ Usage:
 
 import argparse
 import logging
-import sys
 from datetime import datetime, timedelta
-from typing import Dict, List, Any, Optional
 
 from google.cloud import firestore
 

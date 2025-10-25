@@ -24,17 +24,8 @@ def job_storage(mock_db):
         return storage
 
 
-@pytest.fixture
-def sample_job():
-    """Sample job dictionary."""
-    return {
-        "title": "Senior Software Engineer",
-        "company": "Example Corp",
-        "company_website": "https://example.com",
-        "location": "Remote",
-        "description": "We are looking for a senior software engineer...",
-        "url": "https://example.com/jobs/123",
-    }
+# sample_job fixture now provided by tests/conftest.py
+# Note: Tests updated to use sample_job and customize company name if needed
 
 
 @pytest.fixture

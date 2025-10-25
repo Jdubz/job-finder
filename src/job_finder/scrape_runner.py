@@ -12,9 +12,9 @@ from typing import Any, Dict, List, Optional
 
 from job_finder.ai import AIJobMatcher
 from job_finder.company_info_fetcher import CompanyInfoFetcher
+from job_finder.exceptions import ConfigurationError
 from job_finder.profile.schema import Profile
 from job_finder.scrapers.greenhouse_scraper import GreenhouseScraper
-from job_finder.scrapers.rss_scraper import RSSJobScraper
 from job_finder.storage import FirestoreJobStorage
 from job_finder.storage.companies_manager import CompaniesManager
 from job_finder.storage.job_sources_manager import JobSourcesManager
@@ -316,14 +316,14 @@ class ScrapeRunner:
         if source_type == "greenhouse":
             board_token = config.get("board_token")
             if not board_token:
-                raise ValueError(f"Source {source_name} missing board_token in config")
+                raise ConfigurationError(f"Source {source_name} missing board_token in config")
             # Pass full config dict to scraper
             scraper = GreenhouseScraper(config)
             jobs = scraper.scrape()
         elif source_type == "rss":
             rss_url = config.get("url")
             if not rss_url:
-                raise ValueError(f"Source {source_name} missing url in config")
+                raise ConfigurationError(f"Source {source_name} missing url in config")
             # RSS scraper requires listing_config - create empty dict for now
             from job_finder.scrapers.rss_scraper import RSSJobScraper
 

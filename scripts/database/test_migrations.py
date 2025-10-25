@@ -23,7 +23,6 @@ import os
 import sys
 import subprocess
 from datetime import datetime
-from typing import Dict, Any
 
 from google.cloud import firestore
 

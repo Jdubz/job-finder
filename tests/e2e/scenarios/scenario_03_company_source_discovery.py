@@ -10,7 +10,6 @@ Tests the company processing pipeline and automatic source discovery:
 """
 
 import logging
-from typing import Dict, Any
 
 from .base_scenario import BaseE2EScenario
 from ..helpers import QueueMonitor, FirestoreHelper, CleanupHelper

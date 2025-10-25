@@ -10,7 +10,6 @@ Usage:
 
 import argparse
 import logging
-from datetime import datetime
 from google.cloud import firestore
 
 logging.basicConfig(

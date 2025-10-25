@@ -4,6 +4,7 @@ import pytest
 from unittest.mock import patch, MagicMock
 
 from job_finder.ai.providers import AITask, ModelTier, create_provider, get_model_for_task
+from job_finder.exceptions import AIProviderError
 
 
 class TestModelSelection:
@@ -35,8 +36,8 @@ class TestModelSelection:
         assert model == "gpt-4o-mini"
 
     def test_raises_for_unsupported_provider(self):
-        """Should raise ValueError for unsupported provider."""
-        with pytest.raises(ValueError, match="Unsupported AI provider"):
+        """Should raise AIProviderError for unsupported provider."""
+        with pytest.raises(AIProviderError, match="Unsupported AI provider"):
             get_model_for_task("invalid", AITask.SCRAPE)
 
 

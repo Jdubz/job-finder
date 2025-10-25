@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Optional
 from google.cloud import firestore as gcloud_firestore
 from google.cloud.firestore_v1.base_query import FieldFilter
 
+from job_finder.exceptions import StorageError
 from job_finder.queue.models import SourceStatus
 
 from .firestore_client import FirestoreClient
@@ -113,7 +114,7 @@ class JobSourcesManager:
             }
         """
         if not self.db:
-            raise RuntimeError("Firestore not initialized")
+            raise StorageError("Firestore not initialized")
 
         # Determine initial status based on enabled flag
         initial_status = SourceStatus.ACTIVE if enabled else SourceStatus.DISABLED
@@ -174,7 +175,7 @@ class JobSourcesManager:
             List of active source documents
         """
         if not self.db:
-            raise RuntimeError("Firestore not initialized")
+            raise StorageError("Firestore not initialized")
 
         try:
             query = self.db.collection(self.collection_name).where(
@@ -226,7 +227,7 @@ class JobSourcesManager:
             Source document or None if not found
         """
         if not self.db:
-            raise RuntimeError("Firestore not initialized")
+            raise StorageError("Firestore not initialized")
 
         try:
             doc = self.db.collection(self.collection_name).document(source_id).get()
@@ -239,38 +240,6 @@ class JobSourcesManager:
         except Exception as e:
             logger.error(f"Error getting source {source_id}: {str(e)}")
             return None
-
-    def get_sources_for_company(self, company_id: str) -> List[Dict[str, Any]]:
-        """
-        Get all sources associated with a specific company.
-
-        Args:
-            company_id: Company document ID
-
-        Returns:
-            List of source documents for this company
-        """
-        if not self.db:
-            raise RuntimeError("Firestore not initialized")
-
-        try:
-            query = self.db.collection(self.collection_name).where(
-                filter=FieldFilter("companyId", "==", company_id)
-            )
-
-            docs = query.stream()
-
-            sources = []
-            for doc in docs:
-                data = doc.to_dict()
-                data["id"] = doc.id
-                sources.append(data)
-
-            return sources
-
-        except Exception as e:
-            logger.error(f"Error getting sources for company {company_id}: {str(e)}")
-            return []
 
     def update_scrape_status(
         self,
@@ -291,7 +260,7 @@ class JobSourcesManager:
             error: Error message if status is 'error'
         """
         if not self.db:
-            raise RuntimeError("Firestore not initialized")
+            raise StorageError("Firestore not initialized")
 
         update_data = {
             "lastScrapedAt": gcloud_firestore.SERVER_TIMESTAMP,
@@ -324,104 +293,6 @@ class JobSourcesManager:
             )
             raise
 
-    def disable_source(self, doc_id: str) -> None:
-        """Disable a job source."""
-        if not self.db:
-            raise RuntimeError("Firestore not initialized")
-
-        try:
-            self.db.collection(self.collection_name).document(doc_id).update(
-                {
-                    "enabled": False,
-                    "updatedAt": gcloud_firestore.SERVER_TIMESTAMP,
-                }
-            )
-            logger.info(f"Disabled source {doc_id}")
-
-        except (RuntimeError, ValueError) as e:
-            logger.error(f"Error disabling source (database): {str(e)}")
-            raise
-        except Exception as e:
-            logger.error(
-                f"Unexpected error disabling source ({type(e).__name__}): {str(e)}",
-                exc_info=True,
-            )
-            raise
-
-    def enable_source(self, doc_id: str) -> None:
-        """Enable a job source."""
-        if not self.db:
-            raise RuntimeError("Firestore not initialized")
-
-        try:
-            self.db.collection(self.collection_name).document(doc_id).update(
-                {
-                    "enabled": True,
-                    "updatedAt": gcloud_firestore.SERVER_TIMESTAMP,
-                }
-            )
-            logger.info(f"Enabled source {doc_id}")
-
-        except (RuntimeError, ValueError) as e:
-            logger.error(f"Error enabling source (database): {str(e)}")
-            raise
-        except Exception as e:
-            logger.error(
-                f"Unexpected error enabling source ({type(e).__name__}): {str(e)}",
-                exc_info=True,
-            )
-            raise
-
-    def link_source_to_company(self, source_id: str, company_id: str, company_name: str) -> None:
-        """
-        Link a source to a company.
-
-        Args:
-            source_id: Source document ID
-            company_id: Company document ID
-            company_name: Company name (denormalized)
-        """
-        if not self.db:
-            raise RuntimeError("Firestore not initialized")
-
-        try:
-            self.db.collection(self.collection_name).document(source_id).update(
-                {
-                    "companyId": company_id,
-                    "companyName": company_name,
-                    "updatedAt": gcloud_firestore.SERVER_TIMESTAMP,
-                }
-            )
-            logger.info(f"Linked source {source_id} to company {company_name} ({company_id})")
-
-        except Exception as e:
-            logger.error(f"Error linking source to company: {str(e)}")
-            raise
-
-    def unlink_source_from_company(self, source_id: str) -> None:
-        """
-        Unlink a source from its company.
-
-        Args:
-            source_id: Source document ID
-        """
-        if not self.db:
-            raise RuntimeError("Firestore not initialized")
-
-        try:
-            self.db.collection(self.collection_name).document(source_id).update(
-                {
-                    "companyId": None,
-                    "companyName": None,
-                    "updatedAt": gcloud_firestore.SERVER_TIMESTAMP,
-                }
-            )
-            logger.info(f"Unlinked source {source_id} from company")
-
-        except Exception as e:
-            logger.error(f"Error unlinking source from company: {str(e)}")
-            raise
-
     # ========================================================================
     # Granular Pipeline Support Methods
     # ========================================================================
@@ -444,7 +315,7 @@ class JobSourcesManager:
             # Returns source with greenhouse config for Netflix
         """
         if not self.db:
-            raise RuntimeError("Firestore not initialized")
+            raise StorageError("Firestore not initialized")
 
         try:
             from urllib.parse import urlparse
@@ -502,51 +373,6 @@ class JobSourcesManager:
             logger.error(f"Error finding source for URL {url}: {e}")
             return None
 
-    def save_discovered_source(
-        self,
-        url: str,
-        name: str,
-        source_type: str,
-        selectors: Dict[str, Any],
-        confidence: str,
-        company_id: Optional[str] = None,
-        company_name: Optional[str] = None,
-    ) -> str:
-        """
-        Save AI-discovered source configuration.
-
-        Args:
-            url: Base URL for the source
-            name: Human-readable name
-            source_type: scraper, api, etc.
-            selectors: Discovered CSS selectors
-            confidence: high/medium/low confidence in selectors
-            company_id: Optional company ID
-            company_name: Optional company name
-
-        Returns:
-            Document ID of created source
-        """
-        config = {
-            "url": url,
-            "method": "requests",  # Default to requests, can upgrade to selenium later
-            "selectors": selectors,
-            "discovered_by_ai": True,
-            "discovery_confidence": confidence,
-        }
-
-        tags = ["ai-discovered", f"confidence-{confidence}"]
-
-        return self.add_source(
-            name=name,
-            source_type=source_type,
-            config=config,
-            enabled=True,  # Start enabled if high confidence, can be disabled if fails
-            company_id=company_id,
-            company_name=company_name,
-            tags=tags,
-        )
-
     def create_from_discovery(
         self,
         name: str,
@@ -584,7 +410,7 @@ class JobSourcesManager:
             Document ID of created source
         """
         if not self.db:
-            raise RuntimeError("Firestore not initialized")
+            raise StorageError("Firestore not initialized")
 
         # Determine status based on validation requirement
         if validation_required:
@@ -661,7 +487,7 @@ class JobSourcesManager:
             alternative_selectors: Optional list of fallback selectors to try
         """
         if not self.db:
-            raise RuntimeError("Firestore not initialized")
+            raise StorageError("Firestore not initialized")
 
         try:
             update_data = {
@@ -694,7 +520,7 @@ class JobSourcesManager:
             selector_failures: List of selectors that failed
         """
         if not self.db:
-            raise RuntimeError("Firestore not initialized")
+            raise StorageError("Firestore not initialized")
 
         try:
             # Get current source to check failure count
@@ -742,7 +568,7 @@ class JobSourcesManager:
             jobs_found: Number of jobs found in this scrape
         """
         if not self.db:
-            raise RuntimeError("Firestore not initialized")
+            raise StorageError("Firestore not initialized")
 
         try:
             update_data = {

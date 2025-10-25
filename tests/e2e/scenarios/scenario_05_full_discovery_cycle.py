@@ -14,7 +14,7 @@ with valuable data automatically.
 """
 
 import logging
-from typing import Dict, Any, List
+from typing import Dict, List
 
 from .base_scenario import BaseE2EScenario
 from ..helpers import QueueMonitor, FirestoreHelper, CleanupHelper

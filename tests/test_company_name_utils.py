@@ -1,7 +1,5 @@
 """Tests for company name normalization utilities."""
 
-import pytest
-
 from job_finder.utils.company_name_utils import normalize_company_name
 
 

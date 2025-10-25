@@ -18,12 +18,11 @@ import logging
 import sys
 import threading
 import time
-from datetime import datetime, timedelta
-from typing import Generator, Optional, Dict, Any
+from datetime import datetime
+from typing import Optional, Dict, Any
 from contextlib import contextmanager
 
 from google.cloud import logging as cloud_logging
-from google.api_core import gapic_v1
 
 logger = logging.getLogger(__name__)
 

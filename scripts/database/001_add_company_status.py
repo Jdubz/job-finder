@@ -16,9 +16,6 @@ Usage:
 
 import argparse
 import logging
-import sys
-from datetime import datetime
-from typing import Dict, Any
 
 from google.cloud import firestore
 

@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Optional
 from google.cloud import firestore as gcloud_firestore
 from google.cloud.firestore_v1.base_query import FieldFilter
 
+from job_finder.exceptions import InitializationError
 from job_finder.profile.schema import Experience, Profile, Skill
 from job_finder.storage.firestore_client import FirestoreClient
 
@@ -42,7 +43,7 @@ class FirestoreProfileLoader:
             Profile instance populated with Firestore data.
         """
         if not self.db:
-            raise RuntimeError("Firestore not initialized")
+            raise InitializationError("Firestore not initialized")
 
         logger.info(f"Loading profile from Firestore (user_id: {user_id})")
 
@@ -380,19 +381,3 @@ class FirestoreProfileLoader:
         # This is a simplified calculation
         # In production, you'd want to parse dates and calculate actual duration
         return float(len(experiences))
-
-    def close(self):
-        """Close Firestore connection."""
-        # Firebase Admin SDK doesn't require explicit closing
-        # But we can delete the app if needed
-        try:
-            import firebase_admin
-
-            firebase_admin.delete_app(firebase_admin.get_app())
-            logger.info("Closed Firebase connection")
-        except (RuntimeError, ValueError) as e:
-            # Firebase app errors or not initialized - graceful degradation
-            logger.debug(f"Error closing Firebase (app error): {str(e)}")
-        except Exception as e:
-            # Unexpected errors - log at debug level (non-critical operation)
-            logger.debug(f"Unexpected error closing Firebase ({type(e).__name__}): {str(e)}")

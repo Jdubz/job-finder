@@ -2,12 +2,12 @@
 
 import json
 import logging
-import time
 from typing import Any, Dict, Optional
 
 import requests
 from bs4 import BeautifulSoup
 
+from job_finder.constants import MIN_COMPANY_PAGE_LENGTH, MIN_SPARSE_COMPANY_INFO_LENGTH
 from job_finder.logging_config import format_company_name
 
 logger = logging.getLogger(__name__)
@@ -84,7 +84,7 @@ class CompanyInfoFetcher:
             for page_url in pages_to_try:
                 try:
                     content = self._fetch_page_content(page_url)
-                    if content and len(content) > 200:  # Got meaningful content
+                    if content and len(content) > MIN_COMPANY_PAGE_LENGTH:  # Got meaningful content
                         logger.info(f"Successfully fetched content from {page_url}")
                         break
                 except (requests.RequestException, ValueError, AttributeError) as e:
@@ -323,21 +323,7 @@ Return ONLY valid JSON in this format:
                     break
 
         # If we found nothing, use first 300 chars as about
-        if not result["about"] and len(content) > 100:
+        if not result["about"] and len(content) > MIN_SPARSE_COMPANY_INFO_LENGTH:
             result["about"] = content[:300].strip()
 
         return result
-
-
-def create_company_info_fetcher(ai_provider=None, ai_config=None) -> CompanyInfoFetcher:
-    """
-    Factory function to create a CompanyInfoFetcher.
-
-    Args:
-        ai_provider: Optional AI provider for intelligent extraction
-        ai_config: Optional AI configuration dictionary
-
-    Returns:
-        CompanyInfoFetcher instance
-    """
-    return CompanyInfoFetcher(ai_provider=ai_provider, ai_config=ai_config)

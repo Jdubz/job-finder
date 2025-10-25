@@ -8,7 +8,7 @@ Provides metrics on data quality improvements from E2E test runs.
 import logging
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional
 from datetime import datetime
 from collections import defaultdict
 

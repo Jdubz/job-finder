@@ -27,14 +27,18 @@ def mock_managers():
 def processor(mock_managers):
     """Create processor with mocked dependencies."""
     # Patch ScrapeRunner to avoid creating real instance
-    with patch("job_finder.queue.processor.ScrapeRunner") as mock_scrape_runner_class:
+    with patch(
+        "job_finder.queue.processors.base_processor.ScrapeRunner"
+    ) as mock_scrape_runner_class:
         mock_scrape_runner_instance = MagicMock()
         mock_scrape_runner_class.return_value = mock_scrape_runner_instance
 
         processor_instance = QueueItemProcessor(**mock_managers)
 
         # Store reference to mock scrape_runner for tests to access
+        # Note: After refactoring, scrape_runner is on job_processor
         processor_instance.scrape_runner = mock_scrape_runner_instance
+        processor_instance.job_processor.scrape_runner = mock_scrape_runner_instance
 
         return processor_instance
 

@@ -1,6 +1,5 @@
 """Data models for user profile and experience."""
 
-from datetime import date
 from typing import List, Optional
 
 from pydantic import BaseModel, Field, HttpUrl

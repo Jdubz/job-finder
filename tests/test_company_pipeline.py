@@ -1,7 +1,7 @@
 """Tests for granular company processing pipeline."""
 
 import pytest
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock
 
 from job_finder.queue.models import (
     CompanySubTask,

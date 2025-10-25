@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Debug script to inspect Firestore data structure."""
 import json
-import os
 
 from dotenv import load_dotenv
 

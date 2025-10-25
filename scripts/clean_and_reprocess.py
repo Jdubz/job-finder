@@ -13,7 +13,7 @@ import json
 import logging
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Any
+from typing import Dict, Any
 
 from job_finder.filters.strike_filter_engine import StrikeFilterEngine
 from job_finder.storage.firestore_client import FirestoreClient

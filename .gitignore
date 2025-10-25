@@ -84,3 +84,7 @@ Thumbs.db
 
 # Smoke test results
 test_results/
+
+# Prevent --no-verify bypass scripts
+git-bypass-*
+no-verify-*

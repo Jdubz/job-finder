@@ -19,43 +19,7 @@ def mock_provider():
     return provider
 
 
-@pytest.fixture
-def mock_profile():
-    """Create a mock profile."""
-    profile = Mock()
-    profile.name = "Test User"
-    profile.location = "Portland, OR"
-    profile.email = "test@example.com"
-    profile.phone = None
-    profile.linkedin_url = None
-    profile.github_url = None
-    profile.portfolio_url = None
-    profile.summary = "Experienced software engineer"
-    profile.years_of_experience = 5.0
-    profile.skills = []
-    profile.experience = []
-    profile.education = []
-    profile.projects = []
-    profile.certifications = []
-    profile.languages = ["English"]
-    profile.preferences = None
-    profile.get_current_role = Mock(return_value=None)
-    profile.get_all_skills = Mock(return_value=[])
-    return profile
-
-
-@pytest.fixture
-def sample_job():
-    """Create a sample job dictionary."""
-    return {
-        "title": "Senior Software Engineer",
-        "company": "Test Company",
-        "location": "Remote",
-        "description": "Job description",
-        "url": "https://test.com/job/123",
-        "posted_date": datetime.now(timezone.utc).isoformat(),
-        "company_info": "About the company",
-    }
+# mock_profile and sample_job fixtures now provided by tests/conftest.py
 
 
 class TestAIJobMatcherInit:

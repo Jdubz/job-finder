@@ -9,8 +9,7 @@ This test suite validates that:
 """
 
 import logging
-import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 from job_finder.logging_config import (
     format_company_name,

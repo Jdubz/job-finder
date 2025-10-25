@@ -16,7 +16,6 @@ Usage:
 
 import json
 import logging
-import os
 import sys
 from dataclasses import dataclass, field, asdict
 from datetime import datetime
