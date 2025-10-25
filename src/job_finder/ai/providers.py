@@ -75,6 +75,7 @@ class AIProvider(ABC):
         Returns:
             The generated text response.
         """
+        pass
 
 
 class ClaudeProvider(AIProvider):

@@ -40,6 +40,7 @@ class BaseScraper(ABC):
         Returns:
             List of job posting dictionaries with standardized fields.
         """
+        pass
 
     @abstractmethod
     def parse_job(self, element: Any) -> Optional[Dict[str, Any]]:
@@ -58,3 +59,4 @@ class BaseScraper(ABC):
 
             Returns None if parsing fails or required fields are missing.
         """
+        pass
