@@ -302,7 +302,7 @@ class TestPipelineStatePassthrough:
         job_data = {"title": "Engineer", "description": "Desc"}
         processor.sources_manager.get_source_for_url.return_value = None
 
-        with patch.object(processor, "_scrape_job", return_value=job_data):
+        with patch.object(processor.job_processor, "_scrape_job", return_value=job_data):
             processor._process_job_scrape(item)
 
         args = processor.queue_manager.spawn_next_pipeline_step.call_args[1]

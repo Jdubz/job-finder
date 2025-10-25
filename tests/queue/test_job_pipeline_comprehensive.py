@@ -76,7 +76,9 @@ class TestJobScrapeSuccess:
             "company_website": "https://testcorp.com",
         }
 
-        with patch.object(processor, "_scrape_with_source_config", return_value=job_data):
+        with patch.object(
+            processor.job_processor, "_scrape_with_source_config", return_value=job_data
+        ):
             processor._process_job_scrape(item)
 
         # Verify spawn called with correct data
@@ -111,7 +113,7 @@ class TestJobScrapeSuccess:
             "company_website": "https://example.com",
         }
 
-        with patch.object(processor, "_scrape_job", return_value=job_data):
+        with patch.object(processor.job_processor, "_scrape_job", return_value=job_data):
             processor._process_job_scrape(item)
 
         # Should spawn FILTER step
@@ -144,7 +146,7 @@ class TestJobScrapeSuccess:
             "salary": "$120k - $150k",
         }
 
-        with patch.object(processor, "_scrape_job", return_value=job_data):
+        with patch.object(processor.job_processor, "_scrape_job", return_value=job_data):
             processor._process_job_scrape(item)
 
         # Verify optional fields preserved
@@ -169,7 +171,7 @@ class TestJobScrapeFailures:
 
         processor.sources_manager.get_source_for_url.return_value = None
 
-        with patch.object(processor, "_scrape_job", return_value=None):
+        with patch.object(processor.job_processor, "_scrape_job", return_value=None):
             processor._process_job_scrape(item)
 
         # Should NOT spawn next step
@@ -188,7 +190,9 @@ class TestJobScrapeFailures:
         processor.sources_manager.get_source_for_url.return_value = None
 
         # Mock scraping exception
-        with patch.object(processor, "_scrape_job", side_effect=Exception("Network timeout")):
+        with patch.object(
+            processor.job_processor, "_scrape_job", side_effect=Exception("Network timeout")
+        ):
             # The exception will be caught and re-raised by the processor
             try:
                 processor._process_job_scrape(item)
@@ -219,7 +223,7 @@ class TestJobScrapeFailures:
             # Missing: description, company_website
         }
 
-        with patch.object(processor, "_scrape_job", return_value=incomplete_job):
+        with patch.object(processor.job_processor, "_scrape_job", return_value=incomplete_job):
             processor._process_job_scrape(item)
 
         # Scraper doesn't validate - just passes data through to filter
@@ -886,7 +890,7 @@ class TestPipelineStateManagement:
 
         processor.sources_manager.get_source_for_url.return_value = None
 
-        with patch.object(processor, "_scrape_job", return_value=job_data):
+        with patch.object(processor.job_processor, "_scrape_job", return_value=job_data):
             processor._process_job_scrape(scrape_item)
 
         # Verify SCRAPE created state
