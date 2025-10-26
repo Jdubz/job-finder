@@ -158,7 +158,7 @@ class TestGreenhouseDiscovery:
         assert status_call[0][2] == "source-789"  # source_id in result_message
 
     @pytest.mark.skip(reason="Integration test - needs proper HTTP mocking")
-    @patch("job_finder.queue.processor.requests")
+    @patch("job_finder.job_queue.processor.requests")
     def test_handles_greenhouse_404(self, mock_requests, processor, mock_dependencies):
         """Should fail gracefully when Greenhouse board not found."""
         item = JobQueueItem(
@@ -248,7 +248,7 @@ class TestRSSDiscovery:
     """Test RSS feed discovery."""
 
     @pytest.mark.skip(reason="Integration test - needs proper HTTP mocking")
-    @patch("job_finder.queue.processor.feedparser")
+    @patch("job_finder.job_queue.processor.feedparser")
     def test_discovers_rss_source_successfully(self, mock_feedparser, processor, mock_dependencies):
         """Should discover and validate RSS feed."""
         item = JobQueueItem(
@@ -299,7 +299,7 @@ class TestRSSDiscovery:
         assert "2 entries" in status_call[0][2]
 
     @pytest.mark.skip(reason="Integration test - needs proper HTTP mocking")
-    @patch("job_finder.queue.processor.feedparser")
+    @patch("job_finder.job_queue.processor.feedparser")
     def test_handles_invalid_rss_feed(self, mock_feedparser, processor, mock_dependencies):
         """Should fail when RSS feed is invalid."""
         item = JobQueueItem(
@@ -337,7 +337,7 @@ class TestRSSDiscovery:
         assert "Invalid RSS feed" in status_call[0][2]
 
     @pytest.mark.skip(reason="Integration test - needs proper HTTP mocking")
-    @patch("job_finder.queue.processor.feedparser")
+    @patch("job_finder.job_queue.processor.feedparser")
     def test_handles_empty_rss_feed(self, mock_feedparser, processor, mock_dependencies):
         """Should fail when RSS feed has no entries."""
         item = JobQueueItem(
@@ -379,8 +379,8 @@ class TestGenericDiscovery:
     """Test generic HTML source discovery with AI."""
 
     @pytest.mark.skip(reason="Integration test - needs proper HTTP mocking")
-    @patch("job_finder.queue.processor.SelectorDiscovery")
-    @patch("job_finder.queue.processor.requests")
+    @patch("job_finder.job_queue.processor.SelectorDiscovery")
+    @patch("job_finder.job_queue.processor.requests")
     def test_discovers_generic_source_with_high_confidence(
         self, mock_requests, mock_selector_discovery, processor, mock_dependencies
     ):
@@ -445,8 +445,8 @@ class TestGenericDiscovery:
         assert call_kwargs["enabled"] is True  # High confidence = auto-enabled
 
     @pytest.mark.skip(reason="Integration test - needs proper HTTP mocking")
-    @patch("job_finder.queue.processor.SelectorDiscovery")
-    @patch("job_finder.queue.processor.requests")
+    @patch("job_finder.job_queue.processor.SelectorDiscovery")
+    @patch("job_finder.job_queue.processor.requests")
     def test_requires_validation_for_medium_confidence(
         self, mock_requests, mock_selector_discovery, processor, mock_dependencies
     ):
@@ -496,8 +496,8 @@ class TestGenericDiscovery:
         assert call_kwargs["validation_required"] is True
 
     @pytest.mark.skip(reason="Integration test - needs proper HTTP mocking")
-    @patch("job_finder.queue.processor.SelectorDiscovery")
-    @patch("job_finder.queue.processor.requests")
+    @patch("job_finder.job_queue.processor.SelectorDiscovery")
+    @patch("job_finder.job_queue.processor.requests")
     def test_handles_ai_discovery_failure(
         self, mock_requests, mock_selector_discovery, processor, mock_dependencies
     ):
@@ -609,7 +609,7 @@ class TestCompanyAssociation:
     """Test company ID and name association."""
 
     @pytest.mark.skip(reason="Integration test - needs proper HTTP mocking")
-    @patch("job_finder.queue.processor.requests")
+    @patch("job_finder.job_queue.processor.requests")
     def test_associates_company_id(self, mock_requests, processor, mock_dependencies):
         """Should associate source with provided company ID."""
         item = JobQueueItem(
