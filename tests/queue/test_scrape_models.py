@@ -1,6 +1,6 @@
 """Tests for SCRAPE queue models and configuration."""
 
-from job_finder.queue.models import JobQueueItem, QueueItemType, ScrapeConfig
+from job_finder.job_queue.models import JobQueueItem, QueueItemType, ScrapeConfig
 
 
 class TestScrapeConfig:

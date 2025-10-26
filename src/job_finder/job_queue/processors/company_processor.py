@@ -18,7 +18,7 @@ from typing import Any, Dict, Optional
 from job_finder.constants import MIN_COMPANY_PAGE_LENGTH
 from job_finder.exceptions import QueueProcessingError
 from job_finder.logging_config import format_company_name
-from job_finder.queue.models import (
+from job_finder.job_queue.models import (
     CompanySubTask,
     JobQueueItem,
     QueueItemType,

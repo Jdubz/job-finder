@@ -4,8 +4,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from job_finder.queue.models import JobQueueItem, QueueItemType, QueueStatus, ScrapeConfig
-from job_finder.queue.processor import QueueItemProcessor
+from job_finder.job_queue.models import JobQueueItem, QueueItemType, QueueStatus, ScrapeConfig
+from job_finder.job_queue.processor import QueueItemProcessor
 
 
 @pytest.fixture

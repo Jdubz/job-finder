@@ -16,7 +16,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 from dotenv import load_dotenv
 
 from job_finder.queue import QueueManager
-from job_finder.queue.models import JobQueueItem, QueueItemType, ScrapeConfig
+from job_finder.job_queue.models import JobQueueItem, QueueItemType, ScrapeConfig
 
 # Load environment variables
 load_dotenv()

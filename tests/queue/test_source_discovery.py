@@ -4,14 +4,14 @@ from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
-from job_finder.queue.models import (
+from job_finder.job_queue.models import (
     JobQueueItem,
     QueueItemType,
     QueueStatus,
     SourceDiscoveryConfig,
     SourceTypeHint,
 )
-from job_finder.queue.processor import QueueItemProcessor
+from job_finder.job_queue.processor import QueueItemProcessor
 
 
 @pytest.fixture

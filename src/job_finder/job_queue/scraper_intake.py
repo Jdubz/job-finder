@@ -4,8 +4,8 @@ import logging
 import uuid
 from typing import Any, Dict, List, Optional
 
-from job_finder.queue.manager import QueueManager
-from job_finder.queue.models import JobQueueItem, QueueItemType, QueueSource
+from job_finder.job_queue.manager import QueueManager
+from job_finder.job_queue.models import JobQueueItem, QueueItemType, QueueSource
 from job_finder.utils.url_utils import normalize_url
 
 logger = logging.getLogger(__name__)
@@ -164,7 +164,7 @@ class ScraperIntake:
                     return None
 
             # Import CompanySubTask
-            from job_finder.queue.models import CompanySubTask
+            from job_finder.job_queue.models import CompanySubTask
 
             # Generate tracking_id for this root company (all spawned items will inherit it)
             tracking_id = str(uuid.uuid4())

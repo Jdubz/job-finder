@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from job_finder.queue.config_loader import ConfigLoader
+from job_finder.job_queue.config_loader import ConfigLoader
 
 
 @pytest.fixture

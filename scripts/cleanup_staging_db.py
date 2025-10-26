@@ -15,8 +15,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import List, Dict, Any
 
-from job_finder.queue.manager import QueueManager
-from job_finder.queue.models import JobQueueItem, QueueItemType
+from job_finder.job_queue.manager import QueueManager
+from job_finder.job_queue.models import JobQueueItem, QueueItemType
 from job_finder.storage.firestore_client import FirestoreClient
 
 logging.basicConfig(level=logging.INFO)

@@ -4,10 +4,10 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from job_finder.queue.config_loader import ConfigLoader
-from job_finder.queue.manager import QueueManager
-from job_finder.queue.models import JobQueueItem, QueueItemType, QueueStatus
-from job_finder.queue.scraper_intake import ScraperIntake
+from job_finder.job_queue.config_loader import ConfigLoader
+from job_finder.job_queue.manager import QueueManager
+from job_finder.job_queue.models import JobQueueItem, QueueItemType, QueueStatus
+from job_finder.job_queue.scraper_intake import ScraperIntake
 
 
 @pytest.fixture

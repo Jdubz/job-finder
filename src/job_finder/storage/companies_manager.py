@@ -7,7 +7,7 @@ from typing import Any, Callable, Dict, Optional
 from google.cloud.firestore_v1.base_query import FieldFilter
 
 from job_finder.exceptions import StorageError
-from job_finder.queue.models import CompanyStatus
+from job_finder.job_queue.models import CompanyStatus
 from job_finder.utils.company_name_utils import normalize_company_name
 
 from .firestore_client import FirestoreClient

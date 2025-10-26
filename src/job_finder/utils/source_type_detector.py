@@ -5,7 +5,7 @@ import re
 from typing import Dict, Optional, Tuple
 from urllib.parse import urlparse
 
-from job_finder.queue.models import SourceTypeHint
+from job_finder.job_queue.models import SourceTypeHint
 
 logger = logging.getLogger(__name__)
 
