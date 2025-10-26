@@ -94,6 +94,7 @@ def initialize_components(config: Dict[str, Any]) -> tuple:
         min_match_score=ai_config.get("min_match_score", 0.7),
         generate_intake=ai_config.get("generate_intake_data", True),
         portland_office_bonus=ai_config.get("portland_office_bonus", 15),
+        profile=None,  # Will be loaded per request
     )
 
     # Initialize other components
@@ -101,11 +102,14 @@ def initialize_components(config: Dict[str, Any]) -> tuple:
     company_info_fetcher = CompanyInfoFetcher(companies_manager)
     queue_manager = QueueManager(storage)
     processor = QueueItemProcessor(
-        ai_matcher=ai_matcher,
-        profile_loader=profile_loader,
-        company_info_fetcher=company_info_fetcher,
+        queue_manager=queue_manager,
+        config_loader=ConfigLoader(),
+        job_storage=storage,
         companies_manager=companies_manager,
-        job_sources_manager=job_sources_manager,
+        sources_manager=job_sources_manager,
+        company_info_fetcher=company_info_fetcher,
+        ai_matcher=ai_matcher,
+        profile=None,  # Will be loaded per request
     )
 
     return queue_manager, processor, config
