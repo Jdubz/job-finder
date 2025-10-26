@@ -33,6 +33,7 @@ COPY src/ ./src/
 COPY config/ ./config/
 COPY run_job_search.py .
 COPY scripts/workers/queue_worker.py .
+COPY src/job_finder/simple_flask_worker.py .
 
 # Copy cron configuration, entrypoint, and helper scripts
 COPY docker/crontab /etc/cron.d/job-finder-cron
@@ -53,9 +54,9 @@ ENV PYTHONPATH=/app/src:/app
 # Create data and logs directories
 RUN mkdir -p /app/data /app/logs
 
-# Healthcheck
-HEALTHCHECK --interval=5m --timeout=10s --start-period=30s --retries=3 \
-    CMD python -c "import sys; sys.exit(0)"
+# Healthcheck - check Flask worker health endpoint
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+    CMD curl -f http://localhost:5555/health || exit 1
 
 # Use entrypoint script for better logging and startup
 ENTRYPOINT ["/app/entrypoint.sh"]

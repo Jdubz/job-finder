@@ -1,6 +1,6 @@
 # Local Development & Testing Guide
 
-## Recommended: Use Dev-Monitor (Primary Method)
+## Recommended: Use App-Monitor (Primary Method)
 
 **For local development, use the dev-monitor tool to manage all services including the Python worker via Docker.**
 
@@ -10,7 +10,7 @@ The dev-monitor is a local development console that manages:
 - Backend Firebase Functions
 - **Python Worker (via Docker container)**
 
-### Start Dev-Monitor
+### Start App-Monitor
 
 ```bash
 # From the job-finder-app-manager repository root

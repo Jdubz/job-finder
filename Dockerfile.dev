@@ -24,5 +24,5 @@ ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONPATH=/app/src:/app
 
-# Default command (can be overridden in docker-compose)
-CMD ["python", "run_job_search.py"]
+# Default command - start Flask worker (can be overridden in docker-compose)
+CMD ["python", "simple_flask_worker.py"]

@@ -13,7 +13,7 @@ New to Job Finder? Start here:
 ## Core Documentation
 
 ### System Architecture
-- **[Architecture](architecture.md)** - Complete system design, components, and data flow
+- **[Architecture](../../docs/architecture/worker-architecture.md)** - Complete system design, components, and data flow
 - **[Queue System](queue-system.md)** - Queue-based pipeline architecture and processing
 
 ### Setup & Configuration
@@ -56,6 +56,10 @@ python -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
 ```
+
+**Architecture Documentation:**
+- [Worker Architecture](../../docs/architecture/worker-architecture.md) - Complete system design
+- [System Overview](../../docs/architecture/system-overview.md) - Overall system architecture
 
 **Run the job finder:**
 ```bash
