@@ -192,7 +192,15 @@ def setup_logging(
         log_file = str(centralized_logs)
     else:
         log_file = os.getenv("LOG_FILE", log_file)
-    environment = os.getenv("ENVIRONMENT", "development")
+
+    # REQUIRED: Environment must be explicitly set (staging, production, development)
+    environment = os.getenv("ENVIRONMENT")
+    if not environment:
+        raise ValueError(
+            "ENVIRONMENT variable is required but not set. "
+            "Must be set to 'staging', 'production', or 'development'. "
+            "This prevents accidental production deployments."
+        )
 
     # Create logs directory if it doesn't exist
     log_path = Path(log_file)
@@ -310,9 +318,18 @@ class StructuredLogger:
 
         Args:
             logger: Base logger instance
+
+        Raises:
+            ValueError: If ENVIRONMENT variable is not set
         """
         self.logger = logger
-        self.environment = os.getenv("ENVIRONMENT", "development")
+        self.environment = os.getenv("ENVIRONMENT")
+        if not self.environment:
+            raise ValueError(
+                "ENVIRONMENT variable is required but not set. "
+                "Must be set to 'staging', 'production', or 'development'. "
+                "This prevents accidental production deployments."
+            )
 
     def _log(self, level: str, structured_fields: Dict[str, Any]) -> None:
         """

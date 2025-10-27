@@ -1,9 +1,21 @@
 """Shared pytest fixtures for all tests."""
 
+import os
 from datetime import datetime, timezone
 from unittest.mock import MagicMock, Mock
 
 import pytest
+
+
+@pytest.fixture(autouse=True)
+def set_test_environment(monkeypatch):
+    """
+    Automatically set ENVIRONMENT variable for all tests.
+
+    This prevents ValueError from being raised when initializing
+    StructuredLogger or calling setup_logging() in tests.
+    """
+    monkeypatch.setenv("ENVIRONMENT", "development")
 
 
 @pytest.fixture
