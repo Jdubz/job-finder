@@ -29,8 +29,8 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 
-from job_finder.queue.manager import QueueManager
-from job_finder.queue.scraper_intake import ScraperIntake
+from job_finder.job_queue.manager import QueueManager
+from job_finder.job_queue.scraper_intake import ScraperIntake
 from job_finder.storage.firestore_client import FirestoreClient
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")

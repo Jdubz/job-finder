@@ -24,7 +24,7 @@ from job_finder.company_info_fetcher import CompanyInfoFetcher  # noqa: E402
 from job_finder.logging_config import get_structured_logger, setup_logging  # noqa: E402
 from job_finder.profile import FirestoreProfileLoader  # noqa: E402
 from job_finder.queue import ConfigLoader, QueueManager  # noqa: E402
-from job_finder.queue.processor import QueueItemProcessor  # noqa: E402
+from job_finder.job_queue.processor import QueueItemProcessor  # noqa: E402
 from job_finder.storage import FirestoreJobStorage  # noqa: E402
 from job_finder.storage.companies_manager import CompaniesManager  # noqa: E402
 from job_finder.storage.job_sources_manager import JobSourcesManager  # noqa: E402

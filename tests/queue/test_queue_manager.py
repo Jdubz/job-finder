@@ -4,14 +4,14 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from job_finder.queue.manager import QueueManager
-from job_finder.queue.models import JobQueueItem, QueueItemType, QueueStatus
+from job_finder.job_queue.manager import QueueManager
+from job_finder.job_queue.models import JobQueueItem, QueueItemType, QueueStatus
 
 
 @pytest.fixture
 def mock_firestore_client():
     """Mock Firestore client."""
-    with patch("job_finder.queue.manager.FirestoreClient") as mock_client:
+    with patch("job_finder.job_queue.manager.FirestoreClient") as mock_client:
         yield mock_client
 
 

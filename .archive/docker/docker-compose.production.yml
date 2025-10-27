@@ -1,0 +1,93 @@
+version: '3.8'
+
+services:
+  job-finder:
+    image: ghcr.io/jdubz/job-finder-worker:latest
+    container_name: job-finder-production
+    restart: unless-stopped
+
+    environment:
+      # API Keys - SET THESE IN PORTAINER
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/credentials/serviceAccountKey.json
+
+      # Environment Configuration
+      - ENVIRONMENT=production
+      - ENABLE_QUEUE_MODE=true
+      - ENABLE_CRON=true
+      - ENABLE_CLOUD_LOGGING=true
+
+      # Database Overrides - USE PRODUCTION DATABASES
+      - PROFILE_DATABASE_NAME=portfolio
+      - STORAGE_DATABASE_NAME=portfolio
+
+      # Config path (optional - can use production config)
+      - CONFIG_PATH=/app/config/config.production.yaml
+      - LOG_FILE=/app/logs/scheduler.log
+
+      # Timezone for cron
+      - TZ=America/Los_Angeles
+
+    volumes:
+      # Mount credentials (REQUIRED)
+      - ./credentials:/app/credentials:ro
+
+      # Mount production config
+      - ./config:/app/config:ro
+
+      # Mount logs for persistence
+      - ./logs:/app/logs
+
+      # Mount data for any local file outputs
+      - ./data:/app/data
+
+    labels:
+      # Watchtower auto-update labels
+      - "com.centurylinklabs.watchtower.enable=true"
+      - "environment=production"
+
+    networks:
+      - job-finder-network
+
+    # Resource limits (higher for production)
+    deploy:
+      resources:
+        limits:
+          cpus: '1.5'
+          memory: 1.5G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+    healthcheck:
+      test: ["CMD", "python", "-c", "import sys; sys.exit(0)"]
+      interval: 5m
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # Watchtower for auto-updates
+  watchtower:
+    image: containrrr/watchtower:latest
+    container_name: watchtower-job-finder-production
+    restart: unless-stopped
+
+    environment:
+      - WATCHTOWER_CLEANUP=true
+      - WATCHTOWER_POLL_INTERVAL=300  # Check every 5 minutes
+      - WATCHTOWER_LABEL_ENABLE=true  # Only update containers with watchtower label
+      - WATCHTOWER_INCLUDE_RESTARTING=true
+      - WATCHTOWER_NOTIFICATIONS=shoutrrr
+      - WATCHTOWER_NOTIFICATION_URL=${WATCHTOWER_NOTIFICATION_URL:-}  # Optional: Slack/Discord webhook
+      - TZ=America/Los_Angeles
+
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+
+    networks:
+      - job-finder-network
+
+networks:
+  job-finder-network:
+    driver: bridge

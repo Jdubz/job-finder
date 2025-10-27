@@ -101,7 +101,7 @@ The job-finder-worker has three distinct environments:
 
 ### Key Components
 
-1. **Dev-Monitor**
+1. **App-Monitor**
    - Location: `job-finder-app-manager/dev-monitor`
    - Manages: Firebase Emulators, Python worker, Frontend, Backend
    - Worker: Docker container built from local source

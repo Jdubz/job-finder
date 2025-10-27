@@ -4,7 +4,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from job_finder.queue.scraper_intake import ScraperIntake
+from job_finder.job_queue.scraper_intake import ScraperIntake
 
 
 @pytest.fixture

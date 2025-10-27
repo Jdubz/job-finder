@@ -24,7 +24,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
 from job_finder.logging_config import setup_logging  # noqa: E402
 from job_finder.queue import QueueManager  # noqa: E402
-from job_finder.queue.models import JobQueueItem, QueueItemType, ScrapeConfig  # noqa: E402
+from job_finder.job_queue.models import JobQueueItem, QueueItemType, ScrapeConfig  # noqa: E402
 
 # Load environment variables
 load_dotenv()

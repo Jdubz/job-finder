@@ -3,13 +3,13 @@
 import pytest
 from unittest.mock import Mock
 
-from job_finder.queue.models import (
+from job_finder.job_queue.models import (
     CompanySubTask,
     JobQueueItem,
     QueueItemType,
     QueueStatus,
 )
-from job_finder.queue.processor import QueueItemProcessor
+from job_finder.job_queue.processor import QueueItemProcessor
 
 
 class TestCompanyPipeline:

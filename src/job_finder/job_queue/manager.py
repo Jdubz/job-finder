@@ -8,7 +8,7 @@ from google.cloud import firestore as gcloud_firestore
 from google.cloud.firestore_v1.base_query import FieldFilter
 
 from job_finder.exceptions import QueueProcessingError
-from job_finder.queue.models import (
+from job_finder.job_queue.models import (
     CompanySubTask,
     JobQueueItem,
     JobSubTask,
@@ -353,7 +353,7 @@ class QueueManager:
             True if a pending SCRAPE exists, False otherwise
         """
         try:
-            from job_finder.queue.models import QueueItemType
+            from job_finder.job_queue.models import QueueItemType
 
             query = (
                 self.db.collection(self.collection_name)

@@ -4,8 +4,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from job_finder.queue.models import JobQueueItem, QueueItemType, QueueStatus, ScrapeConfig
-from job_finder.queue.processor import QueueItemProcessor
+from job_finder.job_queue.models import JobQueueItem, QueueItemType, QueueStatus, ScrapeConfig
+from job_finder.job_queue.processor import QueueItemProcessor
 
 
 @pytest.fixture
@@ -28,7 +28,7 @@ def processor(mock_managers):
     """Create processor with mocked dependencies."""
     # Patch ScrapeRunner to avoid creating real instance
     with patch(
-        "job_finder.queue.processors.base_processor.ScrapeRunner"
+        "job_finder.job_queue.processors.base_processor.ScrapeRunner"
     ) as mock_scrape_runner_class:
         mock_scrape_runner_instance = MagicMock()
         mock_scrape_runner_class.return_value = mock_scrape_runner_instance

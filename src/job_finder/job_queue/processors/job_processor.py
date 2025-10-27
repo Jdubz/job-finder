@@ -18,7 +18,7 @@ from typing import Any, Dict, Optional
 from google.cloud import firestore as gcloud_firestore
 
 from job_finder.exceptions import QueueProcessingError
-from job_finder.queue.models import (
+from job_finder.job_queue.models import (
     CompanyStatus,
     CompanySubTask,
     JobQueueItem,
@@ -1078,7 +1078,7 @@ class JobProcessor(BaseProcessor):
         scrape_config = item.scrape_config
         if not scrape_config:
             # Use defaults
-            from job_finder.queue.models import ScrapeConfig
+            from job_finder.job_queue.models import ScrapeConfig
 
             scrape_config = ScrapeConfig()
 

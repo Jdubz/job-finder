@@ -28,9 +28,9 @@ from typing import Any, Dict, List, Optional, Tuple
 # Add src to path - noqa: E402
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
-from job_finder.queue.manager import QueueManager  # noqa: E402
-from job_finder.queue.models import QueueStatus  # noqa: E402
-from job_finder.queue.scraper_intake import ScraperIntake  # noqa: E402
+from job_finder.job_queue.manager import QueueManager  # noqa: E402
+from job_finder.job_queue.models import QueueStatus  # noqa: E402
+from job_finder.job_queue.scraper_intake import ScraperIntake  # noqa: E402
 from job_finder.storage.firestore_storage import FirestoreJobStorage  # noqa: E402
 from job_finder.utils.url_utils import normalize_url  # noqa: E402
 

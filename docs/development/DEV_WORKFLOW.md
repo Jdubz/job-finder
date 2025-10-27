@@ -24,7 +24,7 @@ This document describes the complete development workflow for the job-finder-wor
 - gcloud CLI (for viewing staging/production logs)
 ```
 
-### Using Dev-Monitor (Recommended)
+### Using App-Monitor (Recommended)
 
 The dev-monitor is the **primary method** for local development. It manages all services including the Python worker via Docker.
 
@@ -36,7 +36,7 @@ The dev-monitor is the **primary method** for local development. It manages all 
 - Frontend development server (React)
 - Backend Firebase Functions (TypeScript)
 
-#### Starting Dev-Monitor
+#### Starting App-Monitor
 
 ```bash
 # Navigate to dev-monitor directory
@@ -54,7 +54,7 @@ make start-backend    # Backend only
 
 #### Accessing Services
 
-- **Dev-Monitor UI**: http://localhost:5174
+- **App-Monitor UI**: http://localhost:5174
 - **Firebase Emulator UI**: http://localhost:4000
 - **Firestore Emulator**: localhost:8080
 - **Frontend**: http://localhost:3000
@@ -393,7 +393,7 @@ tail -f dev-monitor/logs/queue_worker.log | grep -E "(found_pending_items|no_pen
 
 ## Troubleshooting
 
-### Dev-Monitor Won't Start
+### App-Monitor Won't Start
 
 **Symptoms**: `make dev-monitor` fails or services don't start
 
@@ -404,7 +404,7 @@ lsof -i :4000  # Firebase Emulator UI
 lsof -i :8080  # Firestore Emulator
 lsof -i :3000  # Frontend
 lsof -i :5001  # Backend Functions
-lsof -i :5174  # Dev-Monitor UI
+lsof -i :5174  # App-Monitor UI
 
 # Stop conflicting processes
 make stop-all
@@ -497,7 +497,7 @@ gcloud logging read 'logName="projects/static-sites-257923/logs/job-finder" \
 
 ## Best Practices
 
-### 1. Always Use Dev-Monitor for Local Development
+### 1. Always Use App-Monitor for Local Development
 
 ❌ **Don't**: Start worker manually with `python scripts/workers/queue_worker.py`
 ✅ **Do**: Use `make dev-monitor` to start all services together

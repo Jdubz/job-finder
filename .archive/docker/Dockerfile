@@ -19,11 +19,10 @@ FROM python:3.12-slim
 # Set working directory
 WORKDIR /app
 
-# Install runtime dependencies (cron for scheduling, procps for pgrep, curl for healthcheck)
+# Install runtime dependencies (cron for scheduling, procps for pgrep)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     cron \
     procps \
-    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy Python packages from builder

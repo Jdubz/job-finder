@@ -20,8 +20,8 @@ import sys
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from job_finder.queue.manager import QueueManager
-from job_finder.queue.models import JobQueueItem, JobSubTask
+from job_finder.job_queue.manager import QueueManager
+from job_finder.job_queue.models import JobQueueItem, JobSubTask
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)

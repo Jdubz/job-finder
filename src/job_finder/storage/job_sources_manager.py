@@ -7,7 +7,7 @@ from google.cloud import firestore as gcloud_firestore
 from google.cloud.firestore_v1.base_query import FieldFilter
 
 from job_finder.exceptions import StorageError
-from job_finder.queue.models import SourceStatus
+from job_finder.job_queue.models import SourceStatus
 
 from .firestore_client import FirestoreClient
 

@@ -28,15 +28,15 @@ from job_finder.ai import AIJobMatcher
 from job_finder.company_info_fetcher import CompanyInfoFetcher
 from job_finder.exceptions import QueueProcessingError
 from job_finder.profile.schema import Profile
-from job_finder.queue.config_loader import ConfigLoader
-from job_finder.queue.manager import QueueManager
-from job_finder.queue.models import JobQueueItem, QueueItemType, QueueStatus
-from job_finder.queue.processors import (
+from job_finder.job_queue.config_loader import ConfigLoader
+from job_finder.job_queue.manager import QueueManager
+from job_finder.job_queue.models import JobQueueItem, QueueItemType, QueueStatus
+from job_finder.job_queue.processors import (
     CompanyProcessor,
     JobProcessor,
     SourceProcessor,
 )
-from job_finder.queue.scraper_intake import ScraperIntake  # For test compatibility
+from job_finder.job_queue.scraper_intake import ScraperIntake  # For test compatibility
 from job_finder.scrape_runner import ScrapeRunner  # For test compatibility
 from job_finder.storage import FirestoreJobStorage
 from job_finder.storage.companies_manager import CompaniesManager

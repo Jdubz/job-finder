@@ -22,7 +22,7 @@ from typing import Dict, List
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
 from job_finder.queue import QueueManager
-from job_finder.queue.models import QueueStatus
+from job_finder.job_queue.models import QueueStatus
 from job_finder.storage.firestore_client import FirestoreClient
 
 logger = logging.getLogger(__name__)

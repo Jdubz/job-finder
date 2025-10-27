@@ -281,7 +281,7 @@ class TestJobSubmitter:
             source_database: Database to fetch real job URLs from (default: portfolio)
         """
         from job_finder.queue import QueueManager
-        from job_finder.queue.scraper_intake import ScraperIntake
+        from job_finder.job_queue.scraper_intake import ScraperIntake
 
         self.db = FirestoreClient.get_client(database_name)
         self.queue_manager = QueueManager(database_name)

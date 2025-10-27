@@ -51,11 +51,49 @@ else
     echo ""
 fi
 
-# Start queue worker if enabled
-if [ "${ENABLE_QUEUE_MODE}" = "true" ]; then
+# Start Flask worker if enabled (default mode)
+if [ "${ENABLE_FLASK_WORKER:-true}" = "true" ]; then
     echo ""
     echo "========================================="
-    echo "Starting Queue Worker Daemon"
+    echo "Starting Flask Worker (Port 5555)"
+    echo "========================================="
+    echo "Flask worker provides HTTP API for job processing"
+    echo "Health endpoint: http://localhost:5555/health"
+    echo "Status endpoint: http://localhost:5555/status"
+    echo ""
+
+    # Ensure logs directory exists
+    mkdir -p /app/logs
+
+    # Start Flask worker in background
+    /usr/local/bin/python /app/src/job_finder/simple_flask_worker.py >> /app/logs/flask_worker.log 2>&1 &
+    FLASK_WORKER_PID=$!
+
+    # Wait a moment and check if it started
+    sleep 3
+    if ps -p $FLASK_WORKER_PID > /dev/null; then
+        echo "✓ Flask worker started successfully (PID: $FLASK_WORKER_PID)"
+        echo "✓ Health check: curl http://localhost:5555/health"
+    else
+        echo "✗ ERROR: Flask worker failed to start!"
+        exit 1
+    fi
+
+    echo ""
+    if [ "${ENABLE_CRON}" = "true" ]; then
+        echo "Container is running in HYBRID mode:"
+        echo "  1. Cron (every 6h) - Scrapes sources and adds to queue"
+        echo "  2. Flask Worker (port 5555) - HTTP API for job processing"
+    else
+        echo "Container is running in FLASK-ONLY mode:"
+        echo "  - Cron disabled (manual queue submissions only)"
+        echo "  - Flask Worker (port 5555) - HTTP API for job processing"
+    fi
+    echo "========================================="
+elif [ "${ENABLE_QUEUE_MODE}" = "true" ]; then
+    echo ""
+    echo "========================================="
+    echo "Starting Queue Worker Daemon (Legacy)"
     echo "========================================="
     echo "Queue worker will process jobs from Firestore queue"
     echo ""
@@ -106,6 +144,10 @@ echo "Monitor logs:"
 if [ "${ENABLE_CRON}" = "true" ]; then
     echo "  - Cron output: tail -f /var/log/cron.log"
 fi
+if [ "${ENABLE_FLASK_WORKER:-true}" = "true" ]; then
+    echo "  - Flask worker: tail -f /app/logs/flask_worker.log"
+    echo "  - Health check: curl http://localhost:5555/health"
+fi
 if [ "${ENABLE_QUEUE_MODE}" = "true" ]; then
     echo "  - Queue worker: tail -f /app/logs/queue_worker.log"
 fi
@@ -113,7 +155,13 @@ echo "========================================="
 echo ""
 
 # Tail logs (this keeps container running and shows output)
-if [ "${ENABLE_QUEUE_MODE}" = "true" ] && [ "${ENABLE_CRON}" = "true" ]; then
+if [ "${ENABLE_FLASK_WORKER:-true}" = "true" ] && [ "${ENABLE_CRON}" = "true" ]; then
+    # Tail both cron and Flask worker logs
+    exec tail -f /var/log/cron.log /app/logs/flask_worker.log
+elif [ "${ENABLE_FLASK_WORKER:-true}" = "true" ]; then
+    # Tail just Flask worker log
+    exec tail -f /app/logs/flask_worker.log
+elif [ "${ENABLE_QUEUE_MODE}" = "true" ] && [ "${ENABLE_CRON}" = "true" ]; then
     # Tail both cron and queue worker logs
     exec tail -f /var/log/cron.log /app/logs/queue_worker.log
 elif [ "${ENABLE_QUEUE_MODE}" = "true" ]; then

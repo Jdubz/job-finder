@@ -4,16 +4,16 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from job_finder.queue.config_loader import ConfigLoader
-from job_finder.queue.manager import QueueManager
-from job_finder.queue.models import JobQueueItem, QueueItemType, QueueStatus
-from job_finder.queue.scraper_intake import ScraperIntake
+from job_finder.job_queue.config_loader import ConfigLoader
+from job_finder.job_queue.manager import QueueManager
+from job_finder.job_queue.models import JobQueueItem, QueueItemType, QueueStatus
+from job_finder.job_queue.scraper_intake import ScraperIntake
 
 
 @pytest.fixture
 def mock_firestore():
     """Mock Firestore for all components."""
-    with patch("job_finder.queue.manager.FirestoreClient") as mock_client:
+    with patch("job_finder.job_queue.manager.FirestoreClient") as mock_client:
         mock_db = MagicMock()
         mock_client.get_client.return_value = mock_db
         yield mock_db
@@ -28,7 +28,7 @@ def queue_manager(mock_firestore):
 @pytest.fixture
 def config_loader(mock_firestore):
     """Create config loader."""
-    with patch("job_finder.queue.config_loader.FirestoreClient") as mock_client:
+    with patch("job_finder.job_queue.config_loader.FirestoreClient") as mock_client:
         mock_client.get_client.return_value = mock_firestore
         return ConfigLoader(database_name="test-db")
 

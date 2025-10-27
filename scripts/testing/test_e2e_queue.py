@@ -33,9 +33,9 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
 from job_finder.profile.firestore_loader import FirestoreProfileLoader  # noqa: E402
-from job_finder.queue.manager import QueueManager  # noqa: E402
-from job_finder.queue.models import QueueStatus  # noqa: E402
-from job_finder.queue.scraper_intake import ScraperIntake  # noqa: E402
+from job_finder.job_queue.manager import QueueManager  # noqa: E402
+from job_finder.job_queue.models import QueueStatus  # noqa: E402
+from job_finder.job_queue.scraper_intake import ScraperIntake  # noqa: E402
 
 # Configure logging
 logging.basicConfig(
@@ -89,7 +89,7 @@ def test_scraper_intake():
 
     # Verify jobs are in queue by querying directly without ordering
     # (Firestore composite index not required for this)
-    from job_finder.queue.models import JobQueueItem
+    from job_finder.job_queue.models import JobQueueItem
     from job_finder.storage.firestore_client import FirestoreClient
 
     db = FirestoreClient.get_client("portfolio-staging")
@@ -126,8 +126,8 @@ def test_queue_processor(test_items):
 
     from job_finder.ai import AIJobMatcher
     from job_finder.company_info_fetcher import CompanyInfoFetcher
-    from job_finder.queue.config_loader import ConfigLoader
-    from job_finder.queue.processor import QueueItemProcessor
+    from job_finder.job_queue.config_loader import ConfigLoader
+    from job_finder.job_queue.processor import QueueItemProcessor
     from job_finder.storage import FirestoreJobStorage
     from job_finder.storage.companies_manager import CompaniesManager
     from job_finder.storage.firestore_client import FirestoreClient

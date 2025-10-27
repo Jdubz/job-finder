@@ -15,10 +15,10 @@ from job_finder.ai.matcher import AIJobMatcher
 from job_finder.company_info_fetcher import CompanyInfoFetcher
 from job_finder.filters.strike_filter_engine import StrikeFilterEngine
 from job_finder.profile.schema import Profile
-from job_finder.queue.config_loader import ConfigLoader
-from job_finder.queue.manager import QueueManager
-from job_finder.queue.models import JobQueueItem, QueueStatus
-from job_finder.queue.scraper_intake import ScraperIntake
+from job_finder.job_queue.config_loader import ConfigLoader
+from job_finder.job_queue.manager import QueueManager
+from job_finder.job_queue.models import JobQueueItem, QueueStatus
+from job_finder.job_queue.scraper_intake import ScraperIntake
 from job_finder.scrape_runner import ScrapeRunner
 from job_finder.storage.companies_manager import CompaniesManager
 from job_finder.storage.firestore_storage import FirestoreJobStorage
