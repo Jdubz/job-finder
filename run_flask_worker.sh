@@ -1,7 +1,5 @@
 #!/bin/bash
-"""
-Start the Flask-based job queue worker.
-"""
+# Start the Flask-based job queue worker
 set -e
 
 echo "🚀 Starting Flask-based Job Queue Worker"

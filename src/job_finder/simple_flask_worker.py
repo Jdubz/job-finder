@@ -29,6 +29,9 @@ worker_state = {
     "start_time": None,
 }
 
+# Global worker thread reference
+worker_thread: Optional[threading.Thread] = None
+
 # Flask app
 app = Flask(__name__)
 
@@ -171,6 +174,8 @@ def config_endpoint():
 
 def main():
     """Main entry point."""
+    global worker_thread
+
     # Start worker automatically
     worker_state["start_time"] = time.time()
     worker_thread = threading.Thread(target=mock_worker_loop, daemon=True)

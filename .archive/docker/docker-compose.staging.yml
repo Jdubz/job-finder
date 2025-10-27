@@ -1,0 +1,74 @@
+version: '3.8'
+
+services:
+  job-finder:
+    image: ghcr.io/jdubz/job-finder-worker:staging
+    container_name: job-finder-staging
+    restart: unless-stopped
+
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/credentials/serviceAccountKey.json
+      - ENVIRONMENT=staging
+      - ENABLE_QUEUE_MODE=true
+      - ENABLE_CRON=false
+      - ENABLE_CLOUD_LOGGING=true
+      - PROFILE_DATABASE_NAME=portfolio-staging
+      - STORAGE_DATABASE_NAME=portfolio-staging
+      - CONFIG_PATH=/app/config/config.yaml
+      - LOG_FILE=/app/logs/scheduler.log
+      - TZ=America/Los_Angeles
+
+    volumes:
+      - /srv/dev-disk-by-uuid-45e47416-96ad-41be-9fc0-582e15241cbd/storage/jobscraper/staging/credentials:/app/credentials:ro
+      - /srv/dev-disk-by-uuid-45e47416-96ad-41be-9fc0-582e15241cbd/storage/jobscraper/staging/config:/app/config:ro
+      - /srv/dev-disk-by-uuid-45e47416-96ad-41be-9fc0-582e15241cbd/storage/jobscraper/staging/logs:/app/logs
+      - /srv/dev-disk-by-uuid-45e47416-96ad-41be-9fc0-582e15241cbd/storage/jobscraper/staging/data:/app/data
+
+    labels:
+      # Watchtower auto-update labels
+      - "com.centurylinklabs.watchtower.enable=true"
+      - "environment=staging"
+
+    networks:
+      - job-finder-staging-network
+
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+    healthcheck:
+      test: ["CMD", "python", "-c", "import sys; sys.exit(0)"]
+      interval: 5m
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # Watchtower for auto-updates
+  watchtower:
+    image: containrrr/watchtower:latest
+    container_name: watchtower-job-finder-staging
+    restart: unless-stopped
+
+    environment:
+      - WATCHTOWER_CLEANUP=true
+      - WATCHTOWER_POLL_INTERVAL=180  # Check every 3 minutes (more aggressive for staging)
+      - WATCHTOWER_LABEL_ENABLE=true  # Only update containers with watchtower label
+      - WATCHTOWER_INCLUDE_RESTARTING=true
+      - TZ=America/Los_Angeles
+
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+
+    networks:
+      - job-finder-staging-network
+
+networks:
+  job-finder-staging-network:
+    driver: bridge

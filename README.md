@@ -93,9 +93,65 @@ A Python-based web scraper that finds online job postings relevant to your exper
 
 ## Usage
 
-### Basic Usage
+### Quick Start (Flask Worker)
 
-Run the job finder with AI matching:
+The worker runs as a Flask application that processes queue items in the background.
+
+**Development Mode:**
+```bash
+# Start the worker
+./run_dev.sh
+
+# Or using make
+make dev
+```
+
+The worker will start on `http://127.0.0.1:5555` with endpoints:
+- `GET /health` - Health check
+- `GET /status` - Detailed status
+- `POST /shutdown` - Graceful shutdown
+
+**Production Mode:**
+```bash
+# Set up environment
+export GOOGLE_APPLICATION_CREDENTIALS=/path/to/firebase-key.json
+
+# Start the worker
+./run_prod.sh
+
+# Or using make
+make prod
+```
+
+### Worker Control
+
+**Check Health:**
+```bash
+curl http://localhost:5555/health
+# Or: make health
+```
+
+**Get Status:**
+```bash
+curl http://localhost:5555/status
+# Or: make status
+```
+
+**Graceful Shutdown:**
+```bash
+curl -X POST http://localhost:5555/shutdown
+# Or: make shutdown
+```
+
+**View Logs:**
+```bash
+tail -f logs/worker.log
+# Or: make logs
+```
+
+### Manual Job Search (One-time run)
+
+Run the job search once without starting the worker:
 ```bash
 python -m job_finder.main
 ```

@@ -66,7 +66,7 @@ if [ "${ENABLE_FLASK_WORKER:-true}" = "true" ]; then
     mkdir -p /app/logs
 
     # Start Flask worker in background
-    /usr/local/bin/python /app/simple_flask_worker.py >> /app/logs/flask_worker.log 2>&1 &
+    /usr/local/bin/python /app/src/job_finder/simple_flask_worker.py >> /app/logs/flask_worker.log 2>&1 &
     FLASK_WORKER_PID=$!
 
     # Wait a moment and check if it started

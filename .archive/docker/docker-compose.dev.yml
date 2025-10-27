@@ -95,7 +95,7 @@ services:
       echo 'Source code mounted from local directory - edit files to reload' &&
       echo 'Starting Flask worker - logs will appear in /app/logs/flask_worker.log' &&
       echo '' &&
-      python -m job_finder.simple_flask_worker || echo 'Flask worker failed - container staying alive for debugging' &&
+      python simple_flask_worker.py || echo 'Flask worker failed - container staying alive for debugging' &&
       echo '' &&
       echo '=== Flask worker stopped. Container staying running for debugging. ===' &&
       echo 'Commands:' &&

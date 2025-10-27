@@ -185,9 +185,10 @@ def setup_logging(
     # Default to centralized log directory
     if log_file is None and "LOG_FILE" not in os.environ:
         # Calculate path to service logs directory
-        # worker is at: job-finder-app-manager/job-finder-worker/src/job_finder/
-        # logs are at: job-finder-app-manager/job-finder-worker/logs/
-        centralized_logs = Path(__file__).parent.parent.parent.parent / "logs" / "worker.log"
+        # File is at: .../job-finder-worker/src/job_finder/logging_config.py
+        # Logs are at: .../job-finder-worker/logs/
+        # Traversal: logging_config.py -> job_finder/ (P1) -> src/ (P2) -> job-finder-worker/ (P3) -> logs/
+        centralized_logs = Path(__file__).parent.parent.parent / "logs" / "worker.log"
         log_file = str(centralized_logs)
     else:
         log_file = os.getenv("LOG_FILE", log_file)

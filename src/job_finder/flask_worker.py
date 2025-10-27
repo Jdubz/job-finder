@@ -39,7 +39,20 @@ load_dotenv()
 
 # Configure logging
 log_file = os.getenv("QUEUE_WORKER_LOG_FILE", "/app/logs/queue_worker.log")
-setup_logging(log_file=log_file)
+
+# Ensure log directory exists and is writable
+log_dir = os.path.dirname(log_file)
+try:
+    if log_dir and not os.path.exists(log_dir):
+        os.makedirs(log_dir, exist_ok=True)
+    if log_dir and not os.access(log_dir, os.W_OK):
+        raise PermissionError(f"Log directory '{log_dir}' is not writable.")
+    setup_logging(log_file=log_file)
+except Exception as e:
+    print(f"Failed to set up file logging at '{log_file}': {e}", file=sys.stderr)
+    print("Falling back to console logging.", file=sys.stderr)
+    setup_logging()  # Fallback to default (likely console) logging
+
 slogger = get_structured_logger(__name__)
 
 # Global state
