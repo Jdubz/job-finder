@@ -38,7 +38,7 @@ app = Flask(__name__)
 
 def mock_worker_loop():
     """Mock worker loop that simulates job processing."""
-    global worker_state
+    global worker_state  # noqa: F824
 
     print("🔄 Mock worker started")
     worker_state["running"] = True

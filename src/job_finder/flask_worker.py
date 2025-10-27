@@ -130,7 +130,7 @@ def initialize_components(config: Dict[str, Any]) -> tuple:
 
 def worker_loop():
     """Main worker loop - runs in background thread."""
-    global worker_state, queue_manager, processor
+    global worker_state, queue_manager, processor  # noqa: F824
 
     slogger.worker_status("started")
     worker_state["running"] = True
