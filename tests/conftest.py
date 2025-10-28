@@ -1,6 +1,5 @@
 """Shared pytest fixtures for all tests."""
 
-import os
 from datetime import datetime, timezone
 from unittest.mock import MagicMock, Mock
 
