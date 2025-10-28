@@ -13,6 +13,13 @@ from typing import Any, Dict, Optional, Tuple
 # Global configuration cache
 _logging_config: Optional[Dict] = None
 
+# Error message for missing ENVIRONMENT variable
+ENVIRONMENT_REQUIRED_ERROR = (
+    "ENVIRONMENT variable is required but not set. "
+    "Must be set to 'staging', 'production', or 'development'. "
+    "This prevents accidental production deployments."
+)
+
 
 def _load_logging_config() -> Dict:
     """
@@ -192,7 +199,11 @@ def setup_logging(
         log_file = str(centralized_logs)
     else:
         log_file = os.getenv("LOG_FILE", log_file)
-    environment = os.getenv("ENVIRONMENT", "development")
+
+    # REQUIRED: Environment must be explicitly set (staging, production, development)
+    environment = os.getenv("ENVIRONMENT")
+    if not environment:
+        raise ValueError(ENVIRONMENT_REQUIRED_ERROR)
 
     # Create logs directory if it doesn't exist
     log_path = Path(log_file)
@@ -310,9 +321,14 @@ class StructuredLogger:
 
         Args:
             logger: Base logger instance
+
+        Raises:
+            ValueError: If ENVIRONMENT variable is not set
         """
         self.logger = logger
-        self.environment = os.getenv("ENVIRONMENT", "development")
+        self.environment = os.getenv("ENVIRONMENT")
+        if not self.environment:
+            raise ValueError(ENVIRONMENT_REQUIRED_ERROR)
 
     def _log(self, level: str, structured_fields: Dict[str, Any]) -> None:
         """
