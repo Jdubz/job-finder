@@ -4,7 +4,7 @@
 
 ```yaml
 Title: WORKER-WORKFLOW-1 — Add Test Requirements to Deployments
-Labels: [priority-p0, repository-worker, type-bug, status-todo, workflow]
+Labels: [priority-p0, repository-worker, type-enhancement, status-todo, workflow]
 Assignee: TBD
 Priority: P0-Critical
 Estimated Effort: 1-2 hours

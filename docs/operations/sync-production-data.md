@@ -22,7 +22,7 @@ This runbook consolidates the old `SYNC_PRODUCTION_DATA.md` workflow and reflect
 - `gcloud` CLI authenticated against `static-sites-257923`.
 - Access to generate Firebase service account keys.
 - Local env already has the Firestore emulator installed (`firebase-tools`).
-- Checked out repositories live under `/home/jdubz/Development/job-finder-docs/` style workspace (`job-finder-BE` and `job-finder-worker` siblings).
+- Repositories should be checked out as sibling directories under a common workspace folder (e.g., both `job-finder-BE` and `job-finder-worker` are siblings within the same workspace directory).
 
 ---
 
@@ -36,7 +36,7 @@ This runbook consolidates the old `SYNC_PRODUCTION_DATA.md` workflow and reflect
 
 2. **Run the sync**
    ```bash
-   cd /home/jdubz/Development/job-finder-app-manager/job-finder-BE
+   cd path/to/job-finder-BE   # Replace with the path to your local job-finder-BE repo, e.g. ../job-finder-BE
    FIRESTORE_EMULATOR_HOST=localhost:8080 node scripts/sync-content-from-production.js
    ```
 
@@ -65,7 +65,7 @@ This runbook consolidates the old `SYNC_PRODUCTION_DATA.md` workflow and reflect
 
 3. **Import into emulator**
    ```bash
-   cd /home/jdubz/Development/job-finder-app-manager/job-finder-BE
+   cd path/to/job-finder-BE   # Replace with the path to your local job-finder-BE repo, e.g. ../job-finder-BE
    pkill -f "firebase emulators:start" || true
 
    firebase emulators:start \
@@ -80,7 +80,7 @@ This runbook consolidates the old `SYNC_PRODUCTION_DATA.md` workflow and reflect
 If you have the Cloud SDK installed:
 
 ```bash
-cd /home/jdubz/Development/job-finder-app-manager/job-finder-BE
+cd path/to/job-finder-BE   # Replace with the path to your local job-finder-BE repo, e.g. ../job-finder-BE
 ./scripts/export-production-content.sh
 ```
 
