@@ -1,146 +1,455 @@
 # WORKER-SEC-1 — Comprehensive Security Audit
 
-- **Status**: To Do
-- **Owner**: Worker A
-- **Priority**: P1 (High Impact)
-- **Labels**: priority-p1, repository-worker, type-security, critical
-- **Estimated Effort**: 2-3 days
-- **Dependencies**: None
+## Issue Metadata
 
-## What This Issue Covers
+```yaml
+Title: WORKER-SEC-1 — Comprehensive Security Audit
+Labels:
+  [priority-p1, repository-worker, type-security, status-todo, security-audit]
+Assignee: TBD
+Priority: P1-High
+Estimated Effort: 2-3 days
+Repository: job-finder-worker
+GitHub Issue: #67
+```
 
-Conduct a comprehensive security audit of the job-finder-worker to identify and mitigate potential security vulnerabilities, ensure data protection, and establish security best practices.
+## Summary
 
-## Context
+**P1 HIGH IMPACT**: Conduct a comprehensive security audit of the job-finder-worker to identify and mitigate potential security vulnerabilities. Critical for ensuring the application is secure against common attack vectors and follows security best practices.
 
-The job-finder-worker handles sensitive operations:
-- Processes user profile data (experience, contact info)
-- Scrapes external websites (potential DoS risks)
-- Makes API calls to AI providers (cost and data exposure)
-- Stores job data in Firestore (privacy concerns)
-- Runs automated processes (potential for abuse)
+## Background & Context
 
-Security gaps could lead to:
-- Data breaches of user information
-- Financial losses from AI API abuse
-- Account suspensions from aggressive scraping
-- Legal issues from improper data handling
+### Project Overview
 
-## Tasks
+**Application Name**: Job Finder Worker  
+**Technology Stack**: Python 3.9+, Docker, PostgreSQL/Firebase, External APIs  
+**Architecture**: Containerized Python application with external integrations
 
-### 1. Authentication and Authorization Audit
-- [ ] Review all external API integrations (AI providers, web scraping)
-- [ ] Verify API key storage and rotation procedures
-- [ ] Check for hardcoded credentials or secrets
-- [ ] Audit Firestore access controls and permissions
-- [ ] Review environment variable handling
+### This Repository's Role
 
-### 2. Data Protection Assessment
-- [ ] Identify all sensitive data flows (user profiles, job data, API responses)
-- [ ] Check data encryption in transit and at rest
-- [ ] Verify PII (Personally Identifiable Information) handling
-- [ ] Audit data retention policies
-- [ ] Check for proper data sanitization
+The job-finder-worker repository contains the Python application that processes job queues, performs AI-powered job matching, scrapes job postings, and integrates with job-finder-FE frontend and job-finder-BE backend services.
 
-### 3. Web Scraping Security Review
-- [ ] Audit scraping rate limiting and delays
-- [ ] Check for bot detection evasion techniques
-- [ ] Review robots.txt compliance
-- [ ] Verify proper User-Agent strings
-- [ ] Check for IP rotation or proxy usage
+### Current State
 
-### 4. API Security Analysis
-- [ ] Review AI provider API usage patterns
-- [ ] Check for proper error handling (no credential leaks)
-- [ ] Verify request/response logging doesn't expose secrets
-- [ ] Audit API quota management and cost controls
+The security posture currently:
 
-### 5. Infrastructure Security
-- [ ] Review Docker container security
-- [ ] Check dependency vulnerabilities
-- [ ] Verify proper secret management
-- [ ] Audit logging and monitoring for security events
+- ❌ **No comprehensive security audit** has been performed
+- ❌ **Unknown vulnerability status** across codebase
+- ❌ **No security testing** in CI/CD pipeline
+- ❌ **No security documentation** or guidelines
+- ❌ **Dependency vulnerabilities** may exist
+- ❌ **Input validation** may be insufficient
+- ❌ **Authentication/authorization** not audited
 
-### 6. Compliance and Legal Review
-- [ ] Check GDPR compliance for EU user data
-- [ ] Review Terms of Service compliance for scraped sites
-- [ ] Verify data collection transparency
-- [ ] Check for proper privacy policy implementation
+### Desired State
+
+After completion:
+
+- Comprehensive security audit completed and documented
+- All identified vulnerabilities mitigated
+- Security best practices documented and enforced
+- Automated security scanning in CI/CD
+- Regular security review process established
+- Security testing integrated into development workflow
+
+## Technical Specifications
+
+### Affected Files
+
+```yaml
+CREATE:
+  - docs/security/SECURITY_AUDIT_REPORT.md - Comprehensive audit findings
+  - docs/security/SECURITY_GUIDELINES.md - Security best practices
+  - docs/security/VULNERABILITY_REGISTER.md - Tracked vulnerabilities
+  - tests/security/test_security_scanning.py - Security test suite
+  - .github/workflows/security.yml - Automated security scanning
+  - scripts/security/audit_dependencies.py - Dependency audit script
+  - scripts/security/scan_code.py - Code security scanning
+
+MODIFY:
+  - src/job_finder/ - Apply security fixes to identified issues
+  - requirements.txt - Update dependencies with security patches
+  - Dockerfile - Apply security hardening
+  - .github/workflows/ci.yml - Add security scanning to CI
+```
+
+### Technology Requirements
+
+**Languages**: Python 3.9+, YAML, Shell Script  
+**Frameworks**: Security scanning tools, pytest  
+**Tools**: bandit, safety, semgrep, docker security scanning  
+**Dependencies**: Security scanning tools and libraries
+
+### Code Standards
+
+**Naming Conventions**: Follow security documentation patterns  
+**File Organization**: Group security-related files in docs/security/  
+**Import Style**: Use existing Python import patterns
+
+## Implementation Details
+
+### Step-by-Step Tasks
+
+1. **Automated Security Scanning**
+   - Run bandit for Python security issues
+   - Use safety to check dependency vulnerabilities
+   - Run semgrep for advanced security patterns
+   - Scan Docker images for vulnerabilities
+   - Check for secrets and credentials in code
+
+2. **Manual Security Review**
+   - Review authentication and authorization mechanisms
+   - Audit input validation and sanitization
+   - Check for SQL injection vulnerabilities
+   - Review file handling and path traversal issues
+   - Audit external API integrations for security
+
+3. **Dependency Security Audit**
+   - Scan all Python dependencies for known vulnerabilities
+   - Check for outdated packages with security issues
+   - Verify package integrity and authenticity
+   - Document dependency security status
+   - Plan dependency updates for security patches
+
+4. **Code Security Analysis**
+   - Review error handling for information disclosure
+   - Check logging for sensitive data exposure
+   - Audit configuration management for security
+   - Review data encryption and storage practices
+   - Check for hardcoded secrets or credentials
+
+5. **Infrastructure Security Review**
+   - Audit Docker container security configuration
+   - Review network security and firewall rules
+   - Check database connection security
+   - Audit environment variable handling
+   - Review deployment security practices
+
+6. **Security Documentation**
+   - Document all identified vulnerabilities
+   - Create security best practices guide
+   - Establish vulnerability reporting process
+   - Create security testing guidelines
+   - Document security incident response procedures
+
+### Architecture Decisions
+
+**Why this approach:**
+
+- Comprehensive security coverage across all layers
+- Automated scanning for consistent security monitoring
+- Manual review catches issues automated tools miss
+- Documentation enables ongoing security awareness
+
+**Alternatives considered:**
+
+- Automated scanning only: Misses complex security issues
+- Manual review only: Inconsistent and time-consuming
+- External security audit: Expensive and not ongoing
+
+### Dependencies & Integration
+
+**Internal Dependencies:**
+
+- Depends on: Existing codebase and CI/CD pipeline
+- Consumed by: Development workflow and deployment process
+
+**External Dependencies:**
+
+- APIs: Security scanning services, vulnerability databases
+- Services: CI/CD systems, security monitoring tools
+
+## Testing Requirements
+
+### Test Coverage Required
+
+**Security Tests:**
+
+```python
+# Example security test structure
+def test_input_validation_security():
+    """Test input validation prevents injection attacks"""
+    malicious_input = "'; DROP TABLE users; --"
+    result = validate_user_input(malicious_input)
+    assert result.is_safe == True
+    assert "DROP TABLE" not in result.sanitized_input
+
+def test_authentication_security():
+    """Test authentication mechanisms are secure"""
+    # Test password hashing
+    # Test session management
+    # Test authorization checks
+```
+
+**Integration Tests:**
+
+- Security scanning integration tests
+- Vulnerability detection tests
+- Security configuration tests
+
+**Manual Testing Checklist**
+
+- [ ] All security scans pass without critical issues
+- [ ] No hardcoded secrets or credentials found
+- [ ] Input validation prevents injection attacks
+- [ ] Authentication mechanisms are secure
+- [ ] Dependencies are free of known vulnerabilities
+- [ ] Docker images pass security scanning
+- [ ] Error messages don't leak sensitive information
+- [ ] Logging doesn't expose sensitive data
+- [ ] Configuration is secure and properly managed
+- [ ] Security documentation is comprehensive
 
 ## Acceptance Criteria
 
-- [ ] Comprehensive security audit report created
-- [ ] All high-risk vulnerabilities documented and prioritized
-- [ ] Security hardening recommendations implemented
-- [ ] Updated security documentation for maintainers
-- [ ] Security testing integrated into CI/CD pipeline
-- [ ] Compliance checklist created and verified
+- [ ] Security audit covers all code paths and dependencies
+- [ ] Vulnerabilities are identified and documented
+- [ ] Security fixes are implemented for identified issues
+- [ ] Security best practices are documented and enforced
+- [ ] Dependencies are audited for known vulnerabilities
+- [ ] Input validation and sanitization are reviewed
+- [ ] Authentication and authorization mechanisms are audited
+- [ ] Security documentation is updated with findings
+- [ ] Security testing is integrated into CI/CD pipeline
+- [ ] Regular security reviews are scheduled
 
-## Security Audit Checklist
+## Environment Setup
 
-### Authentication & Access Control
-- [ ] API keys properly stored and rotated
-- [ ] No hardcoded credentials in source code
-- [ ] Proper environment variable validation
-- [ ] Firestore security rules reviewed and tested
-
-### Data Protection
-- [ ] User PII properly identified and protected
-- [ ] Data encryption implemented where needed
-- [ ] Secure data transmission verified
-- [ ] Data retention policies documented
-
-### Web Scraping Security
-- [ ] Rate limiting properly implemented
-- [ ] Respect for robots.txt verified
-- [ ] Appropriate User-Agent strings used
-- [ ] Anti-bot detection measures in place
-
-### API Security
-- [ ] No API credentials in logs or error messages
-- [ ] Proper error handling prevents information leaks
-- [ ] API quotas and costs properly managed
-- [ ] Request/response sizes limited appropriately
-
-### Infrastructure Security
-- [ ] Dependencies scanned for vulnerabilities
-- [ ] Container images from trusted sources
-- [ ] Secrets properly managed in production
-- [ ] Security monitoring and alerting configured
-
-## Test Commands
+### Prerequisites
 
 ```bash
-# Security scanning
-bandit -r src/ -f json -o security-report.json
-safety check --json --output security-vulnerabilities.json
-
-# Dependency audit
-pip-audit --format=json > dependency-audit.json
-
-# Container security
-docker scan job-finder-worker:latest
-
-# Secrets detection
-detect-secrets scan --all-files
+# Required tools and versions
+Python: 3.9+
+bandit: latest
+safety: latest
+semgrep: latest
+docker: latest
 ```
 
-## Useful Files
+### Repository Setup
 
-- `requirements.txt` - Production dependencies
-- `Dockerfile` - Container configuration
-- `.env.example` - Environment variable template
-- `config/config.yaml` - Configuration settings
-- `src/job_finder/` - Source code for security review
+```bash
+# Clone worker repository
+git clone https://github.com/Jdubz/job-finder-worker.git
+cd job-finder-worker
 
-## Dependencies
+# Install security scanning tools
+pip install bandit safety semgrep
 
-- None (can start immediately)
+# Run initial security scan
+bandit -r src/
+safety check
+semgrep --config=auto src/
+```
 
-## Notes
+### Running Locally
 
-- Focus on identifying and documenting risks first, then prioritize fixes
-- Document any intentional security trade-offs with clear rationale
-- Ensure all security fixes are tested thoroughly
-- Consider creating automated security tests for CI/CD
-- Document security procedures for future maintainers
+```bash
+# Run comprehensive security scan
+./scripts/security/run_security_audit.sh
+
+# Run specific security checks
+bandit -r src/ -f json -o security_report.json
+safety check --json --output safety_report.json
+semgrep --config=auto src/ --json --output semgrep_report.json
+```
+
+## Code Examples & Patterns
+
+### Example Implementation
+
+**Security scanning script:**
+
+```python
+#!/usr/bin/env python3
+"""Comprehensive security audit script"""
+
+import subprocess
+import json
+import sys
+from pathlib import Path
+
+def run_bandit_scan():
+    """Run bandit security scan"""
+    result = subprocess.run([
+        'bandit', '-r', 'src/', '-f', 'json'
+    ], capture_output=True, text=True)
+
+    if result.returncode != 0:
+        print("Bandit found security issues:")
+        print(result.stdout)
+        return False
+    return True
+
+def run_safety_check():
+    """Run safety dependency check"""
+    result = subprocess.run([
+        'safety', 'check', '--json'
+    ], capture_output=True, text=True)
+
+    if result.returncode != 0:
+        print("Safety found vulnerable dependencies:")
+        print(result.stdout)
+        return False
+    return True
+
+def run_semgrep_scan():
+    """Run semgrep security scan"""
+    result = subprocess.run([
+        'semgrep', '--config=auto', 'src/', '--json'
+    ], capture_output=True, text=True)
+
+    if result.returncode != 0:
+        print("Semgrep found security issues:")
+        print(result.stdout)
+        return False
+    return True
+
+if __name__ == "__main__":
+    print("Running comprehensive security audit...")
+
+    bandit_ok = run_bandit_scan()
+    safety_ok = run_safety_check()
+    semgrep_ok = run_semgrep_scan()
+
+    if not all([bandit_ok, safety_ok, semgrep_ok]):
+        print("Security audit failed - issues found")
+        sys.exit(1)
+
+    print("Security audit passed - no critical issues found")
+```
+
+## Security & Performance Considerations
+
+### Security
+
+- [ ] Security scans don't expose sensitive information
+- [ ] Audit reports are stored securely
+- [ ] Vulnerability information is handled confidentially
+- [ ] Security testing doesn't impact production
+
+### Performance
+
+- [ ] Security scans complete within reasonable time
+- [ ] CI/CD pipeline isn't significantly slowed
+- [ ] Security monitoring has minimal overhead
+- [ ] Automated scans run efficiently
+
+### Error Handling
+
+```python
+# Example security error handling
+def handle_security_scan_error(error):
+    """Handle security scan errors appropriately"""
+    logger.error(f"Security scan failed: {error}")
+    # Don't expose sensitive error details
+    # Log securely for investigation
+    # Alert security team if critical
+```
+
+## Documentation Requirements
+
+### Code Documentation
+
+- [ ] Security functions have comprehensive docstrings
+- [ ] Security test cases are documented
+- [ ] Vulnerability reports are detailed
+
+### README Updates
+
+Update repository README.md with:
+
+- [ ] Security audit procedures
+- [ ] Security scanning instructions
+- [ ] Vulnerability reporting process
+- [ ] Security best practices guide
+
+## Commit Message Requirements
+
+All commits for this issue must use **semantic commit structure**:
+
+```
+security: implement comprehensive security audit
+
+Add automated security scanning with bandit, safety, and semgrep.
+Implement security testing in CI/CD pipeline. Document security
+best practices and vulnerability management procedures.
+
+Closes #67
+```
+
+### Commit Types
+
+- `security:` - Security improvements and audits
+
+## PR Checklist
+
+When submitting the PR for this issue:
+
+- [ ] PR title matches issue title
+- [ ] PR description references issue: `Closes #67`
+- [ ] All acceptance criteria met
+- [ ] All security scans pass
+- [ ] No critical vulnerabilities found
+- [ ] Security documentation is comprehensive
+- [ ] Self-review completed
+
+## Timeline & Milestones
+
+**Estimated Effort**: 2-3 days  
+**Target Completion**: This week (critical for security)  
+**Dependencies**: None  
+**Blocks**: Secure deployment and ongoing security monitoring
+
+## Success Metrics
+
+How we'll measure success:
+
+- **Security**: No critical vulnerabilities found
+- **Coverage**: All code paths and dependencies audited
+- **Automation**: Security scanning integrated into CI/CD
+- **Documentation**: Comprehensive security guidelines established
+
+## Rollback Plan
+
+If this change causes issues:
+
+1. **Immediate rollback**:
+
+   ```bash
+   # Revert security changes if causing CI failures
+   git revert [commit-hash]
+   ```
+
+2. **Decision criteria**: If security scans cause false positives or CI failures
+
+## Questions & Clarifications
+
+**If you need clarification during implementation:**
+
+1. **Add a comment** to this issue with what's unclear
+2. **Tag the PM** for guidance
+3. **Don't assume** - always ask if requirements are ambiguous
+
+## Issue Lifecycle
+
+```
+TODO → IN PROGRESS → REVIEW → DONE
+```
+
+**Update this issue**:
+
+- When starting work: Add `status-in-progress` label
+- When PR is ready: Add `status-review` label and PR link
+- When merged: Add `status-done` label and close issue
+
+**PR must reference this issue**:
+
+- Use `Closes #67` in PR description
+
+---
+
+**Created**: 2025-10-21
+**Created By**: PM
+**Priority Justification**: Critical for security - prevents vulnerabilities and ensures secure deployment
+**Last Updated**: 2025-10-21

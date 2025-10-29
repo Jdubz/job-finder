@@ -24,6 +24,15 @@ New to Job Finder? Start here:
 - **[Development Workflow](development.md)** - Local development, testing, and code quality
 - **[Next Steps](next-steps.md)** - Roadmap, technical debt, and planned features
 
+### Operations Runbooks
+- **[Duplicate Prevention](operations/duplicate-prevention.md)** - Mitigation steps for duplicate content processing
+- **[Sync Production Data](operations/sync-production-data.md)** - Refresh local emulator with production-grade content items
+
+### Observability
+- **[Structured Logging](observability/structured-logging.md)** - Worker JSON formatter, sampling rules, and troubleshooting
+- **[Logging Overview](observability/logging.md)** - Legacy logging practices (update in progress)
+- Shared architecture references are mirrored from `docs/shared/job-finder-docs/docs/architecture/structured-logging-overview.md`.
+
 ## Specialized Guides
 
 ### Integration Guides
@@ -97,6 +106,14 @@ docs/
 │   ├── environments.md        # Multi-environment configuration
 │   ├── local-testing.md       # Docker local testing
 │   └── cloud-logging.md       # Cloud logging setup
+│
+├── observability/             # Logging, metrics, and monitoring guides
+│   ├── logging.md
+│   └── structured-logging.md
+│
+├── operations/                # Operations runbooks and on-call procedures
+│   ├── duplicate-prevention.md
+│   └── sync-production-data.md
 │
 ├── integrations/              # Integration guides
 │   └── portfolio.md           # job-finder-FE project integration

@@ -1,0 +1,4 @@
+[submodule "docs/shared/job-finder-docs"]
+	path = docs/shared/job-finder-docs
+	url = https://github.com/Jdubz/job-finder-docs
+	branch = main
