@@ -4,251 +4,397 @@
 
 ```yaml
 Title: WORKER-WORKFLOW-1 — Add Test Requirements to Deployments
-Labels: [priority-p0, repository-worker, type-bugfix, status-todo, ci-cd, safety]
+Labels: [priority-p0, repository-worker, type-bug, status-todo, workflow]
 Assignee: TBD
 Priority: P0-Critical
-Estimated Effort: 30 minutes
+Estimated Effort: 1-2 hours
 Repository: job-finder-worker
-GitHub Issue: https://github.com/Jdubz/job-finder-worker/issues/70
+GitHub Issue: #70
 ```
 
 ## Summary
 
-**CRITICAL SAFETY ISSUE**: Add test job as dependency to Docker deployment workflows to prevent deploying broken code to staging or production. Currently tests run in parallel with deployments, allowing failed code to be deployed, which creates a critical risk of production outages.
+**P0 CRITICAL**: Add comprehensive test requirements to deployment workflows to ensure code quality and prevent broken deployments. Currently deployments can proceed without proper testing validation.
 
 ## Background & Context
 
 ### Project Overview
-**Application Name**: Job Finder Application  
-**Technology Stack**: Python, Docker, GitHub Actions, PostgreSQL/Firebase  
-**Architecture**: Containerized Python worker with automated CI/CD pipelines
+
+**Application Name**: Job Finder Worker  
+**Technology Stack**: Python 3.9+, Docker, CI/CD, pytest  
+**Architecture**: Containerized Python application with automated deployment
 
 ### This Repository's Role
-The job-finder-worker repository contains the Python application that processes job queues, performs AI-powered job matching, and integrates with job-finder-FE frontend and job-finder-BE backend services.
+
+The job-finder-worker repository contains the Python application that processes job queues, performs AI-powered job matching, scrapes job postings, and integrates with job-finder-FE frontend and job-finder-BE backend services.
 
 ### Current State
-The deployment workflows currently:
-- ✅ **Run tests** in parallel with Docker build (`test` job)
-- ✅ **Build Docker image** in parallel with tests (`build` job)
-- ✅ **Deploy to staging/production** after successful build
-- ❌ **No dependency** between test job and deployment job
-- ❌ **Deployments can succeed** even if tests fail
+
+The deployment workflow currently:
+
+- ❌ **No test requirements** in deployment process
+- ❌ **Deployments can proceed** without passing tests
+- ❌ **No test validation** before deployment
+- ❌ **No test coverage requirements** for deployments
+- ❌ **Manual testing** not enforced in workflow
+- ❌ **No test failure blocking** for deployments
 
 ### Desired State
+
 After completion:
-- Test job runs before deployment job
-- Deployment only proceeds if tests pass
-- Same safety guarantees as other repositories
-- Broken code cannot reach production
+
+- All deployments require passing tests
+- Test coverage thresholds enforced
+- Test failures block deployment
+- Automated test validation in CI/CD
+- Clear test requirements documented
+- Test quality gates in deployment pipeline
 
 ## Technical Specifications
 
 ### Affected Files
-```yaml
-MODIFY:
-- .github/workflows/docker-build-push-staging.yml - Add test dependency
-- .github/workflows/docker-build-push.yml - Add test dependency
-- .github/workflows/README.md - Update workflow documentation
 
+```yaml
 CREATE:
-- scripts/workflow/test-dependency.sh - Test completion verification
+  - .github/workflows/deploy-requirements.yml - Test requirements workflow
+  - docs/deployment/TEST_REQUIREMENTS.md - Test requirements documentation
+  - scripts/validate_tests.py - Test validation script
+
+MODIFY:
+  - .github/workflows/ci.yml - Add test requirements to CI
+  - .github/workflows/docker-build.yml - Add test validation to Docker builds
+  - .github/workflows/deploy-staging.yml - Add test requirements to staging
+  - .github/workflows/deploy-production.yml - Add test requirements to production
+  - pyproject.toml - Add test requirements configuration
 ```
 
 ### Technology Requirements
-**Languages**: YAML, Shell Script  
-**Frameworks**: GitHub Actions, Docker  
-**Tools**: Python 3.9+, pytest  
-**Dependencies**: Existing test infrastructure
+
+**Languages**: Python 3.9+, YAML, Shell Script  
+**Frameworks**: GitHub Actions, pytest, coverage.py  
+**Tools**: Python testing tools, CI/CD integration  
+**Dependencies**: Existing Python dependencies
 
 ### Code Standards
+
 **Naming Conventions**: Follow existing workflow naming patterns  
-**File Organization**: Place scripts in `scripts/workflow/` directory  
-**Import Style**: Use existing shell script patterns
+**File Organization**: Group test requirements in deployment workflows  
+**Import Style**: Use existing Python import patterns
 
 ## Implementation Details
 
 ### Step-by-Step Tasks
 
-1. **Analyze Current Workflow Structure**
-   - Review existing `docker-build-push-staging.yml` and `docker-build-push.yml`
-   - Identify current job dependencies and structure
-   - Document baseline deployment time
+1. **Add Test Requirements to CI Workflow**
+   - Require all tests to pass before any deployment
+   - Add test coverage threshold enforcement
+   - Block deployment on test failures
+   - Add test quality gates to CI pipeline
 
-2. **Add Test Dependencies**
-   - Modify staging workflow to depend on test job
-   - Modify production workflow to depend on test job
-   - Ensure proper job ordering and failure handling
+2. **Enhance Docker Build Workflow**
+   - Run tests during Docker build process
+   - Validate test results before image creation
+   - Add test requirements to Docker build
+   - Ensure test environment consistency
 
-3. **Update Workflow Documentation**
-   - Update `.github/workflows/README.md`
-   - Document the new test requirement
+3. **Update Deployment Workflows**
+   - Add test validation to staging deployment
+   - Require test passing for production deployment
+   - Add test coverage checks to deployment
+   - Implement test failure rollback procedures
+
+4. **Create Test Validation Script**
+   - Script to validate test requirements
+   - Check test coverage thresholds
+   - Validate test quality metrics
+   - Generate test requirement reports
+
+5. **Document Test Requirements**
+   - Document test requirements for deployments
+   - Create test quality guidelines
    - Add troubleshooting for test failures
+   - Document test validation procedures
 
-4. **Verify Deployment Safety**
-   - Test that deployment fails when tests fail
-   - Test that deployment succeeds when tests pass
-   - Document rollback procedures
+6. **Integrate with Existing Workflows**
+   - Ensure test requirements work with existing CI/CD
+   - Add test requirements to all deployment paths
+   - Configure test failure handling
+   - Add test requirement monitoring
 
 ### Architecture Decisions
 
 **Why this approach:**
-- Simple dependency addition to existing workflows
-- Minimal changes to proven deployment process
-- Consistent with safety patterns in other repositories
+
+- Prevents broken code from reaching production
+- Ensures consistent test quality across deployments
+- Integrates with existing CI/CD infrastructure
+- Provides clear test requirements and validation
 
 **Alternatives considered:**
-- Custom test verification script: More complex, potential for divergence
-- Skip test requirement: Unacceptable safety risk
+
+- Manual test validation: Inconsistent and error-prone
+- Post-deployment testing: Too late to prevent issues
+- Optional test requirements: Insufficient quality control
 
 ### Dependencies & Integration
 
 **Internal Dependencies:**
-- Depends on: Existing test job in workflows
-- Consumed by: Docker build and deployment jobs
+
+- Depends on: Existing test suite and CI/CD pipeline
+- Consumed by: All deployment workflows and processes
 
 **External Dependencies:**
-- APIs: None (tests run in GitHub Actions environment)
-- Services: Docker Hub/GitHub Container Registry
+
+- APIs: GitHub Actions, testing services
+- Services: CI/CD systems, deployment platforms
 
 ## Testing Requirements
 
 ### Test Coverage Required
 
+**Workflow Tests:**
+
+```python
+# Example test requirement validation
+def test_deployment_requires_passing_tests():
+    """Test that deployment fails if tests don't pass"""
+    # Mock test failure
+    # Attempt deployment
+    # Verify deployment is blocked
+
+def test_coverage_threshold_enforcement():
+    """Test that coverage thresholds are enforced"""
+    # Mock low coverage
+    # Attempt deployment
+    # Verify deployment is blocked
+```
+
 **Integration Tests:**
-- Workflow dependency correctly implemented
-- Test failure blocks deployment
-- Test success allows deployment
+
+- Test requirement validation in CI/CD
+- Test failure handling in deployments
+- Test coverage enforcement
 
 **Manual Testing Checklist**
-- [ ] Staging deployment requires passing tests
-- [ ] Production deployment requires passing tests
-- [ ] Test failure prevents deployment to either environment
-- [ ] Deployment time increase is minimal
 
-### Test Data
-
-**Sample workflow scenarios:**
-- Tests pass → deployment proceeds
-- Tests fail → deployment blocked
-- Partial test failures → deployment blocked
+- [ ] All deployments require passing tests
+- [ ] Test failures block deployment
+- [ ] Coverage thresholds are enforced
+- [ ] Test quality gates work correctly
+- [ ] Test validation script functions properly
+- [ ] Test requirements are documented
+- [ ] Test failure handling works
+- [ ] Test requirements integrate with existing workflows
+- [ ] Test validation is consistent across environments
+- [ ] Test requirements prevent broken deployments
 
 ## Acceptance Criteria
 
-- [ ] Test job is dependency for staging deployment
-- [ ] Test job is dependency for production deployment
-- [ ] Deployment fails if tests fail
-- [ ] Deployment succeeds if tests pass
-- [ ] No significant increase in deployment time
-- [ ] Workflow documentation updated
+- [ ] All deployments require passing tests
+- [ ] Test failures block deployment
+- [ ] Test coverage thresholds are enforced
+- [ ] Test quality gates are implemented
+- [ ] Test requirements are documented
+- [ ] Test validation is automated
+- [ ] Test failure handling is implemented
+- [ ] Test requirements integrate with CI/CD
+- [ ] Test requirements prevent broken deployments
+- [ ] Test requirements are consistently enforced
 
 ## Environment Setup
 
 ### Prerequisites
+
 ```bash
 # Required tools and versions
-GitHub Actions: configured
-Docker: installed
 Python: 3.9+
-pytest: configured
+pytest: latest
+coverage.py: latest
+GitHub Actions: configured
 ```
 
 ### Repository Setup
+
 ```bash
 # Clone worker repository
 git clone https://github.com/Jdubz/job-finder-worker.git
 cd job-finder-worker
 
-# Environment variables needed
-cp .env.example .env
-# Configure test environment settings
+# Install test dependencies
+pip install -r requirements-test.txt
+
+# Run tests to verify they pass
+pytest --cov=src/job_finder
 ```
 
 ### Running Locally
-```bash
-# Run tests locally (equivalent to CI)
-python -m pytest
 
-# Test workflow changes locally
-# (Requires GitHub Actions configuration)
+```bash
+# Test deployment requirements locally
+python scripts/validate_tests.py
+
+# Run test requirements validation
+pytest --cov=src/job_finder --cov-fail-under=80
+
+# Test deployment workflow
+./scripts/test_deployment_requirements.sh
 ```
 
 ## Code Examples & Patterns
 
 ### Example Implementation
 
-**Current problematic workflow:**
+**Test requirements workflow:**
+
 ```yaml
+# .github/workflows/deploy-requirements.yml
+name: Test Requirements Validation
+
+on:
+  pull_request:
+    branches: [main, staging]
+  push:
+    branches: [main, staging]
+
 jobs:
-  test:
-    # Runs tests
-  build:
-    # Builds Docker image
-  deploy:
-    needs: build
-    # Deploys even if tests failed
+  test-requirements:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.9"
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install -r requirements-test.txt
+
+      - name: Run tests with coverage
+        run: |
+          pytest --cov=src/job_finder --cov-report=xml --cov-fail-under=80
+
+      - name: Validate test requirements
+        run: |
+          python scripts/validate_tests.py
+
+      - name: Check test quality
+        run: |
+          # Additional test quality checks
+          pytest --cov=src/job_finder --cov-report=term-missing
 ```
 
-**Fixed workflow with safety:**
-```yaml
-jobs:
-  test:
-    # Runs tests
-  build:
-    needs: test
-    # Only builds if tests pass
-  deploy:
-    needs: [test, build]
-    # Only deploys if tests and build pass
+**Test validation script:**
+
+```python
+#!/usr/bin/env python3
+"""Test requirements validation script"""
+
+import subprocess
+import sys
+import json
+from pathlib import Path
+
+def validate_test_requirements():
+    """Validate that test requirements are met"""
+    print("Validating test requirements...")
+
+    # Run tests and check results
+    result = subprocess.run([
+        'pytest', '--cov=src/job_finder', '--cov-report=json', '--cov-fail-under=80'
+    ], capture_output=True, text=True)
+
+    if result.returncode != 0:
+        print("Test requirements not met:")
+        print(result.stdout)
+        print(result.stderr)
+        return False
+
+    # Parse coverage report
+    coverage_file = Path('coverage.json')
+    if coverage_file.exists():
+        with open(coverage_file) as f:
+            coverage_data = json.load(f)
+            total_coverage = coverage_data['totals']['percent_covered']
+            print(f"Coverage: {total_coverage:.2f}%")
+
+            if total_coverage < 80:
+                print("Coverage below threshold (80%)")
+                return False
+
+    print("All test requirements met")
+    return True
+
+if __name__ == "__main__":
+    if not validate_test_requirements():
+        sys.exit(1)
 ```
 
 ## Security & Performance Considerations
 
 ### Security
-- [ ] No sensitive data exposed in workflow failures
-- [ ] Proper cleanup of test artifacts
+
+- [ ] Test requirements don't expose sensitive information
+- [ ] Test validation is secure and reliable
+- [ ] Test requirements are properly authenticated
+- [ ] Test data is handled securely
 
 ### Performance
-- [ ] Test dependency adds <1 minute to deployment time
-- [ ] Parallel execution where possible
-- [ ] Efficient job ordering
+
+- [ ] Test requirements don't significantly slow deployments
+- [ ] Test validation is efficient
+- [ ] Test requirements are optimized for CI/CD
+- [ ] Test failure detection is fast
 
 ### Error Handling
-```yaml
-# Example error handling in workflow
-- name: Deploy to Staging
-  if: success()  # Only run if previous jobs succeeded
-  run: |
-    echo "Deploying to staging..."
-    # Deployment commands
+
+```python
+# Example test requirement error handling
+def handle_test_requirement_failure(error):
+    """Handle test requirement failures appropriately"""
+    logger.error(f"Test requirement failed: {error}")
+    # Block deployment
+    # Notify team
+    # Log failure details
+    # Trigger rollback if needed
 ```
 
 ## Documentation Requirements
 
 ### Code Documentation
-- [ ] Add comments to workflow explaining test requirement
-- [ ] Document test failure scenarios and resolution
+
+- [ ] Test requirement functions are documented
+- [ ] Test validation scripts are documented
+- [ ] Test requirement workflows are documented
 
 ### README Updates
+
 Update repository README.md with:
-- [ ] Deployment now requires passing tests
-- [ ] Test failure blocks deployment
-- [ ] How to troubleshoot test failures
+
+- [ ] Test requirements for deployments
+- [ ] Test validation procedures
+- [ ] Test requirement troubleshooting
+- [ ] Test quality guidelines
 
 ## Commit Message Requirements
 
 All commits for this issue must use **semantic commit structure**:
 
 ```
-fix(workflows): add test requirements to deployment workflows
+feat(workflow): add test requirements to deployments
 
-Add test job as dependency for Docker deployments to prevent
-broken code from reaching staging and production environments.
+Add comprehensive test requirements to all deployment workflows.
+Implement test validation and coverage thresholds. Ensure test
+failures block deployment to prevent broken code in production.
 
 Closes #70
 ```
 
 ### Commit Types
-- `fix:` - Bug fix (deployment safety issue)
+
+- `feat:` - New feature (test requirements workflow)
 
 ## PR Checklist
 
@@ -257,38 +403,39 @@ When submitting the PR for this issue:
 - [ ] PR title matches issue title
 - [ ] PR description references issue: `Closes #70`
 - [ ] All acceptance criteria met
-- [ ] All tests pass locally
-- [ ] No linter errors or warnings
-- [ ] Code follows project style guide
+- [ ] Test requirements are implemented
+- [ ] Test validation works correctly
+- [ ] Test requirements are documented
 - [ ] Self-review completed
 
 ## Timeline & Milestones
 
-**Estimated Effort**: 30 minutes  
-**Target Completion**: Same day (critical safety fix)  
+**Estimated Effort**: 1-2 hours  
+**Target Completion**: This week (critical for deployment quality)  
 **Dependencies**: None  
-**Blocks**: Safe deployment of worker changes
+**Blocks**: Improved deployment quality and reliability
 
 ## Success Metrics
 
 How we'll measure success:
 
-- **Safety**: Deployments now require passing tests
-- **Reliability**: No more broken code deployments
-- **Consistency**: Same safety standards across all repositories
-- **Speed**: Test dependency adds minimal time overhead
+- **Quality**: No broken deployments due to test failures
+- **Reliability**: Test requirements consistently enforced
+- **Coverage**: Test coverage thresholds maintained
+- **Prevention**: Test failures block deployment effectively
 
 ## Rollback Plan
 
 If this change causes issues:
 
 1. **Immediate rollback**:
+
    ```bash
-   # Remove test dependency if causing workflow failures
+   # Revert test requirement changes if causing deployment issues
    git revert [commit-hash]
    ```
 
-2. **Decision criteria**: If test dependency consistently causes deployment issues
+2. **Decision criteria**: If test requirements cause deployment failures
 
 ## Questions & Clarifications
 
@@ -305,16 +452,18 @@ TODO → IN PROGRESS → REVIEW → DONE
 ```
 
 **Update this issue**:
+
 - When starting work: Add `status-in-progress` label
 - When PR is ready: Add `status-review` label and PR link
 - When merged: Add `status-done` label and close issue
 
 **PR must reference this issue**:
+
 - Use `Closes #70` in PR description
 
 ---
 
-**Created**: 2025-10-21  
-**Created By**: PM  
-**Priority Justification**: Critical deployment safety issue - prevents broken code from reaching production  
+**Created**: 2025-10-21
+**Created By**: PM
+**Priority Justification**: Critical for deployment quality - prevents broken code from reaching production
 **Last Updated**: 2025-10-21
