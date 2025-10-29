@@ -796,4 +796,4 @@ This decision tree provides a comprehensive framework for processing companies, 
 5. **Clear Thresholds**: Quantitative criteria for data quality and match scoring
 6. **Future-Proof**: TODO markers for optimization opportunities without over-engineering
 
-**Remember**: Any scrape that fails should save data as "unknown" to flag for inspection.
+**Remember**: Any failed scrape should save data as "unknown" to flag it for inspection.
